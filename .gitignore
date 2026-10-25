@@ -1,0 +1,35 @@
+# Local credentials/configuration
+.env
+.env.*
+!.env.example
+!.env.*.example
+
+# JavaScript build/dependencies
+node_modules/
+.next/
+out/
+
+# Python environments/build/cache
+.venv/
+venv/
+__pycache__/
+*.py[cod]
+.pytest_cache/
+pytest-cache-files-*/
+.mypy_cache/
+.ruff_cache/
+*.egg-info/
+.ipynb_checkpoints/
+*.tsbuildinfo
+.swc-repair/
+
+# Generated verification output
+coverage/
+htmlcov/
+.coverage
+playwright-report/
+test-results/
+
+# Generated experiment artifacts
+/research/results/*
+!/research/results/.gitkeep
