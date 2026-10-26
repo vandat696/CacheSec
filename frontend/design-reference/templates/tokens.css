@@ -1,0 +1,2 @@
+/* Nói UI tokens — override on .nui-theme or a parent element. */
+.nui-theme{--nui-primary:#185adb;--nui-primary-hover:#1246ad;--nui-tint:#ebf2ff;--nui-bg:#f5f7fa;--nui-surface:#fff;--nui-text:#17263c;--nui-muted:#526176;--nui-border:#d6dee9;--nui-control-border:#a7b4c7;--nui-success:#176640;--nui-danger:#b42332;--nui-radius:8px;--nui-surface-radius:0px;--nui-font:'Segoe UI',system-ui,sans-serif;--nui-body:16px;--nui-small:14px;--nui-space:8px;--nui-motion:180ms}

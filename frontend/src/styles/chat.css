@@ -1,0 +1,257 @@
+.chat-layout {
+  display: grid;
+  grid-template-columns: 240px minmax(0, 1fr);
+  min-height: calc(100dvh - 80px);
+}
+.history {
+  min-width: 0;
+  padding: 24px 16px;
+  border-right: 1px solid var(--nui-border);
+  background: #fafbfd;
+}
+.history > .nui-button {
+  width: 100%;
+  white-space: normal;
+  justify-content: flex-start;
+  text-align: left;
+  font-size: 14px;
+}
+.history-label {
+  margin-top: 24px;
+}
+.history-list {
+  display: grid;
+  gap: 8px;
+  margin-top: 24px;
+}
+.history-item {
+  border: 0;
+  background: transparent;
+  text-align: left;
+  padding: 12px;
+  border-radius: var(--nui-radius);
+  font-size: 14px;
+  overflow-wrap: anywhere;
+}
+.history-item.active {
+  background: var(--nui-tint);
+  color: var(--nui-primary);
+}
+.chat-main {
+  padding: 32px;
+  display: flex;
+  flex-direction: column;
+  gap: 24px;
+  min-width: 0;
+  height: max(640px, calc(100dvh - 80px));
+}
+.chat-heading {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+}
+.chat-heading h1 {
+  font-size: 20px;
+  line-height: 1.4;
+  letter-spacing: -0.4px;
+}
+.chat-heading > div {
+  flex: 1 1 180px;
+}
+.chat-heading > .nui-badge {
+  font-size: 12px;
+}
+.messages {
+  flex: 1;
+  overflow-y: auto;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 24px;
+  padding: 16px 0;
+}
+.messages > * {
+  flex-shrink: 0;
+}
+.welcome {
+  margin: auto;
+  max-width: 560px;
+  text-align: center;
+  padding: 24px 0;
+}
+.welcome .brandmark {
+  margin: 0 auto 24px;
+  width: 48px;
+  height: 48px;
+}
+.welcome h2 {
+  font-size: 28px;
+  line-height: 1.25;
+  font-weight: 650;
+  letter-spacing: -0.8px;
+}
+.welcome p {
+  margin: 16px 0 24px;
+  color: var(--nui-muted);
+}
+.suggestions {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 12px;
+}
+.suggestions button {
+  text-align: left;
+  background: var(--nui-surface);
+  padding: 16px;
+  border: 1px solid var(--nui-border);
+  border-radius: var(--nui-radius);
+  font-size: 14px;
+}
+.message {
+  max-width: 720px;
+  width: 100%;
+  margin: 0 auto;
+  display: flex;
+  align-items: flex-start;
+  gap: 12px;
+}
+.message .avatar {
+  background: var(--nui-tint);
+  color: var(--nui-primary);
+}
+.message-body {
+  min-width: 0;
+  flex: 1;
+}
+.message-body > strong {
+  font-size: 14px;
+}
+.message-body p {
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+  margin-top: 8px;
+}
+.message-body > .nui-button {
+  margin-top: 8px;
+}
+.message.user {
+  background: #edf2f9;
+  padding: 16px;
+  border-radius: var(--nui-radius);
+}
+.composer {
+  max-width: 760px;
+  width: 100%;
+  margin: 0 auto;
+  flex: none;
+}
+.composer-box {
+  background: var(--nui-surface);
+  border: 1px solid var(--nui-control-border);
+  border-radius: 12px;
+  padding: 16px;
+}
+.composer label {
+  display: block;
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--nui-muted);
+  margin-bottom: 8px;
+}
+.composer textarea {
+  width: 100%;
+  border: 0;
+  resize: vertical;
+  min-height: 56px;
+  max-height: 160px;
+  background: transparent;
+  color: var(--nui-text);
+}
+.composer-bottom {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 16px;
+}
+.composer-bottom > :first-child {
+  flex: 1;
+  min-width: 0;
+}
+.composer-note {
+  text-align: center;
+  font-size: 12px;
+  color: var(--nui-muted);
+  margin-top: 8px;
+}
+.chat-error {
+  color: var(--nui-danger);
+  font-size: 14px;
+}
+@media (hover: hover) {
+  .history-item:hover,
+  .suggestions button:hover {
+    border-color: var(--nui-primary);
+    background: var(--nui-tint);
+    color: var(--nui-primary);
+  }
+}
+@container workspace (max-width: 640px) {
+  .chat-layout {
+    grid-template-columns: minmax(0, 1fr);
+  }
+  .history {
+    border-right: 0;
+    border-bottom: 1px solid var(--nui-border);
+    padding: 16px;
+  }
+  .history > .nui-button {
+    width: auto;
+    white-space: nowrap;
+  }
+  .history-label {
+    margin-top: 16px;
+  }
+  .history-list {
+    display: flex;
+    overflow-x: auto;
+    margin-top: 8px;
+  }
+  .history-item {
+    flex: 0 0 auto;
+    max-width: 200px;
+  }
+  .chat-main {
+    height: auto;
+    min-height: 640px;
+    padding: 24px 16px;
+  }
+  .messages {
+    min-height: 240px;
+    max-height: 60dvh;
+  }
+  .suggestions {
+    grid-template-columns: minmax(0, 1fr);
+  }
+  .welcome {
+    width: 100%;
+  }
+}
+@media (max-width: 767px) {
+  .chat-layout {
+    min-height: calc(100dvh - 72px);
+  }
+  .chat-heading {
+    align-items: flex-start;
+  }
+  .welcome h2 {
+    font-size: 24px;
+  }
+  .composer {
+    padding-bottom: env(safe-area-inset-bottom);
+  }
+  .composer-bottom .small {
+    font-size: 12px;
+  }
+}

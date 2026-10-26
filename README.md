@@ -6,7 +6,7 @@ Mục tiêu: đo cache nhanh hơn, tiết kiệm hơn trong điều kiện nào;
 
 ## Trạng thái
 
-Đã thêm scaffold Next.js, FastAPI với endpoint health và Docker Compose cho PostgreSQL/pgvector. Chưa có chatbot, cache, xác thực, database adapter hoặc kết quả benchmark. Xem [hướng dẫn chạy](docs/general/setup.md) và [trạng thái kiểm chứng](docs/general/project-status.md).
+Đã tích hợp giao diện Nói vào Next.js: màn chat mô phỏng và thư viện 21 component React/TypeScript. FastAPI có endpoint health; Docker Compose có PostgreSQL/pgvector. Chưa có chatbot AI thật, cache, xác thực, database adapter hoặc kết quả benchmark. Xem [hướng dẫn chạy](docs/general/setup.md) và [trạng thái kiểm chứng](docs/general/project-status.md).
 
 ## Ba màn hình dự kiến
 

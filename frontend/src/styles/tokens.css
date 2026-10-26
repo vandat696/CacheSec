@@ -1,0 +1,33 @@
+/* Nói UI tokens — override on .nui-theme or a parent element. */
+.nui-theme {
+  --nui-primary: #185adb;
+  --nui-primary-hover: #1246ad;
+  --nui-tint: #ebf2ff;
+  --nui-bg: #f5f7fa;
+  --nui-surface: #fff;
+  --nui-text: #17263c;
+  --nui-muted: #526176;
+  --nui-border: #d6dee9;
+  --nui-control-border: #a7b4c7;
+  --nui-success: #176640;
+  --nui-danger: #b42332;
+  --nui-radius: 8px;
+  --nui-surface-radius: 0px;
+  --nui-font: "Segoe UI", system-ui, sans-serif;
+  --nui-body: 16px;
+  --nui-small: 14px;
+  --nui-space: 8px;
+  --nui-motion: 180ms;
+  --nui-enter: 240ms;
+  --nui-exit: 150ms;
+  --nui-ease-out: cubic-bezier(0.2, 0.8, 0.2, 1);
+  --nui-ease-in: cubic-bezier(0.4, 0, 1, 1);
+  --nui-badge-text: #fff;
+  --nui-badge-neutral: #35455c;
+  --nui-badge-success: #15803d;
+  --nui-danger-hover: #941d2a;
+  --nui-input-focus-duration: 180ms;
+  --nui-disabled-bg: #e8edf3;
+  --nui-disabled-text: #596779;
+  --nui-disabled-border: #cbd4df;
+}

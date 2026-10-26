@@ -1,0 +1,430 @@
+:root {
+  color-scheme: light;
+  font-family: var(--nui-font);
+  color: var(--nui-text);
+  background: var(--nui-bg);
+  font-size: var(--nui-body);
+  line-height: 1.6;
+}
+* {
+  box-sizing: border-box;
+}
+body {
+  margin: 0;
+}
+button,
+input,
+textarea,
+select {
+  font: inherit;
+}
+button,
+a {
+  -webkit-tap-highlight-color: transparent;
+  cursor: pointer;
+}
+button {
+  color: inherit;
+}
+:focus-visible {
+  outline: 3px solid var(--nui-primary);
+  outline-offset: 3px;
+}
+[hidden] {
+  display: none !important;
+}
+h1,
+h2,
+h3,
+p {
+  margin: 0;
+}
+h1 {
+  font-size: 32px;
+  line-height: 1.25;
+  font-weight: 650;
+  letter-spacing: -0.8px;
+}
+h2 {
+  font-size: 24px;
+  line-height: 1.4;
+  letter-spacing: -0.4px;
+}
+h3 {
+  font-size: 20px;
+  line-height: 1.4;
+}
+.small {
+  font-size: var(--nui-small);
+}
+.muted {
+  color: var(--nui-muted);
+}
+.row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  min-width: 0;
+}
+.stack {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  min-width: 0;
+}
+.icon {
+  width: 20px;
+  height: 20px;
+  fill: none;
+  stroke: currentColor;
+  stroke-width: 1.75;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+  flex: none;
+}
+.icon-button {
+  min-width: 44px;
+  padding: 10px;
+}
+.app {
+  display: grid;
+  grid-template-columns: 248px minmax(0, 1fr);
+  min-height: 100dvh;
+}
+.workspace {
+  min-width: 0;
+  container: workspace / inline-size;
+}
+.sidebar {
+  background: var(--nui-surface);
+  border-right: 1px solid var(--nui-border);
+  padding: 32px 20px;
+  display: flex;
+  flex-direction: column;
+  gap: 32px;
+  position: sticky;
+  top: 0;
+  height: 100dvh;
+  overflow-y: auto;
+}
+.brand {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  font-size: 22px;
+  font-weight: 700;
+  letter-spacing: -0.6px;
+}
+.brand .nui-badge {
+  font-size: 12px;
+}
+.brandmark {
+  display: grid;
+  place-items: center;
+  width: 36px;
+  height: 36px;
+  background: var(--nui-primary);
+  color: #fff;
+  border-radius: var(--nui-radius);
+  flex: none;
+}
+.brandmark .icon {
+  width: 24px;
+  height: 24px;
+}
+.eyebrow {
+  font-size: 12px;
+  letter-spacing: 1.5px;
+  font-weight: 700;
+  text-transform: uppercase;
+  color: var(--nui-muted);
+}
+.sidebar nav {
+  display: grid;
+  gap: 8px;
+}
+.nav {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  min-height: 48px;
+  border-radius: var(--nui-radius);
+  padding: 12px;
+  text-decoration: none;
+  color: inherit;
+  font-weight: 600;
+}
+.nav.active {
+  background: var(--nui-tint);
+  color: var(--nui-primary);
+}
+.sidebar-note {
+  margin-top: auto;
+  border-top: 1px solid var(--nui-border);
+  padding-top: 24px;
+}
+.profile {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+.avatar {
+  width: 36px;
+  height: 36px;
+  display: grid;
+  place-items: center;
+  border-radius: 50%;
+  background: #edf0f5;
+  font-size: 12px;
+  font-weight: 700;
+  flex: none;
+}
+.topbar {
+  min-height: 80px;
+  background: var(--nui-surface);
+  border-bottom: 1px solid var(--nui-border);
+  padding: 16px 40px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+}
+.topbar > * {
+  min-width: 0;
+}
+.topbar > .nui-badge {
+  font-size: 12px;
+  white-space: nowrap;
+}
+.crumb {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0 12px;
+  font-size: 14px;
+  min-width: 0;
+}
+.crumb span {
+  color: var(--nui-muted);
+}
+.crumb strong {
+  overflow-wrap: anywhere;
+}
+.page {
+  max-width: 1360px;
+  margin: auto;
+  padding: 40px;
+}
+.intro {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  align-items: start;
+  gap: 24px;
+  margin-bottom: 32px;
+}
+.intro p {
+  margin-top: 12px;
+  max-width: 65ch;
+  color: var(--nui-muted);
+}
+.intro > .btn {
+  justify-self: start;
+}
+.btn {
+  min-height: 44px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  padding: 10px 16px;
+  border: 1px solid var(--nui-border);
+  border-radius: var(--nui-radius);
+  background: var(--nui-surface);
+  font-size: 14px;
+  font-weight: 600;
+  text-decoration: none;
+  color: var(--nui-text);
+  white-space: nowrap;
+}
+.btn.tertiary {
+  background: transparent;
+  border-color: transparent;
+  color: var(--nui-primary);
+}
+.panel {
+  background: var(--nui-surface);
+  border: 1px solid var(--nui-border);
+  border-radius: var(--nui-surface-radius);
+  padding: 24px;
+  min-width: 0;
+}
+.section-head {
+  display: flex;
+  justify-content: space-between;
+  align-items: start;
+  gap: 16px;
+  margin-bottom: 20px;
+}
+.section-head h2 {
+  font-size: 20px;
+}
+.footer-note {
+  display: flex;
+  justify-content: space-between;
+  gap: 16px;
+  font-size: 12px;
+  color: var(--nui-muted);
+  border-top: 1px solid var(--nui-border);
+  padding-top: 24px;
+}
+.app-toast {
+  position: fixed;
+  bottom: 24px;
+  left: 50%;
+  transform: translateX(-50%);
+  width: max-content;
+  max-width: calc(100% - 32px);
+  z-index: 20;
+}
+.copy-fallback {
+  flex-basis: 100%;
+}
+.skip-link {
+  position: fixed;
+  left: 16px;
+  top: -80px;
+  padding: 12px;
+  background: var(--nui-surface);
+  color: var(--nui-primary);
+  z-index: 30;
+}
+.skip-link:focus {
+  top: 16px;
+}
+.mobile-toggle.nui-button,
+.drawer-close,
+.scrim {
+  display: none;
+}
+@media (hover: hover) {
+  .btn:hover,
+  .nav:hover {
+    background: var(--nui-tint);
+    color: var(--nui-primary);
+  }
+}
+@media (min-width: 1440px) {
+  .page {
+    padding: 48px;
+  }
+  .topbar {
+    padding-inline: 48px;
+  }
+}
+@media (min-width: 768px) and (max-width: 1023px) {
+  .app {
+    grid-template-columns: 208px minmax(0, 1fr);
+  }
+  .sidebar {
+    padding-inline: 16px;
+  }
+  .brand {
+    flex-wrap: wrap;
+  }
+  .page {
+    padding: 32px 24px;
+  }
+  .topbar {
+    padding-inline: 24px;
+  }
+}
+@container workspace (max-width: 1056px) {
+  .intro {
+    grid-template-columns: minmax(0, 1fr);
+  }
+}
+@media (max-width: 767px) {
+  .app {
+    display: block;
+  }
+  .sidebar {
+    position: fixed;
+    left: 0;
+    top: 0;
+    bottom: 0;
+    width: min(280px, calc(100vw - 48px));
+    z-index: 12;
+    transform: translateX(-100%);
+    visibility: hidden;
+    padding-bottom: max(32px, env(safe-area-inset-bottom));
+    transition:
+      transform var(--nui-enter) var(--nui-ease-out),
+      visibility var(--nui-enter);
+  }
+  .sidebar.open {
+    transform: translateX(0);
+    visibility: visible;
+  }
+  .drawer-close {
+    display: grid;
+    place-items: center;
+    border: 0;
+    background: transparent;
+    min-height: 44px;
+    min-width: 32px;
+    margin-left: auto;
+  }
+  .brand {
+    gap: 8px;
+  }
+  .brand .nui-badge {
+    font-size: 10px;
+  }
+  .scrim {
+    display: block;
+    position: fixed;
+    inset: 0;
+    background: #17263c66;
+    z-index: 11;
+    border: 0;
+  }
+  .mobile-toggle.nui-button {
+    display: inline-flex;
+  }
+  .topbar {
+    padding: 12px 16px;
+    min-height: 72px;
+  }
+  .topbar > .nui-badge {
+    display: none;
+  }
+  .crumb {
+    column-gap: 8px;
+  }
+  .page {
+    padding: 24px 16px;
+  }
+  .intro {
+    grid-template-columns: minmax(0, 1fr);
+    gap: 16px;
+  }
+  .intro h1 {
+    font-size: 28px;
+  }
+  .panel {
+    padding: 20px;
+  }
+  .footer-note {
+    flex-direction: column;
+    gap: 8px;
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation: none !important;
+    transition: none !important;
+    scroll-behavior: auto !important;
+  }
+}

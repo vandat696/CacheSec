@@ -35,11 +35,24 @@ npm ci
 npm run dev
 ```
 
-Mở http://127.0.0.1:3000. Trang hiện chỉ xác nhận scaffold, chưa tự gọi backend, chưa có chat/cache. Không cần API key ở bước này.
+Mở http://127.0.0.1:3000 để dùng chat mô phỏng; http://127.0.0.1:3000/ui là thư viện 21 component tương tác, có mã tích hợp React. Giao diện chưa gọi backend/model; không cần API key. Hội thoại và bản nháp chỉ nằm trong bộ nhớ, mất khi tải lại hoặc rời màn chat. Xem [tổ chức frontend](../frontend/design.md#tổ-chức-code-frontend).
 
 ## Kiểm tra
 
-Trong frontend: npm run lint, npm run typecheck, npm run build.
+Trong frontend: `npm run lint`, `npm run typecheck`, `npm test`, `npm run build`. Các test dùng Node test runner và đọc TypeScript trực tiếp; dùng Node 24 như môi trường đã kiểm tra. Node có thể cảnh báo tự nhận dạng ES module cho file TypeScript; cảnh báo này không làm test thất bại.
+
+Kiểm tra tương tác và responsive bằng Edge/Chrome headless (không thêm test framework):
+
+```powershell
+# Terminal 1, sau npm run build:
+npm run start -- --port 3100
+# Terminal 2, cùng thư mục frontend:
+npm run test:browser
+# Tùy chọn: thêm ảnh đối chiếu với bản thiết kế gốc:
+npm run test:browser -- --reference
+```
+
+Script mặc định tìm Edge/Chrome tại đường dẫn Windows thông dụng. Nếu khác, đặt `BROWSER_PATH` tới executable; `APP_URL` đổi địa chỉ app (mặc định http://127.0.0.1:3100). Ảnh và profile trình duyệt tạm nằm trong `frontend/test-results/browser/`, được Git bỏ qua. Script chỉ đóng process trình duyệt do nó mở; không dùng profile cá nhân. Nếu môi trường chặn tạo process hoặc truy cập DevTools local, cần chạy ngoài sandbox đó.
 
 Trong backend:
 
@@ -54,7 +67,7 @@ Tài liệu tham khảo: [Next.js installation](https://nextjs.org/docs/app/gett
 
 ## Thành phần đã khởi tạo
 
-- Frontend: Next.js App Router, TypeScript strict, CSS thuần, ESLint và npm lockfile. Trang scaffold không có dữ liệu nghiên cứu giả hoặc chức năng chat.
+- Frontend: Next.js App Router, TypeScript strict, CSS thuần, ESLint và npm lockfile; giao diện Nói với chat mô phỏng và thư viện UI. Số liệu trong thư viện là dữ liệu mẫu, không phải kết quả nghiên cứu.
 - Backend: FastAPI, cấu hình CORS local qua Pydantic Settings, health endpoint; requirements runtime/dev và bản freeze dependencies cho môi trường đã cài.
 - Database: Docker Compose với PostgreSQL 17 + pgvector 0.8.7, cổng chỉ bind localhost, persistent volume, init extension vector.
 - Chưa có schema nghiệp vụ, database adapter/migration, authentication, LLM/embedding provider, cache hoặc tích hợp UI/API.

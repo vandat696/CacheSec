@@ -1,0 +1,33 @@
+{
+  "name": "Noi UI Templates",
+  "version": "2.0.0",
+  "runtime": "browser",
+  "namespace": "NoiUI",
+  "styles": ["tokens.css", "components.css"],
+  "script": "components.js",
+  "documentation": "README.md",
+  "returnContract": ["element", "destroy()"],
+  "components": [
+    {"name":"Button","group":"controls","options":["label","variant","disabled","onClick"],"methods":["setLoading(boolean)"]},
+    {"name":"TextInput","group":"controls","options":["label","value","type","placeholder","required","disabled","help","error","validate","onChange"],"methods":["getValue()","setValue(value)","validate()"]},
+    {"name":"Textarea","group":"controls","options":["label","value","placeholder","required","disabled","help","validate","onChange"],"methods":["getValue()","setValue(value)","validate()"]},
+    {"name":"Select","group":"controls","options":["label","value","options","required","disabled","help","onChange"],"methods":["getValue()","setValue(value)","validate()"]},
+    {"name":"Checkbox","group":"controls","options":["label","checked","disabled","onChange"],"methods":["getValue()","setValue(boolean)"]},
+    {"name":"Switch","group":"controls","options":["label","checked","disabled","onChange"],"methods":["getValue()","setValue(boolean)"]},
+    {"name":"Tabs","group":"navigation","options":["label","items","selectedIndex","onChange"],"methods":["select(index)"]},
+    {"name":"Badge","group":"feedback","options":["label","tone"],"methods":[]},
+    {"name":"Alert","group":"feedback","options":["title","description","tone"],"methods":[]},
+    {"name":"Dialog","group":"feedback","options":["title","description","cancelLabel","confirmLabel","onConfirm","onClose"],"methods":["open()","close()"]},
+    {"name":"Dropdown","group":"navigation","options":["label","items","onSelect"],"methods":["open()","close()"]},
+    {"name":"Toast","group":"feedback","options":["message","duration"],"methods":["show(message)"]},
+    {"name":"NumberInput","group":"controls","options":["label","value","min","max","step","required","disabled","help","error","validate","onChange"],"methods":["getValue()","setValue(value)","validate()"]},
+    {"name":"Slider","group":"controls","options":["label","value","min","max","step","disabled","help","onChange"],"methods":["getValue()","setValue(value)","validate()"]},
+    {"name":"StatCard","group":"data","options":["label","value","description"],"methods":[]},
+    {"name":"ProgressBar","group":"data","options":["label","value","max","unit"],"methods":["setValue(value,max)"]},
+    {"name":"DataTable","group":"data","options":["caption","columns","rows"],"methods":["setData(rows)"]},
+    {"name":"LineChart","group":"charts","options":["title","unit","data"],"methods":["setData(data)"]},
+    {"name":"BarChart","group":"charts","options":["title","unit","data"],"methods":["setData(data)"]},
+    {"name":"DonutChart","group":"charts","options":["title","unit","data"],"methods":["setData(data)"]},
+    {"name":"FlowDiagram","group":"diagrams","options":["nodes","selectedId","onSelect"],"methods":["select(id)"]}
+  ]
+}
