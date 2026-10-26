@@ -1,21 +1,28 @@
 # Tổng quan và yêu cầu
 
-CacheSec nghiên cứu chatbot AI nội bộ sử dụng RAG + LLM và cache có kiểm soát quyền. Local Semantic Cache là trọng tâm; no cache và server cache dùng để so sánh.
+CacheSec hướng tới chatbot AI nội bộ dùng RAG + LLM và cache có kiểm soát quyền. Mục tiêu nghiên cứu dài hạn là đánh giá tốc độ, chi phí, chất lượng câu trả lời và tính đúng phân quyền; local semantic cache là trọng tâm, none/server là đối chiếu.
 
-## Mục tiêu
+## Ưu tiên sản phẩm hiện tại
 
-Đánh giá tốc độ, chi phí xử lý, chất lượng câu trả lời và tính đúng phân quyền. Không mặc định cache luôn nhanh hơn hoặc tiết kiệm hơn.
+Theo yêu cầu ngày 2026-10-27, tập trung trước vào hai phần:
 
-## Phạm vi và yêu cầu
+- **Chat nội bộ:** hỏi đáp về thông tin công ty, lịch sử và hội thoại mới.
+- **Tài liệu:** có nơi chọn/tải tệp và phân loại để chuẩn bị nguồn dữ liệu cho chatbot.
 
-- Ba màn hình: so sánh chatbot A/B, thí nghiệm/kết quả, cấu hình/phân quyền.
-- Chọn profile cache/model/thuật toán/tham số để thử nghiệm, lưu cấu hình và số liệu.
-- Cho phép thay thế LLM, embedding, RAG và cache qua ranh giới đơn giản.
-- Kiểm tra quyền hiện tại khi reuse và khi retrieval/generation; dùng dữ liệu giả lập.
-- Lưu kết quả có thể đối chiếu, phân biệt đo thật, mô phỏng và chi phí ước tính.
+Giữ giao diện tối giản. A/B, benchmark, editor profile/cache, model và tham số kỹ thuật được hoãn. Không cần một màn thiết lập cho những chức năng chưa triển khai.
 
-## Phạm vi bản đầu đề xuất, chưa chốt triển khai
+## Phạm vi đã có và còn thiếu
 
-No cache/local/server, exact/semantic, một LLM và embedding provider thật, mock để test, quyền tối thiểu và thu hồi quyền, profile và xuất kết quả.
+Frontend hiện có chat mô phỏng, chọn/thả tệp, danh sách và phân loại trong phiên. Chưa có API upload, lưu trữ, xử lý tài liệu, xác thực hoặc AI/RAG thật. Tệp chưa tải lên không được trình bày như dữ liệu chatbot đã đọc.
 
-Cache hai tầng, nhiều provider, fine-tune và editor rule/code tùy ý để sau. Chi tiết còn mở được ghi tại tài liệu chủ đề và project-status.
+Cần chốt hợp đồng tài liệu/ingestion, nguồn identity/tenant, quyền nạp/đọc và giới hạn tệp trước khi nối backend. Phân loại tài liệu chỉ phục vụ sắp xếp, không tự cấp quyền.
+
+## Hướng nghiên cứu sau nền tảng
+
+- Thay thế LLM, embedding, RAG và cache qua các ranh giới đơn giản.
+- Xác minh quyền hiện tại khi retrieval/generation và cache reuse.
+- Thiết kế workload, cấu hình có phiên bản và số liệu; phân biệt đo thật, mô phỏng và chi phí ước tính.
+- So sánh cache none/local/server và exact/semantic trong cùng điều kiện sau khi baseline hoạt động.
+- Hai tầng cache, nhiều provider, fine-tune và editor rule/code tùy ý để sau.
+
+Chi tiết hiện trạng ở [project-status](project-status.md); luồng giao diện ở [frontend/design](../frontend/design.md).

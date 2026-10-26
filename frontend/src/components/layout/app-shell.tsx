@@ -4,21 +4,21 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useEffect, useRef, useState, type ReactNode } from "react";
 import { Button } from "../ui/button";
-import { Badge, ToastProvider } from "../ui/feedback";
+import { ToastProvider } from "../ui/feedback";
 import { Icon } from "../ui/icon";
+import { useChat } from "@/features/chat/chat-provider";
 
 const navigation = [
-  { href: "/", label: "Không gian trò chuyện", icon: "chat" },
-  { href: "/ui", label: "Thư viện UI", icon: "grid" },
+  { href: "/", label: "Chat", icon: "chat" },
+  { href: "/documents", label: "Tài liệu", icon: "book" },
 ] as const;
 
 export function AppShell({ children }: { children: ReactNode }) {
   const pathname = usePathname();
+  const chat = useChat();
   const [drawerOpen, setDrawerOpen] = useState(false);
   const sidebar = useRef<HTMLElement>(null);
   const toggle = useRef<HTMLButtonElement>(null);
-  const title =
-    navigation.find((item) => item.href === pathname)?.label ?? "CacheSec";
 
   useEffect(() => {
     if (!drawerOpen) return;
@@ -32,10 +32,12 @@ export function AppShell({ children }: { children: ReactNode }) {
         setDrawerOpen(false);
       }
       if (event.key !== "Tab") return;
-      const controls = sidebar.current?.querySelectorAll<HTMLElement>(
-        "a[href], button:not(:disabled)",
-      );
-      if (!controls?.length) return;
+      const controls = [
+        ...(sidebar.current?.querySelectorAll<HTMLElement>(
+          "a[href], button:not(:disabled)",
+        ) ?? []),
+      ].filter((control) => control.getClientRects().length > 0);
+      if (!controls.length) return;
       const first = controls[0],
         last = controls[controls.length - 1];
       if (event.shiftKey && document.activeElement === first) {
@@ -86,7 +88,7 @@ export function AppShell({ children }: { children: ReactNode }) {
             <span className="brandmark">
               <Icon name="chat" />
             </span>
-            Nói<Badge tone="neutral">CacheSec</Badge>
+            <div className="brand-word">CacheSec</div>
             <button
               className="drawer-close"
               type="button"
@@ -96,42 +98,56 @@ export function AppShell({ children }: { children: ReactNode }) {
               <Icon name="close" />
             </button>
           </div>
-          <div className="stack">
-            <div className="eyebrow">Không gian làm việc</div>
-            <nav>
-              {navigation.map((item) => (
-                <Link
-                  key={item.href}
-                  href={item.href}
-                  className={`nav${pathname === item.href ? " active" : ""}`}
-                  aria-current={pathname === item.href ? "page" : undefined}
-                  onClick={() => setDrawerOpen(false)}
-                >
-                  <Icon name={item.icon} />
-                  {item.label}
-                </Link>
-              ))}
-            </nav>
-          </div>
-          <div className="stack">
-            <div className="eyebrow">Nghĩ cùng nhau</div>
-            <p className="small muted">
-              Một nền tảng gọn gàng.
-              <br />
-              Nhiều cách để phát triển.
-            </p>
-          </div>
-          <div className="sidebar-note stack">
-            <div className="profile">
-              <div className="avatar" aria-hidden="true">
-                B
-              </div>
-              <div>
-                <strong className="small">Không gian của bạn</strong>
-                <p className="small muted">Dữ liệu trong phiên hiện tại</p>
+          <nav aria-label="Khu làm việc">
+            {navigation.map((item) => (
+              <Link
+                key={item.href}
+                href={item.href}
+                className={`nav${pathname === item.href ? " active" : ""}`}
+                aria-current={pathname === item.href ? "page" : undefined}
+                onClick={() => setDrawerOpen(false)}
+              >
+                <Icon name={item.icon} />
+                <span>{item.label}</span>
+              </Link>
+            ))}
+          </nav>
+          {pathname === "/" && (
+            <div className="sidebar-chat-section">
+              <Button
+                className="new-conversation"
+                variant="secondary"
+                disabled={chat.state.pendingId !== null}
+                onClick={() => {
+                  chat.create();
+                  setDrawerOpen(false);
+                }}
+              >
+                <Icon name="plus" />
+                Chat mới
+              </Button>
+              <div className="history-list" aria-label="Lịch sử hội thoại">
+                {chat.state.conversations.map((conversation) => (
+                  <button
+                    key={conversation.id}
+                    type="button"
+                    className={`history-item${conversation.id === chat.state.activeId ? " active" : ""}`}
+                    aria-current={
+                      conversation.id === chat.state.activeId
+                        ? "true"
+                        : undefined
+                    }
+                    onClick={() => {
+                      chat.select(conversation.id);
+                      setDrawerOpen(false);
+                    }}
+                  >
+                    {conversation.title}
+                  </button>
+                ))}
               </div>
             </div>
-          </div>
+          )}
         </aside>
         <div className="workspace" inert={drawerOpen}>
           <header className="topbar">
@@ -147,15 +163,15 @@ export function AppShell({ children }: { children: ReactNode }) {
               >
                 <Icon name="menu" />
               </Button>
-              <div className="crumb">
-                <span>CacheSec</span>
-                <span aria-hidden="true">/</span>
-                <strong>{title}</strong>
-              </div>
+              <span className="workspace-brand">CacheSec</span>
             </div>
-            <Badge tone="neutral">
-              {pathname === "/ui" ? "21 component" : "Chế độ mô phỏng"}
-            </Badge>
+            <details className="environment">
+              <summary>Mô phỏng</summary>
+              <p>
+                Chat chưa nối AI. Tệp được chọn chỉ nằm trong phiên, chưa tải
+                lên hoặc nạp vào chatbot.
+              </p>
+            </details>
           </header>
           <main id="main-content" tabIndex={-1}>
             {children}

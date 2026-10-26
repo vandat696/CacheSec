@@ -1,15 +1,28 @@
 "use client";
 
+import Link from "next/link";
 import { useEffect, useRef, useState } from "react";
 import { Button } from "@/components/ui/button";
 import { CopyButton } from "@/components/ui/copy-button";
-import { Alert, Badge } from "@/components/ui/feedback";
+import { Alert } from "@/components/ui/feedback";
 import { Icon } from "@/components/ui/icon";
-import { useChat } from "./use-chat";
+import { useChat } from "./chat-provider";
+
+const suggestions = [
+  {
+    label: "Chính sách nghỉ phép",
+    question: "Chính sách nghỉ phép của công ty như thế nào?",
+  },
+  {
+    label: "Cấp thiết bị",
+    question: "Làm thế nào để đề nghị cấp thiết bị làm việc?",
+  },
+];
 
 export function ChatWorkspace() {
-  const { state, conversation, send, setDraft, select, create } = useChat();
-  const [invalid, setInvalid] = useState(false);
+  const { state, conversation, send, setDraft } = useChat();
+  const [invalidId, setInvalidId] = useState<string | null>(null);
+  const invalid = invalidId === conversation.id;
   const prompt = useRef<HTMLTextAreaElement>(null);
   const messages = useRef<HTMLDivElement>(null);
   const busy = state.pendingId !== null;
@@ -22,56 +35,21 @@ export function ChatWorkspace() {
   function submit() {
     if (busy) return;
     if (!conversation.draft.trim()) {
-      setInvalid(true);
+      setInvalidId(conversation.id);
       prompt.current?.focus();
       return;
     }
-    setInvalid(false);
+    setInvalidId(null);
     void send(conversation.draft);
     prompt.current?.focus();
   }
 
   return (
-    <section className="chat-layout" aria-label="Không gian trò chuyện">
-      <aside className="history" aria-label="Lịch sử hội thoại">
-        <Button
-          variant="secondary"
-          disabled={busy}
-          onClick={() => {
-            create();
-            setInvalid(false);
-            prompt.current?.focus();
-          }}
-        >
-          <Icon name="plus" />
-          Cuộc trò chuyện mới
-        </Button>
-        <div className="eyebrow history-label">Hội thoại</div>
-        <div className="history-list">
-          {state.conversations.map((item) => (
-            <button
-              key={item.id}
-              type="button"
-              className={`history-item${item.id === conversation.id ? " active" : ""}`}
-              aria-current={item.id === conversation.id ? "true" : undefined}
-              onClick={() => {
-                select(item.id);
-                setInvalid(false);
-              }}
-            >
-              {item.title}
-            </button>
-          ))}
-        </div>
-      </aside>
+    <section className="chat-layout" aria-label="Chat nội bộ">
       <div className="chat-main">
-        <div className="chat-heading">
-          <div>
-            <h1>Trợ lý Nói</h1>
-            <p className="small muted">Một nơi để nghĩ cùng nhau.</p>
-          </div>
-          <Badge tone="neutral">Chế độ mô phỏng</Badge>
-        </div>
+        <header className="chat-heading">
+          <h1>Chat nội bộ</h1>
+        </header>
         <div
           className="messages"
           ref={messages}
@@ -82,46 +60,37 @@ export function ChatWorkspace() {
         >
           {conversation.messages.length === 0 ? (
             <div className="welcome">
-              <div className="brandmark">
-                <Icon name="spark" />
+              <div className="welcome-icon">
+                <Icon name="chat" />
               </div>
-              <div className="eyebrow">Không gian của bạn</div>
-              <h2>Bắt đầu từ một ý tưởng.</h2>
-              <p>
-                Viết, tìm hướng giải quyết hoặc sắp xếp suy nghĩ.
-                <br />
-                Hôm nay bạn muốn bắt đầu với điều gì?
-              </p>
+              <h2>Bạn cần tìm thông tin gì?</h2>
               <div className="suggestions">
-                {[
-                  "Lên dàn ý cho một bài viết",
-                  "Sắp xếp công việc trong ngày",
-                ].map((text) => (
+                {suggestions.map((suggestion) => (
                   <button
-                    key={text}
+                    key={suggestion.label}
                     type="button"
                     onClick={() => {
-                      setDraft(text);
+                      setDraft(suggestion.question);
+                      setInvalidId(null);
                       prompt.current?.focus();
                     }}
                   >
-                    {text}
+                    {suggestion.label}
                   </button>
                 ))}
               </div>
+              <Link href="/documents" className="chat-documents-link">
+                Thêm tài liệu
+              </Link>
             </div>
           ) : (
             conversation.messages.map((message) => (
               <article className={`message ${message.role}`} key={message.id}>
                 <div className="avatar" aria-hidden="true">
-                  {message.role === "user" ? "B" : "N"}
+                  {message.role === "user" ? "B" : "C"}
                 </div>
                 <div className="message-body">
-                  <strong>
-                    {message.role === "user"
-                      ? "Bạn"
-                      : "Nói · Phản hồi mô phỏng"}
-                  </strong>
+                  <strong>{message.role === "user" ? "Bạn" : "Trợ lý"}</strong>
                   <p>{message.text}</p>
                   {message.role === "assistant" && (
                     <CopyButton text={message.text} />
@@ -132,12 +101,12 @@ export function ChatWorkspace() {
           )}
           {pendingHere && (
             <p className="small muted" role="status">
-              Đang chuẩn bị phản hồi mô phỏng…
+              Đang chuẩn bị phản hồi mẫu…
             </p>
           )}
         </div>
         {state.error && (
-          <Alert title="Chưa gửi được phản hồi" tone="danger">
+          <Alert title="Chưa có phản hồi" tone="danger">
             {state.error}
           </Alert>
         )}
@@ -149,18 +118,20 @@ export function ChatWorkspace() {
           }}
         >
           <div className="composer-box">
-            <label htmlFor="prompt">Tin nhắn của bạn</label>
+            <label className="sr-only" htmlFor="prompt">
+              Tin nhắn
+            </label>
             <textarea
               ref={prompt}
               id="prompt"
-              placeholder="Bạn đang nghĩ về điều gì?"
+              placeholder="Hỏi về tài liệu công ty…"
               maxLength={4000}
               value={conversation.draft}
               aria-invalid={invalid}
               aria-describedby="chat-error composer-help"
               onChange={(event) => {
                 setDraft(event.target.value);
-                setInvalid(false);
+                setInvalidId(null);
               }}
               onKeyDown={(event) => {
                 if (
@@ -179,26 +150,18 @@ export function ChatWorkspace() {
               role="alert"
               hidden={!invalid}
             >
-              Hãy nhập nội dung tin nhắn trước khi gửi.
+              Nhập tin nhắn để tiếp tục.
             </p>
             <div className="composer-bottom">
               <span className="small muted" id="composer-help">
-                Enter để gửi · Shift + Enter xuống dòng
+                Enter để gửi
               </span>
-              <Button
-                type="submit"
-                className="icon-button"
-                disabled={busy}
-                aria-label="Gửi tin nhắn"
-              >
+              <Button type="submit" disabled={busy} aria-label="Gửi tin nhắn">
                 <Icon name="send" />
+                Gửi
               </Button>
             </div>
           </div>
-          <p className="composer-note">
-            Phản hồi minh họa giao diện, không phải kết quả từ AI. Hội thoại mất
-            khi tải lại trang.
-          </p>
         </form>
       </div>
     </section>

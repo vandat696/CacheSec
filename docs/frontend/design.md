@@ -1,63 +1,59 @@
 # Thiết kế frontend
 
-## Đã thống nhất
+## Ưu tiên hiện tại
 
-Ba màn hình; hai profile A/B có thể thay đổi, mặc định no cache và secure local cache.
+App có hai khu chính, theo yêu cầu ngày 2026-10-27:
 
-## Giao diện đã tích hợp
+- **Chat:** trao đổi với trợ lý nội bộ, lịch sử và chat mới.
+- **Tài liệu:** chọn/thả tệp, phân loại và tìm/lọc danh sách.
 
-Bộ thiết kế Nói được chuyển sang React/TypeScript trong Next.js App Router. Giữ hệ màu, font Segoe UI/system, khoảng cách, bề mặt vuông, control bo 8px, trạng thái disabled và reduced motion của bản xuất. Bản gốc được giữ nguyên tại [frontend/design-reference](../../frontend/design-reference/), không chạy các script DOM của bản xuất trong app.
+Các màn A/B, thí nghiệm, profile/cache và thiết lập kỹ thuật để sau. Mã thử nghiệm trước đó được giữ riêng, không lắp vào luồng hiện tại. Không đưa model, matching, TTL, similarity hoặc seed ra cho người dùng ở bước này.
 
-Bản xuất có lỗi cú pháp `$$let` trong `app.js`; chế độ kiểm tra browser `--reference` chỉ sửa lỗi này trong response preview để chụp đối chiếu, không sửa file gốc. App React không phụ thuộc script đó.
+## Route và trạng thái thực tế
 
-| Route | Hiện có | Giới hạn |
+| Route | Giao diện | Giới hạn |
 | --- | --- | --- |
-| `/` | Chat mô phỏng: gợi ý, gửi tin, trạng thái chờ, sao chép, lịch sử và bản nháp từng hội thoại | Chỉ bộ nhớ trong màn chat; không gọi model/API, không lưu browser storage |
-| `/ui` | Thư viện 21 component: tìm kiếm, lọc nhóm, thử trạng thái, xem/sao chép mã React | Dữ liệu mẫu; không có kết quả benchmark hoặc cấu hình nghiệp vụ |
+| `/` | Chat nội bộ, lịch sử trong sidebar, gợi ý hỏi, gửi/sao chép và chat mới | Phản hồi mẫu; chưa gọi AI/RAG |
+| `/documents` | Chọn nhiều tệp, kéo thả, danh mục khi thêm, đổi danh mục từng tệp, tìm tên/lọc/bỏ khỏi danh sách | Tệp chỉ trong bộ nhớ trình duyệt, chưa tải lên server hay được chatbot đọc |
+| `/chat`, `/settings`, `/experiments` | Chuyển về Chat để giữ liên kết cũ | Không mở lại màn tham số/thí nghiệm |
+| `/ui` | Thư viện 21 component, truy cập trực tiếp cho phát triển | Không có mục điều hướng trong app chính |
 
-Khung dùng chung có sidebar responsive, breadcrumb, liên kết bỏ qua điều hướng, drawer mobile đóng bằng Escape và giữ focus trong drawer. Dialog/menu/tab hỗ trợ bàn phím; các control có nhãn và phản hồi validation. Mã và tin nhắn được hiển thị dưới dạng văn bản, không nhận HTML tùy ý.
+Chỉ có hai mục Chat và Tài liệu trên sidebar. Lịch sử chat dùng cùng sidebar, không tạo thêm cột điều hướng. Nhãn Mô phỏng ở đầu trang mở phần giới hạn; nội dung và hành động giữ ngắn, dùng hệ màu/font/border của Nói.
 
-Hai route này là nền giao diện. Ba màn hình nghiên cứu bên dưới vẫn là thiết kế dự kiến; chat mô phỏng không xác nhận đã triển khai RAG, multi-turn với model, cache hay phân quyền.
+## Luồng chat
 
-## Tổ chức code frontend
+Chat → nhập/gửi câu hỏi → phản hồi mẫu → sao chép hoặc tạo chat mới. Gợi ý dùng tình huống công ty, không phải tác vụ viết bài chung. Phản hồi mẫu ghi rõ chưa nối AI hoặc kho tài liệu, không tự trả lời từ tên/nội dung tệp được chọn.
+
+`ChatProvider` giữ hội thoại và bản nháp qua điều hướng trong phiên. Phản hồi đang chờ có thể hoàn tất khi người dùng mở Tài liệu; kết quả vẫn thuộc hội thoại gốc. Reload mất phiên; chưa lưu server hoặc browser storage. Hook điều phối vẫn tách khỏi reducer và UI, hủy tác vụ khi provider unmount.
+
+## Luồng tài liệu
+
+1. Chọn danh mục mặc định, rồi chọn/thả một hoặc nhiều tệp.
+2. Tệp hợp lệ vào danh sách ở trạng thái **Chờ tải lên**. Lỗi từng tệp được báo riêng; tệp hợp lệ khác vẫn được tiếp nhận.
+3. Đổi phân loại từng dòng, tìm theo tên hoặc lọc danh mục. Bỏ một dòng chỉ bỏ tệp khỏi phiên giao diện, không xóa file gốc.
+4. Khi chuyển về Chat rồi quay lại, danh sách và phân loại vẫn giữ. Reload xóa phiên.
+
+Danh mục hiện có: Chưa phân loại, Nhân sự, Quy định, Kỹ thuật, Quy trình, Khác. Đây là nhãn sắp xếp, không phải role/quyền truy cập.
+
+Bản giao diện nhận PDF, DOCX, TXT, MD theo đuôi tệp, giới hạn 20 MB/tệp, từ chối tệp trống. Chặn trùng bằng tên/kích thước/lastModified, không phải đối chiếu nội dung. Những kiểm tra này phục vụ UI; backend vẫn phải tự kiểm tra định dạng/nội dung, dung lượng, quyền và lưu trữ khi có API thật.
+
+Hiện không đọc nội dung, parse, chunk, embed, upload hoặc lập chỉ mục tệp. Không có progress/success giả; danh sách ghi rõ tệp chưa lên hệ thống. Hợp đồng nạp và cơ chế phân quyền vẫn cần đặc tả trước khi thực thi.
+
+## Tổ chức code
 
 | Thư mục trong `frontend/` | Trách nhiệm |
 | --- | --- |
-| `src/app/` | Route, metadata và import stylesheet; page chỉ lắp ghép tính năng |
-| `src/components/layout/` | Khung ứng dụng, điều hướng và drawer |
-| `src/components/ui/` | Component React nhận props; dùng lại giữa các màn, không gọi API/storage |
-| `src/features/chat/` | Màn chat, hook điều phối, reducer trạng thái và phản hồi mô phỏng tách riêng |
-| `src/features/ui-library/` | Catalog, dữ liệu mẫu, mã ví dụ và phần thử component |
-| `src/styles/` | Tokens, kiểu component, layout, chat và catalog tách theo trách nhiệm |
-| `scripts/` | Test trạng thái hội thoại và kiểm tra browser local |
-| `design-reference/` | Bản xuất HTML/CSS/JS và handoff để đối chiếu, không phải code runtime |
+| `src/app/` | Route, metadata và lắp ghép provider |
+| `src/components/layout/` | Sidebar hai mục, drawer mobile, khung trang |
+| `src/components/ui/` | Component React dùng chung, không gọi API/storage |
+| `src/features/chat/` | Context giữ phiên, hook điều phối, reducer, UI và phản hồi mẫu tách riêng |
+| `src/features/documents/` | Model/validation/lọc, provider giữ File trong phiên và màn tài liệu |
+| `src/features/comparison/`, `experiments/`, `settings/`, `workspace/` | Phần nghiên cứu đã hoãn, không nằm trong luồng app hiện tại |
+| `src/features/ui-library/` | Catalog và mã ví dụ cho phát triển |
+| `src/styles/` | Tokens, UI chung, layout, chat và documents |
+| `scripts/` | Test state/validation và browser smoke |
+| `design-reference/` | Bản xuất thiết kế gốc, không chạy script DOM trong app |
 
-Đổi màu/font/radius/motion tại `src/styles/tokens.css`. Đổi cấu trúc app tại `components/layout/app-shell.tsx`; thêm route trong `app/` và mục điều hướng tương ứng. Khi cần biến thể UI, truyền props hoặc kết hợp các component; không cần kế thừa class hay tạo base component tổng quát.
+Bản gốc nằm tại [frontend/design-reference](../../frontend/design-reference/). Chế độ browser `--reference` chỉ sửa lỗi cú pháp `$$let` trong response preview để chụp ảnh, không sửa bản gốc. Bố cục app hiện tại ưu tiên hai khu theo yêu cầu mới.
 
-Component dùng props TypeScript và event React thông thường. Ví dụ `Button` có `variant`, `loading`, `disabled`; `TextInput`/`NumberInput` nhận thuộc tính input HTML; `Switch`, `Slider`, `FlowDiagram` nhận giá trị và callback để màn sở hữu state. `Tabs`/`Dropdown` quản lý trạng thái tương tác nội bộ. `ToastProvider` được lắp một lần trong `AppShell`; `useToast()` dùng bên trong provider. `/ui` có mã tích hợp riêng cho từng component, bao gồm import và state cần thiết.
-
-Logic chat nằm trong `chat-state.ts`, không phụ thuộc React/HTTP/storage. `use-chat.ts` quản lý tác vụ bất đồng bộ và hủy khi unmount; `demo-reply.ts` chỉ tạo văn bản mô phỏng. Khi có hợp đồng API thật, thêm client tại `src/lib/` theo [kiến trúc](../system/architecture.md), thay nguồn phản hồi ở hook và xử lý hợp đồng lỗi tương ứng. Không đưa fetch, xác minh quyền hoặc matching cache vào component UI.
-
-Việc tích hợp không thêm dependency ứng dụng. Hướng dẫn chạy lint/typecheck/test/build và kiểm tra browser nằm tại [setup](../general/setup.md#kiểm-tra).
-
-## So sánh chatbot
-
-Một câu hỏi chung, hai khung riêng; cùng người dùng và điều kiện so sánh. Hiển thị cấu hình, câu trả lời, nguồn, latency, token, chi phí ước tính, quyền; cache có hit/miss/lý do, similarity, lookup/auth time.
-
-Đề xuất câu hỏi độc lập trước. Multi-turn cần thiết kế cache có ngữ cảnh.
-
-## Thí nghiệm và kết quả
-
-Chọn workload/profile, số lượt, cold/warm; lưu từng lượt/cấu hình, biểu đồ và xuất JSON/CSV. Demo đồng thời khác benchmark.
-
-## Cấu hình và quyền
-
-Chọn thuật toán đã triển khai và tham số; người dùng, tenant, role, phòng ban, quyền tài liệu. Chưa cần editor code hoặc ngôn ngữ rule tùy ý. Profile không chứa secrets.
-
-## Demo đề xuất
-
-Hỏi khi có quyền → tạo cache → hỏi gần nghĩa → hit → thu hồi quyền → hỏi lại → chặn reuse → xem lịch sử.
-
-## Cần chốt
-
-Quản trị tối thiểu; streaming; multi-turn; đối chứng unsafe giả lập có cần không?
+Đổi màu/font tại `styles/tokens.css`; đổi điều hướng tại `components/layout/app-shell.tsx`. Client API tương lai thuộc `src/lib/` theo [kiến trúc](../system/architecture.md), không đặt upload/RAG/auth vào component trình bày. Xem [hướng dẫn chạy và kiểm tra](../general/setup.md#kiểm-tra).

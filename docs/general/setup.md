@@ -35,7 +35,9 @@ npm ci
 npm run dev
 ```
 
-Mở http://127.0.0.1:3000 để dùng chat mô phỏng; http://127.0.0.1:3000/ui là thư viện 21 component tương tác, có mã tích hợp React. Giao diện chưa gọi backend/model; không cần API key. Hội thoại và bản nháp chỉ nằm trong bộ nhớ, mất khi tải lại hoặc rời màn chat. Xem [tổ chức frontend](../frontend/design.md#tổ-chức-code-frontend).
+Mở http://127.0.0.1:3000 để dùng Chat, hoặc `/documents` để chọn/thả và phân loại tài liệu. Sidebar chỉ có hai khu này. `/chat`, `/settings` và `/experiments` chuyển về Chat; `/ui` giữ thư viện component cho phát triển, không nằm trong điều hướng chính. Chưa gọi AI/upload backend; không cần API key. Xem [tổ chức frontend](../frontend/design.md#tổ-chức-code).
+
+Thử luồng: Chat → gửi câu hỏi hoặc tạo chat mới → sang Tài liệu → chọn danh mục rồi chọn/thả tệp → đổi phân loại từng tệp → tìm/lọc danh sách → quay lại Chat. Hội thoại, bản nháp và tệp giữ qua điều hướng trong phiên, mất khi tải lại. Tệp luôn ghi Chờ tải lên: chưa gửi server, chưa parse/embed hoặc được chatbot đọc. Mở nhãn Mô phỏng để xem giới hạn.
 
 ## Kiểm tra
 
@@ -54,6 +56,8 @@ npm run test:browser -- --reference
 
 Script mặc định tìm Edge/Chrome tại đường dẫn Windows thông dụng. Nếu khác, đặt `BROWSER_PATH` tới executable; `APP_URL` đổi địa chỉ app (mặc định http://127.0.0.1:3100). Ảnh và profile trình duyệt tạm nằm trong `frontend/test-results/browser/`, được Git bỏ qua. Script chỉ đóng process trình duyệt do nó mở; không dùng profile cá nhân. Nếu môi trường chặn tạo process hoặc truy cập DevTools local, cần chạy ngoài sandbox đó.
 
+Browser smoke kiểm tra Chat/Tài liệu tại chín kích thước, cùng chọn/thả tệp, từ chối tệp lỗi/trùng, phân loại, tìm/lọc, giữ phiên qua route, redirect và UI kit. Tham số `--reference` chỉ chụp thêm bản xuất gốc để đối chiếu nền thiết kế, không dùng nó làm hợp đồng bố cục hiện tại.
+
 Trong backend:
 
 ```powershell
@@ -67,7 +71,7 @@ Tài liệu tham khảo: [Next.js installation](https://nextjs.org/docs/app/gett
 
 ## Thành phần đã khởi tạo
 
-- Frontend: Next.js App Router, TypeScript strict, CSS thuần, ESLint và npm lockfile; giao diện Nói với chat mô phỏng và thư viện UI. Số liệu trong thư viện là dữ liệu mẫu, không phải kết quả nghiên cứu.
+- Frontend: Next.js App Router, TypeScript strict, CSS thuần, ESLint và npm lockfile; Chat nội bộ và tiếp nhận/phân loại tài liệu trong phiên trên hệ thiết kế Nói. Chưa có upload hoặc phản hồi AI thật.
 - Backend: FastAPI, cấu hình CORS local qua Pydantic Settings, health endpoint; requirements runtime/dev và bản freeze dependencies cho môi trường đã cài.
 - Database: Docker Compose với PostgreSQL 17 + pgvector 0.8.7, cổng chỉ bind localhost, persistent volume, init extension vector.
 - Chưa có schema nghiệp vụ, database adapter/migration, authentication, LLM/embedding provider, cache hoặc tích hợp UI/API.

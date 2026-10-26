@@ -6,15 +6,16 @@ Mục tiêu: đo cache nhanh hơn, tiết kiệm hơn trong điều kiện nào;
 
 ## Trạng thái
 
-Đã tích hợp giao diện Nói vào Next.js: màn chat mô phỏng và thư viện 21 component React/TypeScript. FastAPI có endpoint health; Docker Compose có PostgreSQL/pgvector. Chưa có chatbot AI thật, cache, xác thực, database adapter hoặc kết quả benchmark. Xem [hướng dẫn chạy](docs/general/setup.md) và [trạng thái kiểm chứng](docs/general/project-status.md).
+Frontend tập trung vào hai khu: Chat nội bộ và Tài liệu. Đã có chat mô phỏng, chọn/thả tệp, phân loại và tìm/lọc danh sách trong phiên. Chưa upload/ingest thật hoặc nối AI; tệp hiển thị Chờ tải lên. FastAPI hiện có endpoint health; Docker Compose có PostgreSQL/pgvector. Xem [hướng dẫn chạy](docs/general/setup.md) và [trạng thái kiểm chứng](docs/general/project-status.md).
 
-## Ba màn hình dự kiến
+## Hai khu chính
 
-- **So sánh chatbot:** một câu hỏi chung, hai khung A/B chọn cấu hình. Mặc định không cache so với secure local cache.
-- **Thí nghiệm và kết quả:** chạy bộ câu hỏi có nhãn, lưu cấu hình và số liệu, xem biểu đồ và xuất JSON/CSV.
-- **Cấu hình và phân quyền:** chọn model, thuật toán, tham số; quản lý người dùng, role và rule trong phạm vi thử nghiệm.
+- **Chat** (`/`): hỏi đáp nội bộ, lịch sử hội thoại và chat mới.
+- **Tài liệu** (`/documents`): chọn hoặc kéo thả tệp, phân loại, tìm và lọc danh sách.
 
-Mỗi khung hiển thị câu trả lời, nguồn, thời gian, token, chi phí ước tính, quyền và cache hit/miss nếu có.
+Giữ giao diện tối giản; chưa đưa model, TTL, similarity hoặc tham số nghiên cứu ra luồng người dùng. A/B và benchmark được hoãn đến khi nền tảng chat/tài liệu hoạt động.
+
+Chat và tệp chỉ được giữ trong phiên, mất khi tải lại. Phân loại không thay thế quyền truy cập; upload, xử lý tài liệu, phân quyền và RAG cần triển khai backend.
 
 ## Các phần có thể thay thế
 

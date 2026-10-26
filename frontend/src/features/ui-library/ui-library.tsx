@@ -46,7 +46,7 @@ export function UiLibrary() {
             hoặc kết hợp qua cùng hệ token.
           </p>
         </div>
-        <Link className="btn" href="/">
+        <Link className="btn" href="/chat">
           Mở chat mẫu →
         </Link>
       </div>

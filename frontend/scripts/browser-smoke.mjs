@@ -309,6 +309,16 @@ try {
   );
 
   await navigate("/");
+  assert.equal(
+    await evaluate("document.querySelectorAll('.sidebar nav a').length"),
+    2,
+  );
+  assert.equal(
+    await evaluate(
+      "document.querySelector('.sidebar').textContent.includes('Cấu hình')",
+    ),
+    false,
+  );
   await click('.composer button[type="submit"]');
   assert.equal(
     await evaluate(
@@ -330,7 +340,13 @@ try {
     0,
   );
   assert.equal(await evaluate("window.injected === true"), false);
-  await click(".history > button");
+  assert.ok(
+    await evaluate(
+      "document.querySelector('.message.assistant').textContent.includes('chưa kết nối')",
+    ),
+  );
+
+  await click(".new-conversation");
   await fill("#prompt", "Bản nháp hội thoại mới");
   await click(".history-item:last-child");
   assert.equal(
@@ -342,21 +358,152 @@ try {
     await evaluate("document.querySelector('#prompt').value"),
     "Bản nháp hội thoại mới",
   );
-  await evaluate("document.querySelector('#prompt').focus()");
-  await key("Enter");
-  await waitFor("document.querySelectorAll('.message.assistant').length === 1");
-  await click('.sidebar a[href="/ui"]');
+
+  await click('.sidebar a[href="/documents"]');
   await waitFor(
-    "location.pathname === '/ui' && !!document.querySelector('.catalog-grid')",
+    "location.pathname === '/documents' && !!document.querySelector('#document-files')",
   );
+  assert.equal(
+    await evaluate("document.querySelectorAll('.document-row').length"),
+    0,
+  );
+  const fixtures = join(output, "fixtures");
+  await mkdir(fixtures, { recursive: true });
+  await writeFile(join(fixtures, "policy.txt"), "SYNTHETIC_POLICY_BODY");
+  await writeFile(join(fixtures, "guide.md"), "# Synthetic guide");
+  await writeFile(join(fixtures, "bad.exe"), "Synthetic unsupported file");
+  await writeFile(join(fixtures, "empty.txt"), "");
+  const upload = async (names) => {
+    const { root } = await cdp("DOM.getDocument");
+    const { nodeId } = await cdp("DOM.querySelector", {
+      nodeId: root.nodeId,
+      selector: "#document-files",
+    });
+    await cdp("DOM.setFileInputFiles", {
+      nodeId,
+      files: names.map((name) => join(fixtures, name)),
+    });
+    await pause(100);
+  };
+  await fill(".document-intake select", "hr");
+  await upload(["policy.txt", "guide.md", "bad.exe", "empty.txt"]);
+  assert.equal(
+    await evaluate("document.querySelectorAll('.document-row').length"),
+    2,
+  );
+  assert.ok(
+    await evaluate(
+      "document.querySelector('.document-issues').textContent.includes('bad.exe')",
+    ),
+  );
+  assert.ok(
+    await evaluate(
+      "document.querySelector('.document-issues').textContent.includes('empty.txt')",
+    ),
+  );
+  assert.ok(
+    await evaluate(
+      "[...document.querySelectorAll('.document-row select')].every(select => select.value === 'hr')",
+    ),
+  );
+  assert.ok(
+    await evaluate(
+      "[...document.querySelectorAll('.document-status')].every(node => node.textContent === 'Chờ tải lên')",
+    ),
+  );
+  await click(".document-issues button");
+  await upload(["policy.txt"]);
+  assert.equal(
+    await evaluate("document.querySelectorAll('.document-row').length"),
+    2,
+  );
+  assert.ok(
+    await evaluate(
+      "document.querySelector('.document-issues').textContent.includes('đã có')",
+    ),
+  );
+  await click(".document-issues button");
+  await fill(".document-row select", "technical");
+  await fill(".document-toolbar select", "hr");
+  assert.equal(
+    await evaluate("document.querySelectorAll('.document-row').length"),
+    1,
+  );
+  await fill(".document-toolbar select", "all");
+  await fill('.document-toolbar input[type="search"]', "POLICY");
+  assert.equal(
+    await evaluate("document.querySelectorAll('.document-row').length"),
+    1,
+  );
+  await fill('.document-toolbar input[type="search"]', "missing");
+  assert.ok(
+    await evaluate(
+      "document.querySelector('.documents-empty').textContent.includes('Không tìm thấy')",
+    ),
+  );
+  await fill('.document-toolbar input[type="search"]', "");
+
+  await evaluate(`(() => {
+    const transfer = new DataTransfer();
+    transfer.items.add(new File(["Synthetic dropped file"], "drop.txt", {lastModified: 1}));
+    document.querySelector(".upload-dropzone").dispatchEvent(new DragEvent("drop", {dataTransfer: transfer, bubbles: true, cancelable: true}));
+  })()`);
+  await waitFor("document.querySelectorAll('.document-row').length === 3");
+  await click('.document-row button[aria-label="Bỏ guide.md khỏi danh sách"]');
+  assert.equal(
+    await evaluate("document.querySelectorAll('.document-row').length"),
+    2,
+  );
+  await screenshot("documents-populated-1440x900.png");
+
   await click('.sidebar a[href="/"]');
   await waitFor(
-    "location.pathname === '/' && !!document.querySelector('.welcome')",
+    "location.pathname === '/' && !!document.querySelector('#prompt')",
   );
+  assert.equal(
+    await evaluate("document.querySelector('#prompt').value"),
+    "Bản nháp hội thoại mới",
+  );
+  await evaluate("document.querySelector('#prompt').focus()");
+  await key("Enter");
+  await click('.sidebar a[href="/documents"]');
+  await waitFor(
+    "location.pathname === '/documents' && !!document.querySelector('#document-files')",
+  );
+  assert.equal(
+    await evaluate("document.querySelectorAll('.document-row').length"),
+    2,
+  );
+  await pause(1100);
+  await click('.sidebar a[href="/"]');
+  await waitFor(
+    "location.pathname === '/' && document.querySelectorAll('.message.assistant').length === 1",
+  );
+  assert.equal(
+    await evaluate(
+      "document.querySelector('.message.assistant').textContent.includes('SYNTHETIC_POLICY_BODY')",
+    ),
+    false,
+  );
+  await navigate("/");
   assert.equal(
     await evaluate("document.querySelectorAll('.message').length"),
     0,
   );
+  await click('.sidebar a[href="/documents"]');
+  await waitFor(
+    "location.pathname === '/documents' && !!document.querySelector('#document-files')",
+  );
+  assert.equal(
+    await evaluate("document.querySelectorAll('.document-row').length"),
+    0,
+  );
+  for (const oldPath of ["/chat", "/settings", "/experiments"]) {
+    await cdp("Page.navigate", { url: new URL(oldPath, baseUrl).href });
+    await waitFor(
+      "location.pathname === '/' && !!document.querySelector('.welcome')",
+    );
+  }
 
   const viewports = [
     [360, 800],
@@ -376,16 +523,23 @@ try {
       deviceScaleFactor: 1,
       mobile: false,
     });
-    for (const path of ["/", "/ui"]) {
+    for (const path of ["/", "/documents"]) {
       await navigate(path);
+      if (path === "/documents") await upload(["policy.txt", "guide.md"]);
       await pause(350);
       assert.ok(
         await evaluate("document.documentElement.scrollWidth <= innerWidth"),
         `Tràn ngang: ${path} ${width}x${height}`,
       );
       await screenshot(
-        `${path === "/" ? "chat" : "ui"}-${width}x${height}.png`,
+        `${path === "/" ? "chat" : "documents"}-${width}x${height}.png`,
       );
+      if (path === "/documents" && width === 390) {
+        await evaluate(
+          "document.querySelector('.document-list').scrollIntoView({block:'center',behavior:'instant'})",
+        );
+        await screenshot("documents-list-390x844.png");
+      }
     }
   }
   await cdp("Emulation.setDeviceMetricsOverride", {
@@ -394,6 +548,7 @@ try {
     deviceScaleFactor: 1,
     mobile: false,
   });
+  await navigate("/");
   await click(".mobile-toggle");
   await waitFor(
     "document.querySelector('.sidebar').classList.contains('open')",
@@ -403,7 +558,9 @@ try {
       "document.querySelector('.sidebar').contains(document.activeElement)",
     ),
   );
-  await evaluate("document.querySelector('.sidebar nav a:last-child').focus()");
+  await evaluate(
+    "[...document.querySelectorAll('.sidebar a, .sidebar button:not(:disabled)')].at(-1).focus()",
+  );
   await key("Tab");
   assert.equal(
     await evaluate("document.activeElement.getAttribute('aria-label')"),
@@ -422,7 +579,7 @@ try {
   });
   assert.equal(
     await evaluate(
-      "getComputedStyle(document.querySelector('.intro')).animationName",
+      "getComputedStyle(document.querySelector('.welcome')).animationName",
     ),
     "none",
   );
@@ -485,7 +642,7 @@ try {
   }
   assert.deepEqual(errors, [], "Lỗi runtime/React trên trình duyệt");
   console.log(
-    "Đạt: 21 component, lọc/validation, bàn phím, copy, dữ liệu rỗng, hội thoại/XSS, 18 bố cục, drawer và reduced motion.",
+    "Đạt: Chat, tài liệu chọn/thả tệp, validation/trùng tệp, phân loại/tìm/lọc, giữ phiên qua route, redirect, UI kit, keyboard và 18 bố cục.",
   );
   console.log(`Ảnh kiểm chứng: ${output}`);
 } catch (error) {

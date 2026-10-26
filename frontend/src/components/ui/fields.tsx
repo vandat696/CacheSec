@@ -113,7 +113,7 @@ export function Textarea({
   );
 }
 
-export type SelectOption = { value: string; label: string };
+export type SelectOption = { value: string; label: string; disabled?: boolean };
 export function Select({
   label,
   help,
@@ -136,7 +136,11 @@ export function Select({
     >
       <select {...field.controlProps} {...props}>
         {options.map((option) => (
-          <option key={option.value} value={option.value}>
+          <option
+            key={option.value}
+            value={option.value}
+            disabled={option.disabled}
+          >
             {option.label}
           </option>
         ))}
