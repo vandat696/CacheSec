@@ -6,10 +6,10 @@ CacheSec hướng tới chatbot AI nội bộ dùng RAG + LLM và cache có ki�
 
 Theo yêu cầu ngày 2026-10-27, tập trung trước vào hai phần:
 
-- **Chat nội bộ:** hỏi đáp về thông tin công ty, lịch sử và hội thoại mới.
+- **Chat nội bộ:** hỏi đáp về thông tin công ty, lịch sử và hội thoại mới; nút bánh răng chọn không cache, có cache hoặc so sánh hai khung với prompt chung.
 - **Tài liệu:** có nơi chọn/tải tệp và phân loại để chuẩn bị nguồn dữ liệu cho chatbot.
 
-Giữ giao diện tối giản. A/B, benchmark, editor profile/cache, model và tham số kỹ thuật được hoãn. Không cần một màn thiết lập cho những chức năng chưa triển khai.
+Giữ giao diện tối giản. So sánh đơn giản nằm trong Chat theo yêu cầu bổ sung ngày 2026-10-27; cả hai nhánh vẫn trả lời mẫu, chưa có cache thật. Benchmark, runner, editor profile/cache, model và tham số kỹ thuật được hoãn. Không cần một màn thiết lập riêng cho những chức năng chưa triển khai.
 
 ## Phạm vi đã có và còn thiếu
 

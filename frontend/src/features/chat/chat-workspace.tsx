@@ -1,36 +1,31 @@
 "use client";
 
-import Link from "next/link";
-import { useEffect, useRef, useState } from "react";
+import { useLayoutEffect, useRef, useState } from "react";
 import { Button } from "@/components/ui/button";
-import { CopyButton } from "@/components/ui/copy-button";
-import { Alert } from "@/components/ui/feedback";
 import { Icon } from "@/components/ui/icon";
 import { useChat } from "./chat-provider";
-
-const suggestions = [
-  {
-    label: "Chính sách nghỉ phép",
-    question: "Chính sách nghỉ phép của công ty như thế nào?",
-  },
-  {
-    label: "Cấp thiết bị",
-    question: "Làm thế nào để đề nghị cấp thiết bị làm việc?",
-  },
-];
+import { branchesForMode } from "./chat-state";
+import { ChatPanel } from "./chat-panel";
 
 export function ChatWorkspace() {
   const { state, conversation, send, setDraft } = useChat();
   const [invalidId, setInvalidId] = useState<string | null>(null);
   const invalid = invalidId === conversation.id;
   const prompt = useRef<HTMLTextAreaElement>(null);
-  const messages = useRef<HTMLDivElement>(null);
-  const busy = state.pendingId !== null;
-  const pendingHere = state.pendingId === conversation.id;
+  const busy = state.pending !== null;
+  const split = conversation.mode === "compare";
 
-  useEffect(() => {
-    messages.current?.scrollTo({ top: messages.current.scrollHeight });
-  }, [conversation.messages.length, conversation.id, pendingHere]);
+  useLayoutEffect(() => {
+    const textarea = prompt.current;
+    if (!textarea) return;
+    const resize = () => {
+      textarea.style.height = "0px";
+      textarea.style.height = `${Math.min(textarea.scrollHeight, 160)}px`;
+    };
+    resize();
+    window.addEventListener("resize", resize);
+    return () => window.removeEventListener("resize", resize);
+  }, [conversation.draft, conversation.id]);
 
   function submit() {
     if (busy) return;
@@ -45,71 +40,29 @@ export function ChatWorkspace() {
   }
 
   return (
-    <section className="chat-layout" aria-label="Chat nội bộ">
-      <div className="chat-main">
-        <header className="chat-heading">
-          <h1>Chat nội bộ</h1>
-        </header>
-        <div
-          className="messages"
-          ref={messages}
-          role="log"
-          aria-label="Nội dung hội thoại"
-          aria-live="polite"
-          aria-relevant="additions text"
-        >
-          {conversation.messages.length === 0 ? (
-            <div className="welcome">
-              <div className="welcome-icon">
-                <Icon name="chat" />
-              </div>
-              <h2>Bạn cần tìm thông tin gì?</h2>
-              <div className="suggestions">
-                {suggestions.map((suggestion) => (
-                  <button
-                    key={suggestion.label}
-                    type="button"
-                    onClick={() => {
-                      setDraft(suggestion.question);
-                      setInvalidId(null);
-                      prompt.current?.focus();
-                    }}
-                  >
-                    {suggestion.label}
-                  </button>
-                ))}
-              </div>
-              <Link href="/documents" className="chat-documents-link">
-                Thêm tài liệu
-              </Link>
-            </div>
-          ) : (
-            conversation.messages.map((message) => (
-              <article className={`message ${message.role}`} key={message.id}>
-                <div className="avatar" aria-hidden="true">
-                  {message.role === "user" ? "B" : "C"}
-                </div>
-                <div className="message-body">
-                  <strong>{message.role === "user" ? "Bạn" : "Trợ lý"}</strong>
-                  <p>{message.text}</p>
-                  {message.role === "assistant" && (
-                    <CopyButton text={message.text} />
-                  )}
-                </div>
-              </article>
-            ))
-          )}
-          {pendingHere && (
-            <p className="small muted" role="status">
-              Đang chuẩn bị phản hồi mẫu…
-            </p>
-          )}
+    <section className="chat-layout" aria-label="Chat">
+      <h1 className="sr-only">Chat</h1>
+      <div className={`chat-main${split ? " chat-comparison" : ""}`}>
+        <div className="chat-panels">
+          {branchesForMode(conversation.mode).map((branch) => (
+            <ChatPanel
+              key={`${conversation.id}-${branch}`}
+              branch={branch}
+              messages={conversation.messages[branch]}
+              pending={
+                state.pending?.conversationId === conversation.id &&
+                state.pending.branches.includes(branch)
+              }
+              error={conversation.errors[branch]}
+              split={split}
+              onSuggest={(question) => {
+                setDraft(question);
+                setInvalidId(null);
+                prompt.current?.focus();
+              }}
+            />
+          ))}
         </div>
-        {state.error && (
-          <Alert title="Chưa có phản hồi" tone="danger">
-            {state.error}
-          </Alert>
-        )}
         <form
           className="composer"
           onSubmit={(event) => {
@@ -124,7 +77,8 @@ export function ChatWorkspace() {
             <textarea
               ref={prompt}
               id="prompt"
-              placeholder="Hỏi về tài liệu công ty…"
+              rows={1}
+              placeholder="Nhập tin nhắn…"
               maxLength={4000}
               value={conversation.draft}
               aria-invalid={invalid}
@@ -144,24 +98,22 @@ export function ChatWorkspace() {
                 }
               }}
             />
-            <p
-              className="chat-error"
-              id="chat-error"
-              role="alert"
-              hidden={!invalid}
-            >
-              Nhập tin nhắn để tiếp tục.
-            </p>
-            <div className="composer-bottom">
-              <span className="small muted" id="composer-help">
-                Enter để gửi
-              </span>
-              <Button type="submit" disabled={busy} aria-label="Gửi tin nhắn">
-                <Icon name="send" />
-                Gửi
-              </Button>
-            </div>
+            <Button type="submit" disabled={busy} aria-label="Gửi tin nhắn">
+              <Icon name="send" />
+              Gửi
+            </Button>
           </div>
+          <p
+            className="chat-error"
+            id="chat-error"
+            role="alert"
+            hidden={!invalid}
+          >
+            Nhập tin nhắn để tiếp tục.
+          </p>
+          <span className="sr-only" id="composer-help">
+            Enter để gửi{split ? " cho cả hai bên" : ""}, Shift+Enter để xuống dòng.
+          </span>
         </form>
       </div>
     </section>

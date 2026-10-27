@@ -1,5 +1,49 @@
 # Trạng thái dự án
 
+Các mốc ngày tháng bên dưới là lịch sử tại thời điểm thực hiện; mục mới hơn thay thế định hướng cũ khi có thay đổi. Phạm vi và bước tiếp theo hiện hành được tổng hợp ở cuối file.
+
+## 2026-10-28 — Cửa sổ Thông số theo lượt gửi
+
+- Thêm nút Thông số ở góc phải, mở modal hai cột Không cache/Có cache với năm trường: Cache Status, thời gian phản hồi, lượt gọi LLM, token LLM và kiểm tra quyền. Dropdown lấy lượt gửi trong hội thoại hiện tại, mới nhất trước và mặc định chọn lượt gần nhất mỗi lần mở; prompt trùng vẫn là các lượt riêng.
+- Thiết kế lại từ UI kit Nói: modal bo góc, khối chọn prompt riêng và hai bảng xanh dương/tím, icon từng chỉ số, số nổi bật và nhãn trung tính/vàng cho giá trị chưa xác định/chưa xác minh. Màu chỉ phân biệt nhánh/trạng thái đã biết, không thể hiện Hit hoặc ALLOW giả. Sửa chiều cao tiêu đề mobile để các hàng vẫn thẳng khi nhãn nhánh không chạy xuống dòng.
+- Lưu ID, prompt, chế độ và trạng thái/lỗi từng nhánh theo lượt; một lượt chia đôi chỉ có một mục. Đổi chế độ/xem hội thoại khác không ghép lại dữ liệu cũ; bỏ qua phản hồi trễ/trùng và ID lượt đã dùng. Có trạng thái chưa gửi, đang chờ, nhánh không chạy và reset khi reload.
+- Chỉ là frontend mô phỏng: cache/thời gian/quyền chưa có kết quả thật; baseline cache ghi Không áp dụng, nhánh không chạy ghi Không chạy. Lượt gọi/token LLM bằng 0 vì demo không gọi model, không dùng độ trễ mẫu làm số đo AI/cache. Chưa thêm API hoặc chốt schema telemetry/quyền.
+- Kiểm chứng: lint, typecheck, production build và 31 test logic đạt; Edge production smoke đạt chọn lượt mới nhất/cũ/trùng, cập nhật phản hồi, tách hội thoại, mở/đóng/focus, không bịa số đo/quyền và 45 bố cục tại chín kích thước. Đã rà ảnh desktop/mobile, link và diff. Cập nhật README, thiết kế frontend/setup; chưa kiểm chứng browser/thiết bị khác. Bước tiếp theo vẫn là hợp đồng upload/ingestion, lưu trữ và quyền cho baseline thật.
+- Kiểm chứng giao diện mới: lint/typecheck/31 test và build đạt; đã chạy lại Edge smoke 45 bố cục. Sau chỉnh căn hàng mobile, bản production cuối được kiểm tra riêng hai nhánh chạy/một nhánh không chạy tại bốn kích thước (8 trường hợp), không tràn ngang và các hàng chỉ số thẳng nhau. Đã rà ảnh, link/diff và tương phản chữ của bốn cặp màu chính (đều trên 4,5:1); chưa phải kiểm toán accessibility đầy đủ.
+
+## 2026-10-27 — Đồng nhất thanh nhập và phân chia hai nhánh
+
+- Cả ba chế độ dùng cùng một thiết kế thanh nhập, chiều rộng tối đa 1120 px; textarea và nút Gửi nằm cạnh nhau trong viền chung. Bỏ hàng nút riêng, thống nhất placeholder, chuyển lỗi nhập rỗng xuống dưới thanh.
+- Ô nhập tự giãn từ 44 đến 160 px theo nội dung/chiều rộng màn hình rồi cuộn, thu gọn sau gửi; nút Gửi bám cạnh dưới khi có nhiều dòng. Giữ Enter gửi và Shift+Enter xuống dòng, logic hai nhánh và lịch sử trong phiên.
+- Bổ sung vạch dọc 1 px giữa hai nhánh khi chia đôi, dừng trước thanh nhập, không thêm viền bao quanh hoặc chặn thao tác. Kiểm chứng bổ sung: lint và Edge dev ở ba chế độ/chín kích thước đạt; đã rà ảnh desktop/mobile, link và diff. Hai chế độ đơn không hiện vạch.
+- Kiểm chứng: lint, typecheck, production build và 27 test logic đạt; Edge smoke đạt ô nhập/Gửi cùng hàng, cùng kích thước qua ba chế độ, tự giãn/thu gọn, Shift+Enter và 36 bố cục tại chín kích thước. Đã rà ảnh desktop/mobile, link tài liệu và diff; cập nhật thiết kế frontend/setup. AI/cache vẫn mô phỏng; chưa kiểm chứng browser/thiết bị khác.
+
+## 2026-10-27 — Nới vùng chat và tối giản phần điều khiển
+
+- Bỏ tiêu đề hiển thị Chat nội bộ, nhãn chế độ lặp, nhãn Mô phỏng từng khung, lời nhắc ở vùng so sánh trống và tên vai trò lặp trên tin nhắn. Giữ nhãn Không cache/Có cache để phân biệt hai bên, nhãn mô phỏng chung và tên truy cập cho trình đọc màn hình.
+- Bỏ viền/nền card/đường kẻ tiêu đề của hai vùng so sánh, giảm padding ngoài và đưa icon cài đặt 16 px không viền lên góc phải thanh trên cùng. Giữ vùng bấm 32 px trên desktop, 44 px với con trỏ cảm ứng; không đổi logic gửi hoặc lưu lịch sử trong phiên.
+- Kiểm chứng: lint, typecheck, production build, 27 test logic và Edge smoke trên 27 bố cục đạt. Đã kiểm tra menu bằng phím mũi tên/Tab/Escape và cảm ứng, rà ảnh desktop/mobile, link tài liệu và diff. Cập nhật thiết kế frontend/setup; giới hạn AI/cache mô phỏng và browser/thiết bị khác vẫn như trước.
+
+## 2026-10-27 — Chọn chế độ và so sánh ngay trong Chat
+
+- Thêm nút bánh răng chọn Không cache, Có cache hoặc So sánh chia đôi. Hai khung Không cache/Có cache cuộn riêng, dùng một ô nhập gửi cùng prompt sang hai nhánh song song; giữ bố cục hai cột cả ở màn nhỏ.
+- Chế độ, bản nháp và lịch sử từng nhánh giữ theo hội thoại trong phiên; chat mới kế thừa chế độ với lịch sử rỗng. Khóa đổi chế độ/tạo chat khi chờ; theo dõi ID lượt và từng nhánh để bỏ qua phản hồi trễ/trùng, giữ kết quả nhánh thành công khi nhánh kia lỗi.
+- Kiểm chứng: lint, typecheck, production build và 27 test logic đạt; Edge production smoke đạt ba chế độ, prompt chung, lịch sử riêng, giữ phiên qua route, an toàn hiển thị văn bản, sao chép, luồng Tài liệu/UI kit và 27 bố cục tại chín kích thước. Đã kiểm tra riêng radio bằng phím mũi tên, Tab/Escape, click ngoài và rà ảnh desktop/mobile của menu/chia đôi.
+- Cập nhật README, tổng quan, thiết kế frontend và setup. Vẫn chỉ là UI/phản hồi mẫu; chưa có AI/RAG, lookup/reuse cache hoặc số đo thật; chưa chốt local/server và chưa kiểm chứng browser/thiết bị khác. Bước tiếp theo vẫn là hợp đồng upload/ingestion, lưu trữ và quyền cho baseline thật.
+
+## 2026-10-27 — Chẩn đoán hydration warning trên body
+
+- Log người dùng gửi có `__processed_…`, `bis_register`, `bis_skin_checked` và class `mdl-js`; source ứng dụng và HTML trả về từ dev server không sinh các dấu này. Đối chiếu extension cài trong Cốc Cốc: ID giải mã từ `bis_register` khớp 1ClickVPN Proxy for Chrome 1.17.15, có script xử lý/chèn thuộc tính `bis_*`; eJOY AI Dictionary 7.2.0 đăng ký content script trên mọi website với mã thêm `mdl-js` vào html.
+- Kiểm chứng Edge trên bản dev: Chat/Tài liệu không có console error với profile sạch; mô phỏng chèn thuộc tính trước hydration tái hiện cảnh báo ở cả hai route; bỏ mô phỏng và tải lại Chat không còn cảnh báo. Không sửa logic ứng dụng cho sai khác do tác nhân bên ngoài.
+- Bổ sung [cách xử lý trong setup](setup.md#hydration-warning-do-trình-duyệt-sửa-html), gồm hai extension đã đối chiếu trên máy. Chưa thay đổi cấu hình trình duyệt; còn cần tắt hoặc giới hạn hai extension rồi xác nhận lại trên profile đang gặp lỗi.
+
+## 2026-10-27 — Rà soát lỗi và đồng bộ trạng thái
+
+- Sửa phần tổng hợp còn ghi ba màn hình nghiên cứu và thứ tự công việc cũ; đồng bộ với ưu tiên Chat/Tài liệu, upload/ingestion và quyền nạp/đọc. Giữ các mốc cũ làm lịch sử, không coi là phạm vi hiện hành.
+- Kiểm chứng lại: frontend lint, typecheck, production build và 20 test logic đạt; backend Ruff và 2 test health/CORS đạt; Edge smoke đạt luồng Chat/Tài liệu, UI kit, keyboard và 18 bố cục. Chưa tái hiện lỗi ứng dụng trong các kiểm tra này.
+- Edge trong sandbox không khởi động được; lượt kiểm tra ngoài sandbox đạt. Vẫn có cảnh báo Node tự nhận dạng ES module và deprecation TestClient/httpx, không làm test thất bại. Chưa kiểm chứng lại database hoặc browser/thiết bị khác.
+- Bước tiếp theo vẫn là chốt hợp đồng upload/ingestion, lưu trữ và quyền để nối baseline thật; không thay đổi phạm vi sản phẩm.
+
 ## 2026-10-27 — Ưu tiên Chat nội bộ và Tài liệu
 
 - Theo yêu cầu mới, app chỉ có hai khu chính: Chat tại `/` và Tài liệu tại `/documents`. Lịch sử nằm trong cùng sidebar; bỏ A/B, thí nghiệm và tham số kỹ thuật khỏi luồng chính. `/chat`, `/settings`, `/experiments` chuyển về Chat; mã nghiên cứu trước đó được giữ riêng để dùng sau.
@@ -85,31 +129,29 @@
 ### Định hướng đã thống nhất
 
 - Secure local semantic cache là trọng tâm, none/server là đối chiếu.
-- Profile A/B linh hoạt, ba màn hình trong frontend/design.md.
+- Giao diện hiện tại gồm Chat nội bộ và Tài liệu theo [thiết kế frontend](../frontend/design.md). Chat có ba chế độ không cache/có cache/so sánh chia đôi bằng prompt chung, hiện chỉ mô phỏng. Runner, benchmark, editor profile và thiết lập kỹ thuật được hoãn đến sau nền tảng chat/tài liệu.
 - Next.js, FastAPI/Python, PostgreSQL/pgvector, browser IndexedDB/Dexie.
 - API model trước, local/fine-tune sau; tách LLM/embedding.
 - Tách storage/matching/validation, tránh abstraction quá mức.
-- Scaffold đã có; nghiệp vụ chatbot/cache/AI vẫn chưa triển khai.
+- Frontend Chat/Tài liệu mô phỏng và backend health đã có; upload/ingestion, xác thực, phân quyền, RAG/model và cache thật vẫn chưa triển khai.
 
 ### Còn mở
 
 | Chủ đề | Cần quyết định | Tài liệu |
 | --- | --- | --- |
-| UI/phạm vi | Streaming, multi-turn, quản trị tối thiểu | frontend/design.md |
-| Kiến trúc | Server storage, metadata tin cậy, API, profile persistence | system/architecture.md |
-| Bảo mật | RBAC/ABAC, threat model, toàn vẹn, offline | system/cache.md và system/authorization.md |
-| Cache | Metric/ngưỡng, TTL, eviction, schema, scope | system/cache.md và system/authorization.md |
-| AI | Provider/model, embedding, nơi chạy | system/architecture.md |
-| Đánh giá | Dataset/nhãn, số lượt, công thức, thống kê | evaluation/design.md |
+| Tài liệu/baseline | API upload/ingestion, lưu trữ, giới hạn tệp, streaming, multi-turn và quản trị tối thiểu | [Frontend](../frontend/design.md), [kiến trúc](../system/architecture.md) |
+| Quyền cho baseline | Nguồn identity/tenant, quyền nạp/đọc, RBAC/ABAC và threat model | [Phân quyền](../system/authorization.md) |
+| AI | Provider/model, embedding, nơi chạy | [Kiến trúc](../system/architecture.md) |
+| Cache, sau baseline | Server storage, metadata tin cậy, toàn vẹn, offline, metric/ngưỡng, TTL, eviction, schema và scope | [Cache](../system/cache.md), [phân quyền](../system/authorization.md) |
+| Đánh giá, sau baseline | Dataset/nhãn, số lượt, công thức, thống kê và lưu profile/kết quả | [Đánh giá](../evaluation/design.md), [kiến trúc](../system/architecture.md) |
 
 
 ## Thứ tự tiếp theo đề xuất
 
-1. Chốt phạm vi và threat model.
-2. Chốt metadata, hợp đồng API, ma trận quyền.
-3. Chốt workload, nhãn và cách đo.
-4. Triển khai chatbot baseline và đo đạc, sau đó cache adapter.
-5. Kiểm thử và benchmark trước khi kết luận.
+1. Chốt hợp đồng upload/ingestion, lưu trữ và giới hạn tệp cùng nguồn identity/tenant, quyền nạp/đọc và threat model cho baseline.
+2. Nối Chat/Tài liệu với backend để có upload/ingestion và chatbot RAG baseline thật, kiểm thử phân quyền tương ứng.
+3. Sau nền tảng baseline, chốt metadata/policy cache, workload, nhãn và cách đo; bổ sung cache adapter cùng kiểm thử quyền/invalidation.
+4. Nối hai nhánh so sánh với baseline/cache thật, triển khai runner và benchmark theo [thiết kế đánh giá](../evaluation/design.md) trước khi kết luận.
 
 Quyết định mới ghi nội dung, lý do, lựa chọn cân nhắc và ảnh hưởng đến so sánh; chi tiết giữ tại tài liệu chủ đề, không lặp lại ở nhiều nơi.
 

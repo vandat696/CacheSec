@@ -10,10 +10,10 @@ Frontend tập trung vào hai khu: Chat nội bộ và Tài liệu. Đã có cha
 
 ## Hai khu chính
 
-- **Chat** (`/`): hỏi đáp nội bộ, lịch sử hội thoại và chat mới.
+- **Chat** (`/`): hỏi đáp nội bộ, lịch sử hội thoại và chat mới; nút bánh răng chọn không cache, có cache hoặc hai khung so sánh dùng chung một ô nhập. Nút Thông số mở cửa sổ so sánh theo từng lượt gửi, mặc định chọn câu gần nhất.
 - **Tài liệu** (`/documents`): chọn hoặc kéo thả tệp, phân loại, tìm và lọc danh sách.
 
-Giữ giao diện tối giản; chưa đưa model, TTL, similarity hoặc tham số nghiên cứu ra luồng người dùng. A/B và benchmark được hoãn đến khi nền tảng chat/tài liệu hoạt động.
+Giữ giao diện tối giản; chưa đưa model, TTL, similarity hoặc tham số nghiên cứu ra luồng người dùng. Ba chế độ chat hiện chỉ có phản hồi mô phỏng, chưa có cache thật; runner và benchmark được hoãn đến khi nền tảng chat/tài liệu hoạt động.
 
 Chat và tệp chỉ được giữ trong phiên, mất khi tải lại. Phân loại không thay thế quyền truy cập; upload, xử lý tài liệu, phân quyền và RAG cần triển khai backend.
 

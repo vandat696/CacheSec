@@ -7,6 +7,8 @@ import { Button } from "../ui/button";
 import { ToastProvider } from "../ui/feedback";
 import { Icon } from "../ui/icon";
 import { useChat } from "@/features/chat/chat-provider";
+import { ChatSettings } from "@/features/chat/chat-settings";
+import { ChatMetrics } from "@/features/chat/chat-metrics";
 
 const navigation = [
   { href: "/", label: "Chat", icon: "chat" },
@@ -117,7 +119,7 @@ export function AppShell({ children }: { children: ReactNode }) {
               <Button
                 className="new-conversation"
                 variant="secondary"
-                disabled={chat.state.pendingId !== null}
+                disabled={chat.state.pending !== null}
                 onClick={() => {
                   chat.create();
                   setDrawerOpen(false);
@@ -149,8 +151,11 @@ export function AppShell({ children }: { children: ReactNode }) {
             </div>
           )}
         </aside>
-        <div className="workspace" inert={drawerOpen}>
-          <header className="topbar">
+        <div
+          className={`workspace${pathname === "/" ? " chat-workspace-shell" : ""}`}
+          inert={drawerOpen}
+        >
+          <header className={`topbar${pathname === "/" ? " chat-topbar" : ""}`}>
             <div className="row">
               <Button
                 className="mobile-toggle icon-button"
@@ -172,6 +177,20 @@ export function AppShell({ children }: { children: ReactNode }) {
                 lên hoặc nạp vào chatbot.
               </p>
             </details>
+            {pathname === "/" && (
+              <>
+                <ChatMetrics
+                  key={`metrics-${chat.conversation.id}`}
+                  conversation={chat.conversation}
+                />
+                <ChatSettings
+                  key={chat.conversation.id}
+                  mode={chat.conversation.mode}
+                  disabled={chat.state.pending !== null}
+                  onChange={chat.setMode}
+                />
+              </>
+            )}
           </header>
           <main id="main-content" tabIndex={-1}>
             {children}

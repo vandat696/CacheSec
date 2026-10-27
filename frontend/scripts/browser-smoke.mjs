@@ -178,6 +178,36 @@ try {
       "React hydration",
     );
   };
+  const setChatMode = async (mode) => {
+    await click('.chat-settings button[aria-label="Cài đặt chat"]');
+    await waitFor("document.querySelector('.chat-settings button').getAttribute('aria-expanded') === 'true'");
+    await click(`.chat-mode-options label:has(input[value="${mode}"])`);
+    await key("Escape");
+    assert.equal(await evaluate("document.activeElement.getAttribute('aria-label')"), "Cài đặt chat");
+  };
+  const openMetrics = async () => {
+    await click(".chat-metrics-trigger");
+    await waitFor("document.querySelector('.chat-metrics-dialog').open");
+    assert.equal(await evaluate("document.querySelectorAll('.chat-metrics-column').length"), 2);
+    assert.ok(await evaluate("[...document.querySelectorAll('.chat-metrics-column')].every(column => column.querySelectorAll('dl > div').length === 5)"));
+  };
+  const closeMetrics = async () => {
+    await key("Escape");
+    await waitFor("!document.querySelector('.chat-metrics-dialog').open");
+    assert.equal(await evaluate("document.activeElement.classList.contains('chat-metrics-trigger')"), true);
+  };
+  const checkComposerRow = async (label) => {
+    const bounds = await evaluate(`(() => {
+      const input = document.querySelector('#prompt').getBoundingClientRect();
+      const button = document.querySelector('.composer button[type=submit]').getBoundingClientRect();
+      const box = document.querySelector('.composer-box').getBoundingClientRect();
+      return {inputRight:input.right,inputBottom:input.bottom,inputHeight:input.height,buttonLeft:button.left,buttonBottom:button.bottom,width:box.width,height:box.height};
+    })()`);
+    assert.ok(bounds.inputRight <= bounds.buttonLeft, `Nút Gửi phải nằm bên phải ô nhập: ${label}`);
+    assert.ok(Math.abs(bounds.inputBottom - bounds.buttonBottom) < 2, `Nút Gửi phải cùng hàng với ô nhập: ${label}`);
+    assert.ok(bounds.inputHeight >= 44 && bounds.inputHeight <= 160, `Chiều cao ô nhập: ${label}`);
+    return bounds;
+  };
   const screenshot = async (filename) => {
     await pause(350);
     const result = await cdp("Page.captureScreenshot", { format: "png" });
@@ -309,6 +339,13 @@ try {
   );
 
   await navigate("/");
+  assert.ok(await evaluate("!!document.querySelector('.topbar .chat-settings')"));
+  assert.equal(await evaluate("document.querySelector('.chat-settings button').textContent.trim()"), "");
+  assert.equal(await evaluate("document.querySelectorAll('.chat-heading, .chat-current-mode').length"), 0);
+  await openMetrics();
+  assert.equal(await evaluate("document.querySelector('.chat-metrics-dialog select').disabled"), true);
+  assert.ok(await evaluate("[...document.querySelectorAll('.chat-metrics-column dd')].every(value => value.textContent === '—')"));
+  await closeMetrics();
   assert.equal(
     await evaluate("document.querySelectorAll('.sidebar nav a').length"),
     2,
@@ -326,11 +363,24 @@ try {
     ),
     "true",
   );
+  await fill("#prompt", "Dòng thứ nhất\nDòng thứ hai\nDòng thứ ba");
+  const multiline = await checkComposerRow("nhiều dòng");
+  assert.ok(multiline.inputHeight > 44);
+  await evaluate("document.querySelector('#prompt').focus()");
+  await cdp("Input.dispatchKeyEvent", {type:"keyDown",key:"Enter",code:"Enter",windowsVirtualKeyCode:13,modifiers:8,text:"\r"});
+  await cdp("Input.dispatchKeyEvent", {type:"keyUp",key:"Enter",code:"Enter",windowsVirtualKeyCode:13,modifiers:8});
+  await pause(100);
+  assert.equal(await evaluate("document.querySelectorAll('.message.user').length"), 0);
+  assert.equal(await evaluate("document.querySelector('#prompt').value.split('\\n').length"), 4);
+  await fill("#prompt", "Dòng dài\n".repeat(20));
+  assert.equal((await checkComposerRow("giới hạn nhiều dòng")).inputHeight, 160);
+  assert.ok(await evaluate("document.querySelector('#prompt').scrollHeight > document.querySelector('#prompt').clientHeight"));
   const unsafeText = '<img src=x onerror="window.injected=true"> Câu hỏi mẫu';
   await fill("#prompt", unsafeText);
   await click('.composer button[type="submit"]');
   await click('.composer button[type="submit"]');
   await waitFor("document.querySelectorAll('.message.assistant').length === 1");
+  assert.equal((await checkComposerRow("sau gửi")).inputHeight, 44);
   assert.equal(
     await evaluate("document.querySelectorAll('.message.user').length"),
     1,
@@ -345,6 +395,12 @@ try {
       "document.querySelector('.message.assistant').textContent.includes('chưa kết nối')",
     ),
   );
+  await openMetrics();
+  assert.equal(await evaluate("document.querySelectorAll('.chat-metrics-dialog select option').length"), 1);
+  assert.equal(await evaluate("document.querySelector('.chat-metrics-prompt').textContent"), unsafeText);
+  assert.equal(await evaluate("document.querySelectorAll('.chat-metrics-prompt img').length"), 0);
+  assert.ok(await evaluate("[...document.querySelectorAll('[data-metrics-branch=cache] dd')].every(value => value.textContent === 'Không chạy')"));
+  await closeMetrics();
 
   await click(".new-conversation");
   await fill("#prompt", "Bản nháp hội thoại mới");
@@ -485,7 +541,92 @@ try {
     ),
     false,
   );
+
+  // One composer, independent branch histories, and concurrent comparison replies.
+  await setChatMode("cache");
+  assert.equal(await evaluate("document.querySelectorAll('.chat-panel').length"), 1);
+  assert.equal(await evaluate("document.querySelectorAll('.message').length"), 0);
+  await fill("#prompt", "Câu hỏi riêng cho nhánh cache");
+  await click('.composer button[type="submit"]');
+  assert.equal(await evaluate("document.querySelector('.chat-settings button').disabled"), true);
+  await openMetrics();
+  assert.equal(await evaluate("document.querySelector('[data-metrics-branch=cache] .chat-metrics-state').textContent"), "Đang chờ phản hồi");
+  await waitFor("document.querySelector('[data-metrics-branch=cache] .chat-metrics-state').textContent === 'Phản hồi mẫu'");
+  await closeMetrics();
+  await waitFor("document.querySelectorAll('.message.assistant').length === 1");
+  assert.ok(await evaluate("document.querySelector('.message.assistant').textContent.includes('Cache chưa được triển khai')"));
+  await setChatMode("compare");
+  assert.equal(await evaluate("document.querySelectorAll('.chat-panel').length"), 2);
+  assert.equal(await evaluate("document.querySelectorAll('.composer textarea').length"), 1);
+  assert.equal(await evaluate("document.querySelectorAll('.chat-mode-options input').length"), 3);
+  await fill("#prompt", unsafeText);
+  await click('.composer button[type="submit"]');
+  await click('.composer button[type="submit"]');
+  for (const branch of ["cache", "no-cache"]) {
+    assert.equal(await evaluate(`document.querySelectorAll('[data-branch="${branch}"] .message.user').length`), 2);
+    assert.equal(await evaluate(`document.querySelector('[data-branch="${branch}"] .message.user:last-of-type p').textContent`), unsafeText);
+    assert.ok(await evaluate(`!!document.querySelector('[data-branch="${branch}"] [role="status"]')`));
+  }
+  assert.equal(await evaluate("document.querySelector('.new-conversation').disabled"), true);
+  await click('.sidebar a[href="/documents"]');
+  await waitFor("location.pathname === '/documents' && !!document.querySelector('#document-files')");
+  await pause(1100);
+  await click('.sidebar a[href="/"]');
+  await waitFor("location.pathname === '/' && document.querySelectorAll('.message.assistant').length === 4");
+  assert.equal(await evaluate("document.querySelectorAll('.messages img').length"), 0);
+  assert.equal(await evaluate("window.injected === true"), false);
+  await evaluate("Object.defineProperty(navigator, 'clipboard', {configurable:true, value:{writeText: async text => { window.copiedText = text; }}})");
+  await click('[data-branch="cache"] .message.assistant:last-child .message-body > button');
+  assert.ok(await evaluate("window.copiedText.includes('Cache chưa được triển khai')"));
+  await screenshot("chat-comparison-1440x900.png");
+  await setChatMode("no-cache");
+  assert.equal(await evaluate("document.querySelectorAll('.message.assistant').length"), 2);
+  await setChatMode("compare");
+  await click(".new-conversation");
+  assert.equal(await evaluate("document.querySelectorAll('.chat-panel').length"), 2);
+  assert.equal(await evaluate("document.querySelectorAll('.message').length"), 0);
+  await click(".history-item:last-child");
+  assert.equal(await evaluate("document.querySelectorAll('.chat-panel').length"), 1);
+  await click(".history-item:nth-child(2)");
+  assert.equal(await evaluate("document.querySelectorAll('.message.assistant').length"), 4);
+  await openMetrics();
+  const turnOptions = await evaluate("[...document.querySelector('.chat-metrics-dialog select').options].map(option => ({value:option.value,text:option.textContent}))");
+  assert.equal(turnOptions.length, 3);
+  assert.equal(await evaluate("document.querySelector('.chat-metrics-dialog select').value"), turnOptions[0].value);
+  assert.equal(await evaluate("document.querySelector('.chat-metrics-prompt').textContent"), unsafeText);
+  for (const branch of ["cache", "no-cache"]) {
+    assert.equal(await evaluate(`document.querySelector('[data-metrics-branch="${branch}"] [data-metric=llmCalls] dd').textContent`), "0");
+    assert.equal(await evaluate(`document.querySelector('[data-metrics-branch="${branch}"] [data-metric=llmTokens] dd').textContent`), "0");
+    assert.equal(await evaluate(`document.querySelector('[data-metrics-branch="${branch}"] [data-metric=responseTime] dd').textContent`), "Chưa đo");
+    assert.equal(await evaluate(`document.querySelector('[data-metrics-branch="${branch}"] [data-metric=permission] dd').textContent`), "Chưa xác minh");
+  }
+  assert.equal(await evaluate("document.querySelector('[data-metrics-branch=cache] [data-metric=cacheStatus] dd').textContent"), "Chưa xác định");
+  await fill(".chat-metrics-dialog select", turnOptions[2].value);
+  assert.equal(await evaluate("document.querySelector('.chat-metrics-prompt').textContent"), "Bản nháp hội thoại mới");
+  assert.ok(await evaluate("[...document.querySelectorAll('[data-metrics-branch=cache] dd')].every(value => value.textContent === 'Không chạy')"));
+  await fill(".chat-metrics-dialog select", turnOptions[1].value);
+  assert.equal(await evaluate("document.querySelector('.chat-metrics-prompt').textContent"), "Câu hỏi riêng cho nhánh cache");
+  assert.ok(await evaluate("[...document.querySelectorAll('[data-metrics-branch=no-cache] dd')].every(value => value.textContent === 'Không chạy')"));
+  await closeMetrics();
+  await openMetrics();
+  assert.equal(await evaluate("document.querySelector('.chat-metrics-dialog select').value"), turnOptions[0].value);
+  await screenshot("chat-metrics-1440x900.png");
+  await click('.chat-metrics-heading button[aria-label="Đóng thông số"]');
+  await waitFor("!document.querySelector('.chat-metrics-dialog').open");
+  await fill("#prompt", unsafeText);
+  await click('.composer button[type="submit"]');
+  await waitFor("document.querySelectorAll('.message.assistant').length === 6");
+  await openMetrics();
+  const repeatedOptions = await evaluate("[...document.querySelector('.chat-metrics-dialog select').options].map(option => ({value:option.value,text:option.textContent}))");
+  assert.equal(repeatedOptions.length, 4);
+  assert.notEqual(repeatedOptions[0].value, repeatedOptions[1].value);
+  assert.ok(repeatedOptions[0].text.includes("Câu hỏi mẫu") && repeatedOptions[1].text.includes("Câu hỏi mẫu"));
+  await closeMetrics();
+
   await navigate("/");
+  await openMetrics();
+  assert.equal(await evaluate("document.querySelector('.chat-metrics-dialog select').disabled"), true);
+  await closeMetrics();
   assert.equal(
     await evaluate("document.querySelectorAll('.message').length"),
     0,
@@ -534,6 +675,39 @@ try {
       await screenshot(
         `${path === "/" ? "chat" : "documents"}-${width}x${height}.png`,
       );
+      if (path === "/") {
+        const baselineComposer = await checkComposerRow(`không cache ${width}x${height}`);
+        await setChatMode("cache");
+        const cacheComposer = await checkComposerRow(`có cache ${width}x${height}`);
+        assert.equal(cacheComposer.width, baselineComposer.width);
+        assert.equal(cacheComposer.height, baselineComposer.height);
+        await screenshot(`chat-cache-${width}x${height}.png`);
+        await setChatMode("compare");
+        const comparisonComposer = await checkComposerRow(`chia đôi ${width}x${height}`);
+        assert.equal(comparisonComposer.width, baselineComposer.width);
+        assert.equal(comparisonComposer.height, baselineComposer.height);
+        await fill("#prompt", "Cùng một câu hỏi cho hai nhánh, kiểm tra nội dung dài: " + "CacheSec".repeat(24));
+        await click('.composer button[type="submit"]');
+        await waitFor("document.querySelectorAll('.message.assistant').length === 2");
+        assert.ok(await evaluate("document.documentElement.scrollWidth <= innerWidth"), `Tràn ngang chia đôi: ${width}x${height}`);
+        assert.ok(await evaluate("[...document.querySelectorAll('.messages')].every(log => log.scrollWidth <= log.clientWidth)"), `Tràn ngang tin nhắn: ${width}x${height}`);
+        assert.ok(await evaluate("document.querySelector('.composer').getBoundingClientRect().bottom <= innerHeight"), `Ô nhập ngoài màn hình: ${width}x${height}`);
+        const bounds = await evaluate("[...document.querySelectorAll('.chat-panel')].map(panel => { const r = panel.getBoundingClientRect(); return {left:r.left,right:r.right,top:r.top}; })");
+        assert.equal(bounds[0].top, bounds[1].top);
+        assert.ok(bounds[0].right <= bounds[1].left);
+        assert.ok(await evaluate("[...document.querySelectorAll('.chat-panel, .chat-panel-heading')].every(panel => getComputedStyle(panel).borderTopWidth === '0px' && getComputedStyle(panel).borderLeftWidth === '0px')"), `Viền khung chia đôi: ${width}x${height}`);
+        assert.ok(await evaluate("document.querySelector('.chat-panels').getBoundingClientRect().top < 64"), `Vùng chat chưa sát đầu trang: ${width}x${height}`);
+        assert.equal(await evaluate("getComputedStyle(document.querySelector('.chat-settings-trigger .icon')).width"), "16px");
+        await screenshot(`chat-comparison-${width}x${height}.png`);
+        await openMetrics();
+        assert.ok(await evaluate("document.querySelector('.chat-metrics-dialog').scrollWidth <= document.querySelector('.chat-metrics-dialog').clientWidth"), `Tràn ngang thông số: ${width}x${height}`);
+        assert.ok(await evaluate("document.querySelector('.chat-metrics-dialog').getBoundingClientRect().height <= innerHeight"));
+        const metricBounds = await evaluate("[...document.querySelectorAll('.chat-metrics-column')].map(column => { const r = column.getBoundingClientRect(); return {top:r.top,left:r.left,right:r.right}; })");
+        assert.equal(metricBounds[0].top, metricBounds[1].top);
+        assert.ok(metricBounds[0].right <= metricBounds[1].left);
+        await screenshot(`chat-metrics-${width}x${height}.png`);
+        await closeMetrics();
+      }
       if (path === "/documents" && width === 390) {
         await evaluate(
           "document.querySelector('.document-list').scrollIntoView({block:'center',behavior:'instant'})",
@@ -642,7 +816,7 @@ try {
   }
   assert.deepEqual(errors, [], "Lỗi runtime/React trên trình duyệt");
   console.log(
-    "Đạt: Chat, tài liệu chọn/thả tệp, validation/trùng tệp, phân loại/tìm/lọc, giữ phiên qua route, redirect, UI kit, keyboard và 18 bố cục.",
+    "Đạt: ba chế độ Chat, thanh nhập chung, Thông số theo lượt gửi, prompt mới nhất/trùng/lịch sử, nhánh không chạy, không bịa số đo/quyền, giữ phiên/reset, Tài liệu, UI kit, keyboard và 45 bố cục.",
   );
   console.log(`Ảnh kiểm chứng: ${output}`);
 } catch (error) {
