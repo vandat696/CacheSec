@@ -347,7 +347,7 @@ try {
   assert.ok(await evaluate("[...document.querySelectorAll('.chat-metrics-column dd')].every(value => value.textContent === '—')"));
   await closeMetrics();
   assert.equal(
-    await evaluate("document.querySelectorAll('.sidebar nav a').length"),
+    await evaluate("document.querySelectorAll('.sidebar nav a.nav').length"),
     2,
   );
   assert.equal(
@@ -402,6 +402,11 @@ try {
   assert.ok(await evaluate("[...document.querySelectorAll('[data-metrics-branch=cache] dd')].every(value => value.textContent === 'Không chạy')"));
   await closeMetrics();
 
+  assert.equal(await evaluate("document.querySelector('#chat-history').inert"), true);
+  await evaluate("document.querySelector('.history-toggle').focus()");
+  await key("Enter");
+  await waitFor("!document.querySelector('#chat-history').inert");
+  await pause(250);
   await click(".new-conversation");
   await fill("#prompt", "Bản nháp hội thoại mới");
   await click(".history-item:last-child");
@@ -623,6 +628,36 @@ try {
   assert.ok(repeatedOptions[0].text.includes("Câu hỏi mẫu") && repeatedOptions[1].text.includes("Câu hỏi mẫu"));
   await closeMetrics();
 
+  // Nested history: five initially, incremental reveal, reset, and cross-route selection.
+  for (let index = 0; index < 10; index++) {
+    await click(".new-conversation");
+    await fill("#prompt", `History draft ${index + 1}`);
+  }
+  assert.equal(await evaluate("document.querySelectorAll('.history-item').length"), 5);
+  assert.ok(await evaluate("!!document.querySelector('.history-more')"));
+  await click(".history-more");
+  assert.equal(await evaluate("document.querySelectorAll('.history-item').length"), 10);
+  await click(".history-more");
+  assert.equal(await evaluate("document.querySelectorAll('.history-item').length"), 13);
+  assert.equal(await evaluate("!!document.querySelector('.history-more')"), false);
+  await click(".history-item:last-child");
+  assert.equal(await evaluate("document.querySelectorAll('.message').length"), 2);
+  await click('.sidebar a[href="/documents"]');
+  await waitFor("location.pathname === '/documents'");
+  await click(".history-item:first-child");
+  await waitFor("location.pathname === '/' && !!document.querySelector('#prompt')");
+  assert.equal(await evaluate("document.querySelector('#prompt').value"), "History draft 10");
+  await click(".sidebar-chat-heading .nav");
+  await pause(250);
+  assert.equal(await evaluate("document.querySelector('#chat-history').inert"), true);
+  assert.equal(await evaluate("document.querySelector('#chat-history').getBoundingClientRect().height"), 0);
+  await click(".sidebar-chat-heading .nav");
+  await pause(250);
+  assert.equal(await evaluate("document.querySelectorAll('.history-item').length"), 5);
+  assert.equal(await evaluate("document.querySelector('.history-item').getAttribute('aria-current')"), "true");
+  assert.equal(await evaluate("document.querySelector('#prompt').value"), "History draft 10");
+  await screenshot("chat-history-1440x900.png");
+
   await navigate("/");
   await openMetrics();
   assert.equal(await evaluate("document.querySelector('.chat-metrics-dialog select').disabled"), true);
@@ -732,8 +767,21 @@ try {
       "document.querySelector('.sidebar').contains(document.activeElement)",
     ),
   );
+  await click(".sidebar-chat-heading .nav");
+  await pause(250);
+  assert.equal(await evaluate("document.querySelector('.sidebar').classList.contains('open')"), true);
+  assert.equal(await evaluate("document.querySelector('#chat-history').inert"), false);
+  await screenshot("chat-history-390x844.png");
+  await click(".history-item:first-child");
+  assert.equal(await evaluate("document.querySelector('.sidebar').classList.contains('open')"), false);
+  await click(".mobile-toggle");
+  await click(".history-toggle");
+  await pause(250);
+  await evaluate("document.querySelector('.history-toggle').focus()");
+  await key("Tab");
+  assert.equal(await evaluate("document.activeElement.getAttribute('href')"), "/documents");
   await evaluate(
-    "[...document.querySelectorAll('.sidebar a, .sidebar button:not(:disabled)')].at(-1).focus()",
+    "[...document.querySelectorAll('.sidebar a, .sidebar button:not(:disabled)')].filter(control => !control.closest('[inert]')).at(-1).focus()",
   );
   await key("Tab");
   assert.equal(
@@ -751,6 +799,7 @@ try {
   await cdp("Emulation.setEmulatedMedia", {
     features: [{ name: "prefers-reduced-motion", value: "reduce" }],
   });
+  assert.equal(await evaluate("getComputedStyle(document.querySelector('.history-collapse')).transitionDuration"), "0s");
   assert.equal(
     await evaluate(
       "getComputedStyle(document.querySelector('.welcome')).animationName",

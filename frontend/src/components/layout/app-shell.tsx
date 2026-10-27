@@ -9,6 +9,7 @@ import { Icon } from "../ui/icon";
 import { useChat } from "@/features/chat/chat-provider";
 import { ChatSettings } from "@/features/chat/chat-settings";
 import { ChatMetrics } from "@/features/chat/chat-metrics";
+import { SidebarChat } from "@/features/chat/sidebar-chat";
 
 const navigation = [
   { href: "/", label: "Chat", icon: "chat" },
@@ -38,7 +39,9 @@ export function AppShell({ children }: { children: ReactNode }) {
         ...(sidebar.current?.querySelectorAll<HTMLElement>(
           "a[href], button:not(:disabled)",
         ) ?? []),
-      ].filter((control) => control.getClientRects().length > 0);
+      ].filter(
+        (control) => control.getClientRects().length > 0 && !control.closest("[inert]"),
+      );
       if (!controls.length) return;
       const first = controls[0],
         last = controls[controls.length - 1];
@@ -101,55 +104,27 @@ export function AppShell({ children }: { children: ReactNode }) {
             </button>
           </div>
           <nav aria-label="Khu làm việc">
-            {navigation.map((item) => (
-              <Link
-                key={item.href}
-                href={item.href}
-                className={`nav${pathname === item.href ? " active" : ""}`}
-                aria-current={pathname === item.href ? "page" : undefined}
-                onClick={() => setDrawerOpen(false)}
-              >
-                <Icon name={item.icon} />
-                <span>{item.label}</span>
-              </Link>
-            ))}
+            {navigation.map((item) =>
+              item.href === "/" ? (
+                <SidebarChat
+                  key={item.href}
+                  active={pathname === "/"}
+                  onNavigate={() => setDrawerOpen(false)}
+                />
+              ) : (
+                <Link
+                  key={item.href}
+                  href={item.href}
+                  className={`nav${pathname === item.href ? " active" : ""}`}
+                  aria-current={pathname === item.href ? "page" : undefined}
+                  onClick={() => setDrawerOpen(false)}
+                >
+                  <Icon name={item.icon} />
+                  <span>{item.label}</span>
+                </Link>
+              ),
+            )}
           </nav>
-          {pathname === "/" && (
-            <div className="sidebar-chat-section">
-              <Button
-                className="new-conversation"
-                variant="secondary"
-                disabled={chat.state.pending !== null}
-                onClick={() => {
-                  chat.create();
-                  setDrawerOpen(false);
-                }}
-              >
-                <Icon name="plus" />
-                Chat mới
-              </Button>
-              <div className="history-list" aria-label="Lịch sử hội thoại">
-                {chat.state.conversations.map((conversation) => (
-                  <button
-                    key={conversation.id}
-                    type="button"
-                    className={`history-item${conversation.id === chat.state.activeId ? " active" : ""}`}
-                    aria-current={
-                      conversation.id === chat.state.activeId
-                        ? "true"
-                        : undefined
-                    }
-                    onClick={() => {
-                      chat.select(conversation.id);
-                      setDrawerOpen(false);
-                    }}
-                  >
-                    {conversation.title}
-                  </button>
-                ))}
-              </div>
-            </div>
-          )}
         </aside>
         <div
           className={`workspace${pathname === "/" ? " chat-workspace-shell" : ""}`}

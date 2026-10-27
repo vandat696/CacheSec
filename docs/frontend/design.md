@@ -20,6 +20,8 @@ Theo yêu cầu bổ sung ngày 2026-10-27, so sánh hai nhánh được đặt 
 
 Chỉ có hai mục Chat và Tài liệu trên sidebar. Lịch sử chat dùng cùng sidebar, không tạo thêm cột điều hướng. Thanh đầu trang Chat giữ Thông số và cài đặt ở góc phải; đã bỏ nhãn Mô phỏng và phần giới hạn mở từ nhãn đó. Nội dung và hành động giữ ngắn, dùng hệ màu/font/border của Nói.
 
+Lịch sử và nút Chat mới nằm lồng ngay dưới mục Chat, trước Tài liệu. Mặc định thu gọn; bấm Chat hoặc mũi tên để mở/đóng với hiệu ứng chiều cao và độ mờ (tắt khi giảm chuyển động). Mỗi lần mở hiện 5 hội thoại đầu danh sách, theo thứ tự mới tạo trước; **Hiển thị thêm** mở tiếp từng nhóm 5 và ẩn khi hết. Hội thoại đang chọn được tô nền, tên dài rút gọn bằng dấu ba chấm. Có thể chọn lịch sử từ Tài liệu để trở về đúng hội thoại; giữ bản nháp và chế độ. Trên điện thoại, mở lịch sử giữ drawer để chọn; chọn hội thoại/Chat mới đóng drawer. Nội dung thu gọn không nhận focus hoặc xuất hiện với trình đọc màn hình; nút mũi tên hỗ trợ bàn phím và báo trạng thái mở/đóng.
+
 ## Luồng chat
 
 Chat → nhập/gửi câu hỏi → phản hồi mẫu → sao chép hoặc tạo chat mới. Gợi ý dùng tình huống công ty, không phải tác vụ viết bài chung. Phản hồi mẫu ghi rõ chưa nối AI hoặc kho tài liệu, không tự trả lời từ tên/nội dung tệp được chọn.

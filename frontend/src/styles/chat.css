@@ -300,44 +300,6 @@
 .chat-comparison .messages {
   padding: 12px 8px;
 }
-.sidebar-chat-section {
-  display: flex;
-  flex-direction: column;
-  flex: 1;
-  min-height: 0;
-  gap: 16px;
-}
-.new-conversation.nui-button {
-  width: 100%;
-  font-size: 13px;
-  justify-content: flex-start;
-}
-.history-list {
-  display: flex;
-  flex-direction: column;
-  gap: 4px;
-  overflow-y: auto;
-  min-height: 0;
-}
-.history-item {
-  display: block;
-  flex: none;
-  min-height: 44px;
-  padding: 12px;
-  border: 0;
-  border-radius: 6px;
-  background: transparent;
-  text-align: left;
-  font-size: 13px;
-  color: var(--nui-muted);
-  white-space: nowrap;
-  text-overflow: ellipsis;
-  overflow: hidden;
-}
-.history-item.active {
-  background: #f1f4f8;
-  color: var(--nui-text);
-}
 .messages {
   flex: 1;
   overflow-y: auto;
@@ -459,7 +421,6 @@
   margin-top: 8px;
 }
 @media (hover: hover) {
-  .history-item:hover,
   .suggestions button:hover {
     border-color: var(--nui-primary);
     background: var(--nui-tint);

@@ -171,6 +171,100 @@ h3 {
   color: var(--nui-primary);
   font-weight: 600;
 }
+.sidebar-chat {
+  min-width: 0;
+}
+.sidebar-chat-heading {
+  position: relative;
+}
+.sidebar-chat-heading .nav {
+  padding-right: 48px;
+}
+.history-toggle {
+  position: absolute;
+  inset: 2px 2px 2px auto;
+  display: grid;
+  place-items: center;
+  width: 40px;
+  border: 0;
+  border-radius: var(--nui-radius);
+  background: transparent;
+  color: var(--nui-muted);
+}
+.history-toggle .icon {
+  width: 16px;
+  height: 16px;
+  transform: rotate(-90deg);
+  transition: transform 220ms var(--nui-ease-out);
+}
+.history-toggle[aria-expanded="true"] .icon {
+  transform: rotate(0);
+}
+.history-collapse {
+  display: grid;
+  grid-template-rows: 0fr;
+  opacity: 0;
+  transition: grid-template-rows 220ms var(--nui-ease-out), opacity 180ms ease;
+}
+.history-collapse.expanded {
+  grid-template-rows: 1fr;
+  opacity: 1;
+}
+.history-collapse-inner {
+  min-height: 0;
+  overflow: hidden;
+}
+.sidebar-chat-section {
+  display: grid;
+  gap: 6px;
+  margin: 8px 0 4px 21px;
+  padding-left: 10px;
+  border-left: 1px solid var(--nui-border);
+}
+.new-conversation.nui-button {
+  width: 100%;
+  padding-inline: 10px;
+  font-size: 13px;
+  justify-content: flex-start;
+}
+.new-conversation .icon {
+  width: 16px;
+  height: 16px;
+}
+.history-list {
+  display: grid;
+  gap: 4px;
+  min-width: 0;
+}
+.history-item {
+  display: block;
+  min-width: 0;
+  min-height: 44px;
+  padding: 10px;
+  border-radius: 6px;
+  text-decoration: none;
+  font-size: 13px;
+  color: var(--nui-muted);
+  white-space: nowrap;
+  text-overflow: ellipsis;
+  overflow: hidden;
+}
+.history-item.active {
+  background: var(--nui-tint);
+  color: var(--nui-primary);
+  font-weight: 600;
+}
+.history-more {
+  min-height: 44px;
+  padding: 10px;
+  border: 0;
+  border-radius: 6px;
+  background: transparent;
+  text-align: left;
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--nui-primary);
+}
 .resource-navigation {
   margin-top: auto;
 }
@@ -313,7 +407,10 @@ h3 {
 }
 @media (hover: hover) {
   .btn:hover,
-  .nav:hover {
+  .nav:hover,
+  .history-toggle:hover,
+  .history-item:hover,
+  .history-more:hover {
     background: var(--nui-tint);
     color: var(--nui-primary);
   }

@@ -2,6 +2,13 @@
 
 Các mốc ngày tháng bên dưới là lịch sử tại thời điểm thực hiện; mục mới hơn thay thế định hướng cũ khi có thay đổi. Phạm vi và bước tiếp theo hiện hành được tổng hợp ở cuối file.
 
+## 2026-10-28 — Lịch sử thu gọn dưới mục Chat
+
+- Đưa Chat mới và lịch sử vào ngay dưới mục Chat, trước Tài liệu. Bấm Chat/mũi tên để mở hoặc thu gọn, chuyển động chiều cao/độ mờ và tôn trọng giảm chuyển động. Mỗi lần mở hiện 5 hội thoại mới tạo nhất; Hiển thị thêm mở tiếp từng nhóm 5 đến hết.
+- Giữ trạng thái chọn, bản nháp và chế độ; chọn lịch sử từ Tài liệu mở đúng hội thoại. Trên mobile, mở danh sách giữ drawer, chọn hội thoại/Chat mới đóng drawer; danh sách thu gọn không nhận focus. Lịch sử vẫn chỉ lưu trong phiên và mất khi reload.
+- Kiểm chứng: lint, typecheck, production build và 31 test logic đạt. Edge production smoke đạt danh sách 5 → 10 → 13, ẩn Hiển thị thêm khi hết, thu gọn/mở lại về 5, giữ bản nháp/chọn từ Tài liệu, bàn phím/mobile/giảm chuyển động và 45 bố cục hiện có; đã rà ảnh desktop/mobile và diff. Chưa kiểm chứng browser khác.
+- Cập nhật thiết kế frontend và hướng dẫn sử dụng; không đổi API, cache hoặc dữ liệu hội thoại. Bước tiếp theo của baseline thật vẫn là hợp đồng upload/ingestion, lưu trữ và quyền.
+
 ## 2026-10-28 — Cửa sổ Thông số theo lượt gửi
 
 - Nút Thông số chỉ hiện biểu tượng, nằm ngay bên trái bánh răng cài đặt trong cùng một nhóm sát góc phải, cách nhau 4 px trên desktop/mobile. Nút mở modal hai cột Không cache/Có cache với năm trường: Cache Status, thời gian phản hồi, lượt gọi LLM, token LLM và kiểm tra quyền. Dropdown lấy lượt gửi trong hội thoại hiện tại, mới nhất trước và mặc định chọn lượt gần nhất mỗi lần mở; prompt trùng vẫn là các lượt riêng.
