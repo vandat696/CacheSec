@@ -170,13 +170,6 @@ export function AppShell({ children }: { children: ReactNode }) {
               </Button>
               <span className="workspace-brand">CacheSec</span>
             </div>
-            <details className="environment">
-              <summary>Mô phỏng</summary>
-              <p>
-                Chat chưa nối AI. Tệp được chọn chỉ nằm trong phiên, chưa tải
-                lên hoặc nạp vào chatbot.
-              </p>
-            </details>
             {pathname === "/" && (
               <>
                 <ChatMetrics

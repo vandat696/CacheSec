@@ -18,7 +18,7 @@ Theo yêu cầu bổ sung ngày 2026-10-27, so sánh hai nhánh được đặt 
 | `/chat`, `/settings`, `/experiments` | Chuyển về Chat để giữ liên kết cũ | Không mở lại màn tham số/thí nghiệm |
 | `/ui` | Thư viện 21 component, truy cập trực tiếp cho phát triển | Không có mục điều hướng trong app chính |
 
-Chỉ có hai mục Chat và Tài liệu trên sidebar. Lịch sử chat dùng cùng sidebar, không tạo thêm cột điều hướng. Nhãn Mô phỏng ở đầu trang mở phần giới hạn; nội dung và hành động giữ ngắn, dùng hệ màu/font/border của Nói.
+Chỉ có hai mục Chat và Tài liệu trên sidebar. Lịch sử chat dùng cùng sidebar, không tạo thêm cột điều hướng. Thanh đầu trang Chat giữ Thông số và cài đặt ở góc phải; đã bỏ nhãn Mô phỏng và phần giới hạn mở từ nhãn đó. Nội dung và hành động giữ ngắn, dùng hệ màu/font/border của Nói.
 
 ## Luồng chat
 
@@ -34,7 +34,7 @@ Icon bánh răng **Cài đặt chat** ở góc phải thanh trên cùng mở ba 
 - **Có cache**: một khung cho nhánh có cache; phản hồi mẫu nói rõ cache chưa triển khai.
 - **So sánh chia đôi**: hai khung Không cache/Có cache đặt cạnh nhau, cuộn riêng, cùng một ô nhập và nút gửi bên dưới. Gửi một lần thêm cùng prompt vào hai nhánh và khởi chạy hai phản hồi mẫu song song; mỗi nhánh có trạng thái chờ/lỗi riêng. Giữ bố cục hai cột cả ở màn nhỏ với chữ/padding gọn hơn.
 
-Hai vùng so sánh không có viền bao quanh, nền card hoặc đường kẻ tiêu đề; giữ nhãn nhỏ Không cache/Có cache và một vạch dọc 1 px màu viền chung nằm giữa khoảng cách hai cột. Vạch chạy hết chiều cao vùng hội thoại, dừng trước thanh nhập, không chặn thao tác chuột và chỉ hiện ở chế độ chia đôi, kể cả trên mobile. Giảm padding ngoài, bỏ nội dung chờ lặp ở hai vùng trống, nhãn Mô phỏng từng bên và tên vai trò lặp trên tin nhắn. Giữ một nhãn Mô phỏng chung ở thanh trên cùng, mô tả giới hạn trong menu/phản hồi mẫu, trạng thái chờ/lỗi và thao tác sao chép. Hướng dẫn phím gửi dùng chữ ẩn cho trình đọc màn hình; placeholder và nút Gửi phục vụ thao tác chính.
+Hai vùng so sánh không có viền bao quanh, nền card hoặc đường kẻ tiêu đề; giữ nhãn nhỏ Không cache/Có cache và một vạch dọc 1 px màu viền chung nằm giữa khoảng cách hai cột. Vạch chạy hết chiều cao vùng hội thoại, dừng trước thanh nhập, không chặn thao tác chuột và chỉ hiện ở chế độ chia đôi, kể cả trên mobile. Giảm padding ngoài, bỏ nội dung chờ lặp ở hai vùng trống, nhãn Mô phỏng và tên vai trò lặp trên tin nhắn. Giữ giới hạn trong menu/phản hồi mẫu, trạng thái chờ/lỗi và thao tác sao chép. Hướng dẫn phím gửi dùng chữ ẩn cho trình đọc màn hình; placeholder và nút Gửi phục vụ thao tác chính.
 
 Thanh nhập dùng cùng thiết kế và chiều rộng ở cả ba chế độ (tối đa 1120 px, co theo màn hình). Textarea và nút Gửi nằm cạnh nhau trong cùng một hàng có viền chung; nút bám cạnh dưới khi nhập nhiều dòng. Ô nhập cao tối thiểu 44 px, tự giãn đến 160 px rồi cuộn nội dung, thu gọn lại sau gửi và điều chỉnh theo bản nháp/chiều rộng màn hình. Enter gửi, Shift+Enter xuống dòng; thông báo nhập rỗng đặt dưới thanh để không đẩy nút Gửi sang hàng khác.
 
@@ -46,7 +46,7 @@ Mỗi lượt có ID và danh sách nhánh đang chờ để bỏ qua phản h�
 
 Nút **Thông số** ở góc phải thanh trên cùng, cạnh nút cài đặt, mở một cửa sổ modal có hai cột Không cache/Có cache và vạch ngăn giữa. Trên màn nhỏ, nút chỉ hiện icon biểu đồ và giữ tên truy cập Thông số. Escape hoặc nút đóng trả focus về nút mở; nội dung cửa sổ cuộn khi thiếu chiều cao.
 
-Giao diện dùng lại tokens Nói, Button, Select, Badge và Icon từ UI kit. Modal nền sáng, bo góc; phần chọn/câu hỏi nằm trong khối riêng. Hai bảng đặt cạnh nhau: Không cache dùng xanh dương, Có cache dùng tím nhạt, có tên và icon để phân biệt cả khi không nhìn màu. Các hàng chỉ số căn tương ứng; giá trị số nổi bật theo màu nhánh, giá trị chưa đo dùng nhãn trung tính, Chưa xác minh dùng nhãn vàng. Trạng thái chờ dùng vàng và lỗi dùng đỏ theo trạng thái thực tế; màu nhánh không biểu thị cache hit, quyền ALLOW hay hiệu năng tốt hơn. Giữ hai cột trên mobile, giảm icon/khoảng đệm và cuộn trong cửa sổ khi cần.
+Giao diện dùng lại tokens Nói, Button, Select và Badge từ UI kit. Modal nền trắng, bo góc; phần chọn/câu hỏi nằm trong khối riêng, hai bảng có viền trung tính và tiêu đề chữ đậm. Bỏ icon trang trí ở tiêu đề/nhánh/chỉ số, các mảng nền và viền xanh dương/tím, cùng dòng “Chưa đo AI/cache. LLM chưa được gọi.” và nhãn Mô phỏng. Giữ nút đóng và icon mở cửa sổ. Nhấn bằng chữ đậm và màu chữ theo nhóm chỉ số (xanh trầm, cam/nâu, vàng nâu), dùng cùng màu cho cùng chỉ số ở cả hai nhánh. Trạng thái chờ/chưa xác minh dùng chữ vàng nâu, lỗi dùng chữ đỏ theo trạng thái thực tế; màu chữ không biểu thị cache hit, quyền ALLOW hay hiệu năng tốt hơn. Giữ các hàng căn tương ứng và hai cột trên mobile; cuộn trong cửa sổ khi cần.
 
 Dropdown liệt kê các lượt gửi trong hội thoại đang mở, mới nhất trước, mặc định chọn lượt gần nhất mỗi lần mở cửa sổ. Hiển thị đầy đủ prompt đã chọn bên dưới. Một lượt chia đôi chỉ có một mục; gửi lại cùng câu vẫn tạo mục riêng theo ID lượt và số thứ tự. Bản nháp/câu rỗng không vào danh sách; đổi chế độ không thay snapshot của lượt cũ. Không trộn lượt từ các hội thoại khác; reload xóa phiên. Khi chưa gửi câu nào, dropdown bị khóa và các giá trị là “—”.
 

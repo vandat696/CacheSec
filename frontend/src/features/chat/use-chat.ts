@@ -55,7 +55,7 @@ export function useChat() {
                 conversationId,
                 requestId,
                 branch,
-                error: "Không thể tạo phản hồi mô phỏng. Bạn có thể thử gửi lại.",
+                error: "Không thể tạo phản hồi mẫu. Bạn có thể thử gửi lại.",
               });
           }
         }),

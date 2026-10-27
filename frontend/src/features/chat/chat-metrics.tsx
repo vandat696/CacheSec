@@ -8,14 +8,6 @@ import { Badge } from "@/components/ui/feedback";
 import type { ChatBranch, Conversation } from "./chat-state";
 import { chatMetricDefinitions, getDemoMetricValues } from "./chat-metrics-model";
 
-const metricIcons = {
-  cacheStatus: "grid",
-  responseTime: "clock",
-  llmCalls: "chat",
-  llmTokens: "file",
-  permission: "lock",
-} as const;
-
 export function ChatMetrics({ conversation }: { conversation: Conversation }) {
   const [open, setOpen] = useState(false);
   const [selectedId, setSelectedId] = useState("");
@@ -60,18 +52,13 @@ export function ChatMetrics({ conversation }: { conversation: Conversation }) {
         id={id}
         className="nui nui-theme nui-dialog chat-metrics-dialog"
         aria-labelledby={`${id}-title`}
-        aria-describedby={`${id}-description`}
         onCancel={(event) => {
           event.preventDefault();
           setOpen(false);
         }}
       >
         <div className="chat-metrics-heading">
-          <div className="chat-metrics-heading-title">
-            <span className="chat-metrics-heading-icon"><Icon name="chart" /></span>
-            <h2 id={`${id}-title`}>Thông số</h2>
-            <Badge tone="neutral">Mô phỏng</Badge>
-          </div>
+          <h2 id={`${id}-title`}>Thông số</h2>
           <Button
             variant="tertiary"
             className="icon-button"
@@ -81,9 +68,6 @@ export function ChatMetrics({ conversation }: { conversation: Conversation }) {
             <Icon name="close" />
           </Button>
         </div>
-        <p className="chat-metrics-note" id={`${id}-description`}>
-          Chưa đo AI/cache. LLM chưa được gọi.
-        </p>
         <div className="chat-metrics-query">
           <Select
             label="Câu hỏi đã gửi"
@@ -116,9 +100,6 @@ export function ChatMetrics({ conversation }: { conversation: Conversation }) {
                 aria-labelledby={`${id}-${branch}`}
               >
                 <div className="chat-metrics-column-heading">
-                  <span className="chat-metrics-branch-icon">
-                    <Icon name={branch === "cache" ? "grid" : "chat"} />
-                  </span>
                   <div>
                     <h3 id={`${id}-${branch}`}>{branch === "cache" ? "Có cache" : "Không cache"}</h3>
                     <p className="chat-metrics-state" role="status"><Badge tone="neutral">{status}</Badge></p>
@@ -128,7 +109,6 @@ export function ChatMetrics({ conversation }: { conversation: Conversation }) {
                   {chatMetricDefinitions.map((metric) => (
                     <div key={metric.key} data-metric={metric.key}>
                       <dt title={"hint" in metric ? metric.hint : undefined}>
-                        <span className="chat-metric-icon"><Icon name={metricIcons[metric.key]} /></span>
                         <span>{metric.label}</span>
                       </dt>
                       <dd

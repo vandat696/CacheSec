@@ -209,33 +209,11 @@ h3 {
 .topbar > * {
   min-width: 0;
 }
+.topbar > .row {
+  margin-right: auto;
+}
 .workspace-brand {
   display: none;
-}
-.environment {
-  position: relative;
-  margin-left: auto;
-  color: var(--nui-muted);
-  font-size: 12px;
-}
-.environment > summary {
-  min-height: 32px;
-  padding: 6px 10px;
-  cursor: pointer;
-}
-.environment > p {
-  position: absolute;
-  z-index: 8;
-  right: 0;
-  top: calc(100% + 8px);
-  width: 240px;
-  max-width: calc(100vw - 32px);
-  padding: 16px;
-  background: var(--nui-surface);
-  border: 1px solid var(--nui-border);
-  border-radius: 6px;
-  box-shadow: 0 4px 16px #17263c0c;
-  font-size: 13px;
 }
 .page {
   max-width: 1360px;

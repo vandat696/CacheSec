@@ -85,7 +85,7 @@ export function ChatSettings({
             <span>{option.label}</span>
           </label>
         ))}
-        <p>Phản hồi mô phỏng · cache chưa hoạt động.</p>
+        <p>Cache chưa hoạt động.</p>
       </fieldset>
     </div>
   );
