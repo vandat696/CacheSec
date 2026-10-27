@@ -171,7 +171,7 @@ export function AppShell({ children }: { children: ReactNode }) {
               <span className="workspace-brand">CacheSec</span>
             </div>
             {pathname === "/" && (
-              <>
+              <div className="chat-topbar-actions" role="group" aria-label="Công cụ chat">
                 <ChatMetrics
                   key={`metrics-${chat.conversation.id}`}
                   conversation={chat.conversation}
@@ -182,7 +182,7 @@ export function AppShell({ children }: { children: ReactNode }) {
                   disabled={chat.state.pending !== null}
                   onChange={chat.setMode}
                 />
-              </>
+              </div>
             )}
           </header>
           <main id="main-content" tabIndex={-1}>

@@ -44,7 +44,7 @@ Mỗi lượt có ID và danh sách nhánh đang chờ để bỏ qua phản h�
 
 ### Thông số theo lượt gửi
 
-Nút **Thông số** ở góc phải thanh trên cùng, cạnh nút cài đặt, mở một cửa sổ modal có hai cột Không cache/Có cache và vạch ngăn giữa. Trên màn nhỏ, nút chỉ hiện icon biểu đồ và giữ tên truy cập Thông số. Escape hoặc nút đóng trả focus về nút mở; nội dung cửa sổ cuộn khi thiếu chiều cao.
+Nút **Thông số** chỉ hiện icon biểu đồ trên cả desktop/mobile, giữ tên truy cập và tooltip Thông số. Icon này nằm ngay bên trái bánh răng cài đặt trong cùng một nhóm ở góc phải thanh trên cùng, cách nhau 4 px, vùng bấm 32 px trên desktop hoặc 44 px trên thiết bị cảm ứng. Nút mở một cửa sổ modal có hai cột Không cache/Có cache và vạch ngăn giữa. Escape hoặc nút đóng trả focus về nút mở; nội dung cửa sổ cuộn khi thiếu chiều cao.
 
 Giao diện dùng lại tokens Nói, Button, Select và Badge từ UI kit. Modal nền trắng, bo góc; phần chọn/câu hỏi nằm trong khối riêng, hai bảng có viền trung tính và tiêu đề chữ đậm. Bỏ icon trang trí ở tiêu đề/nhánh/chỉ số, các mảng nền và viền xanh dương/tím, cùng dòng “Chưa đo AI/cache. LLM chưa được gọi.” và nhãn Mô phỏng. Giữ nút đóng và icon mở cửa sổ. Nhấn bằng chữ đậm và màu chữ theo nhóm chỉ số (xanh trầm, cam/nâu, vàng nâu), dùng cùng màu cho cùng chỉ số ở cả hai nhánh. Trạng thái chờ/chưa xác minh dùng chữ vàng nâu, lỗi dùng chữ đỏ theo trạng thái thực tế; màu chữ không biểu thị cache hit, quyền ALLOW hay hiệu năng tốt hơn. Giữ các hàng căn tương ứng và hai cột trên mobile; cuộn trong cửa sổ khi cần.
 

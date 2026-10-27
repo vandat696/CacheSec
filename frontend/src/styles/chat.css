@@ -9,6 +9,13 @@
   padding: 4px 16px;
   gap: 8px;
 }
+.chat-topbar-actions {
+  display: flex;
+  align-items: center;
+  flex: none;
+  gap: 4px;
+  margin-left: auto;
+}
 .chat-main {
   padding: 4px 16px 16px;
   display: flex;
@@ -77,9 +84,8 @@
 }
 .chat-metrics-trigger.nui-button {
   min-height: 32px;
-  padding: 4px 8px;
-  font-size: 12px;
-  gap: 6px;
+  min-width: 32px;
+  padding: 8px;
   border: 0;
   color: var(--nui-muted);
 }
@@ -510,9 +516,6 @@
   }
 }
 @media (max-width: 480px) {
-  .chat-metrics-trigger .chat-metrics-button-label {
-    display: none;
-  }
   .chat-metrics-dialog {
     padding: 16px;
     border-radius: 16px;

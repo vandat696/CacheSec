@@ -45,7 +45,6 @@ export function ChatMetrics({ conversation }: { conversation: Conversation }) {
         }}
       >
         <Icon name="chart" />
-        <span className="chat-metrics-button-label">Thông số</span>
       </Button>
       <dialog
         ref={dialog}
