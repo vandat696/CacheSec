@@ -21,10 +21,10 @@
 .metrics-view-summary { margin-bottom: 16px; padding-bottom: 0; }
 .metrics-comparison { margin-bottom: 22px; }
 .metrics-comparison-table { table-layout: fixed; }
-.metrics-comparison-table tbody tr { height: 88px; }
+.metrics-comparison-table tbody tr { height: 64px; }
 .metrics-comparison-table col:first-child, .metrics-comparison-table col:last-child { width: 30%; }
 .metrics-comparison-table col:nth-child(2) { width: 40%; }
-.metrics-workspace .metrics-comparison-table th, .metrics-workspace .metrics-comparison-table td { text-align: center; vertical-align: middle; padding: 16px 12px; overflow-wrap: anywhere; }
+.metrics-workspace .metrics-comparison-table th, .metrics-workspace .metrics-comparison-table td { text-align: center; vertical-align: middle; padding: 8px 10px; overflow-wrap: anywhere; }
 .metrics-workspace .metrics-comparison-table thead th { background: transparent; color: var(--nui-text); font-size: 15px; }
 .metrics-workspace .metrics-comparison-table thead th:nth-child(2) { font-size: 12px; color: var(--nui-muted); }
 .metrics-workspace .metrics-comparison-table thead th[data-comparison-branch] { font-weight: 700; }
@@ -170,7 +170,7 @@
 }
 @media (max-width: 480px) {
   .metrics-tabs .nui-tab { min-width: 0; flex: 1; padding-inline: 12px; }
-  .metrics-workspace .metrics-comparison-table th, .metrics-workspace .metrics-comparison-table td { padding: 14px 6px; }
+  .metrics-workspace .metrics-comparison-table th, .metrics-workspace .metrics-comparison-table td { padding: 6px; }
   .metrics-workspace .metrics-comparison-table thead th { font-size: 12px; white-space: normal; }
   .metrics-workspace .metrics-comparison-table tbody th, .metrics-workspace .metrics-comparison-table td { font-size: 11px; }
   .metrics-branch-quality > div { display: grid; gap: 8px; }

@@ -1,5 +1,10 @@
 # Trạng thái dự án
 
+## 2026-10-29 — Thu gọn bảng so sánh
+
+- Giảm hàng từ 88 xuống 64 px, giảm padding dọc còn 8 px (mobile 6 px), giữ căn giữa và các hàng đồng đều. Cập nhật thiết kế frontend.
+- Lint và Edge dev desktop/mobile đạt: hàng bằng chiều cao, không tràn ngang, màu/đơn vị giữ đúng. Đã rà diff; chưa chạy lại production build cho thay đổi CSS này.
+
 ## 2026-10-28 — Cân đối chiều cao hàng so sánh
 
 - Đặt sáu hàng nội dung cao 88 px và giữ căn giữa. Cập nhật thiết kế frontend; lint và Edge dev desktop/mobile đạt, xác nhận sáu hàng bằng chiều cao, giữ màu/đơn vị và không tràn ngang. Chưa chạy lại production build cho thay đổi CSS này.

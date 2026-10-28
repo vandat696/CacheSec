@@ -68,7 +68,7 @@ Nhánh không được chạy ở lượt đó ghi **Không chạy** cho cả n�
 
 ## Dashboard Số liệu
 
-Sáu hàng nội dung bảng so sánh dùng chiều cao 88 px, căn giữa theo chiều dọc để các tiêu chí một/hai dòng cân đối với hàng có số ca. Nội dung dài vẫn được phép làm hàng cao hơn để tránh cắt chữ.
+Sáu hàng nội dung bảng so sánh dùng chiều cao 64 px, padding dọc 8 px (mobile 6 px), căn giữa theo chiều dọc để bảng gọn và các hàng cân đối. Nội dung dài vẫn được phép làm hàng cao hơn để tránh cắt chữ.
 
 Fixture mặc định minh họa đủ hơn/bằng/kém trong bảng: Cache tốt hơn ở độ trễ, calls và token; Không cache tốt hơn ở chất lượng (24/24 so với 23/24); hai bên bằng nhau ở rò rỉ và từ chối nhầm (0%). Chất lượng lưu theo từng nhánh/từng truy vấn để bảng, tab nhánh và bộ lọc tính nhất quán; đây chỉ là kịch bản xem UI.
 
