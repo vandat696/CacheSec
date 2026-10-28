@@ -1,7 +1,8 @@
 "use client";
 
 import { useId, useState, type ComponentProps } from "react";
-import { Select, Switch } from "@/components/ui/fields";
+import { useSearchParams } from "next/navigation";
+import { Select } from "@/components/ui/fields";
 import { Icon } from "@/components/ui/icon";
 import { Tabs } from "@/components/ui/navigation";
 import { useChat } from "@/features/chat/chat-provider";
@@ -158,10 +159,9 @@ function MetricsView({ rows, branch, filterKey, preview }: {
   );
 }
 
-export function MetricsWorkspace() {
+function MetricsWorkspaceView({ showPreview }: { showPreview: boolean }) {
   const chat = useChat();
   const [conversationId, setConversationId] = useState("all");
-  const [showPreview, setShowPreview] = useState(true);
   const preview = showPreview ? getMetricsPreview(conversationId) : undefined;
   const rows = preview?.rows ?? selectMetricsRows(chat.state.conversations, conversationId, "all");
   const conversations = showPreview ? previewConversations : chat.state.conversations;
@@ -178,13 +178,6 @@ export function MetricsWorkspace() {
                 <Select id="metrics-conversation" label="Hội thoại" value={conversationId}
                   options={[{ value: "all", label: "Tất cả hội thoại" }, ...conversations.map((item, index) => ({ value: item.id, label: `${index + 1}. ${item.title}` }))]}
                   onChange={(event) => setConversationId(event.target.value)} />
-                <div className="metrics-preview-control">
-                  <Switch label="Xem dữ liệu mẫu" checked={showPreview} onChange={(checked) => {
-                    setConversationId("all");
-                    setShowPreview(checked);
-                  }} />
-                  <p role="status">{showPreview ? "Dữ liệu giả để xem giao diện · Không phải kết quả đo" : "Dữ liệu phiên Chat hiện tại"}</p>
-                </div>
               </div>
             </>
           }
@@ -197,4 +190,9 @@ export function MetricsWorkspace() {
       </div>
     </div>
   );
+}
+
+export function MetricsWorkspace() {
+  const showPreview = useSearchParams().get("source") !== "session";
+  return <MetricsWorkspaceView key={showPreview ? "sample" : "session"} showPreview={showPreview} />;
 }

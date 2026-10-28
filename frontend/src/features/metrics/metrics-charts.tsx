@@ -97,7 +97,7 @@ export function CacheOutcomes({ counts }: { counts?: CacheCounts }) {
   return (
     <div className="metrics-cache-outcomes">
       <div className={`metrics-empty-ring${counts ? " metrics-sample-ring" : ""}`} role="img"
-        style={counts ? { background: `conic-gradient(var(--metrics-cache) 0% ${hitPercent}%, #cbd5e1 ${hitPercent}% ${missEnd}%, #b33b35 ${missEnd}% 100%)` } : undefined}
+        style={counts ? { background: `conic-gradient(var(--metrics-hit) 0% ${hitPercent}%, var(--metrics-miss) ${hitPercent}% ${missEnd}%, var(--metrics-rejected) ${missEnd}% 100%)` } : undefined}
         aria-label={counts ? `Dữ liệu mẫu: ${counts.hit} Hit, ${counts.miss} Miss, ${counts.rejected} Rejected trên ${total} lượt tra cache` : "Tỷ lệ cache chưa đo; chưa có kết quả Hit, Miss hoặc Rejected"}>
         <strong>{counts && total ? `${hitPercent.toLocaleString("vi-VN", { maximumFractionDigits: 1 })}%` : "—"}</strong><span>Hit hợp lệ</span>
       </div>

@@ -1,5 +1,5 @@
-import { branches, branchLabels, ResponseOutcomes } from "./metrics-charts";
-import { getBetterBranch, getDemoComparisonRows, type ComparisonRow } from "./metrics-comparison-model";
+import { branches } from "./metrics-charts";
+import { formatComparisonValue, getBetterBranch, getDemoComparisonRows, type ComparisonRow } from "./metrics-comparison-model";
 import type { BranchSummary } from "./metrics-model";
 
 export function MetricsComparisonTable({ rows }: {
@@ -7,7 +7,7 @@ export function MetricsComparisonTable({ rows }: {
 }) {
   return (
     <table className="metrics-comparison-table">
-      <caption className="sr-only">Không cache bên trái, tiêu chí ở giữa, Cache bên phải. Giá trị tốt hơn được in đậm và tô màu khi có phép đo tương đương; bằng nhau hoặc chưa đủ dữ liệu giữ trung tính.</caption>
+      <caption className="sr-only">Không cache bên trái, tiêu chí ở giữa, Cache bên phải. Hai bên dùng cùng đơn vị trong mỗi hàng. Giá trị tốt hơn in đậm, màu xanh dương cho Không cache và nâu cam cho Cache; bằng nhau hoặc chưa đủ dữ liệu giữ trung tính.</caption>
       <colgroup><col /><col /><col /></colgroup>
       <thead>
         <tr>
@@ -22,12 +22,13 @@ export function MetricsComparisonTable({ rows }: {
           const valueCell = (branch: (typeof branches)[number]) => (
             <td data-comparison-value={branch} data-better={better === branch || undefined}>
               {better === branch ? (
-                <strong>{row.values[branch].text}<span className="sr-only"> · Tốt hơn</span></strong>
-              ) : <span>{row.values[branch].text}</span>}
+                <strong>{formatComparisonValue(row, row.values[branch])}<span className="sr-only"> · Tốt hơn</span></strong>
+              ) : <span>{formatComparisonValue(row, row.values[branch])}</span>}
+              {row.values[branch].samples && <small className="metrics-comparison-samples">{row.values[branch].samples.count}/{row.values[branch].samples.total} ca</small>}
             </td>
           );
           return (
-            <tr key={row.key} data-comparison-metric={row.key}>
+            <tr key={row.key} data-comparison-metric={row.key} data-unit={row.unit}>
               {valueCell("no-cache")}
               <th scope="row">{row.label}</th>
               {valueCell("cache")}
@@ -43,9 +44,6 @@ export function MetricsComparison({ summaries, rows }: { summaries: Record<(type
   return (
     <section className="metrics-panel metrics-comparison" aria-label="So sánh Không cache và Cache">
       <MetricsComparisonTable rows={rows ?? getDemoComparisonRows(summaries)} />
-      <div className="metrics-comparison-outcomes" aria-label={`Trạng thái phản hồi ${branchLabels["no-cache"]} và ${branchLabels.cache}`}>
-        <ResponseOutcomes summaries={summaries} />
-      </div>
     </section>
   );
 }

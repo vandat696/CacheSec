@@ -2,7 +2,7 @@ import assert from "node:assert/strict";
 import { test } from "node:test";
 import { initialChatState, chatReducer } from "../src/features/chat/chat-state.ts";
 import { selectBranchRows, selectMetricsRows, summarizeDemoMetrics } from "../src/features/metrics/metrics-model.ts";
-import { getBetterBranch, getDemoComparisonRows } from "../src/features/metrics/metrics-comparison-model.ts";
+import { formatComparisonValue, getBetterBranch, getDemoComparisonRows } from "../src/features/metrics/metrics-comparison-model.ts";
 import { getDemoQueryTrend, getTrendSegments } from "../src/features/metrics/metrics-trend-model.ts";
 import { getMetricsPreview, previewQueries, summarizePreview } from "../src/features/metrics/metrics-preview.ts";
 
@@ -61,7 +61,7 @@ function finish(state, id, branch, error = false) {
 }
 
 const comparisonRow = (left, right, preference = "lower", comparable = true) => ({
-  key: "fixture", label: "Tiêu chí giả lập", preference, comparable,
+  key: "fixture", label: "Tiêu chí giả lập", unit: "ms", preference, comparable,
   values: {
     "no-cache": { text: String(left), value: left },
     cache: { text: String(right), value: right },
@@ -133,13 +133,45 @@ test("Bảng đối chiếu demo không suy ra bên thắng từ usage 0, số m
   const state = send(chatReducer(initialChatState(), { type: "mode", mode: "no-cache" }), "single");
   const summary = summarizeDemoMetrics(selectMetricsRows(state.conversations, "all", "all"));
   const rows = getDemoComparisonRows(summary.branches);
-  assert.equal(rows.length, 9);
+  assert.equal(rows.length, 6);
   assert.ok(rows.every((row) => getBetterBranch(row) === null));
   assert.equal(rows.find((row) => row.key === "llmCalls").values["no-cache"].text, "0");
   assert.equal(rows.find((row) => row.key === "llmCalls").values.cache.text, "—");
-  assert.equal(rows.find((row) => row.key === "permission").preference, null);
+  assert.ok(rows.every(row => !["permission", "cacheStatus", "falseHit"].includes(row.key)));
   assert.equal(rows.find((row) => row.key === "quality").preference, "higher");
   assert.equal(rows.find((row) => row.key === "latency").values.cache.value, null);
+});
+
+test("Bảng chỉ giữ tiêu chí so được trực tiếp, hai bên dùng một đơn vị chung và tỷ lệ có mẫu số", () => {
+  const preview = getMetricsPreview("all");
+  const live = getDemoComparisonRows(summarizeDemoMetrics([]).branches);
+  const expected = [["latency", "ms"], ["llmCalls", "lượt"], ["llmTokens", "token"], ["quality", "%"], ["disclosure", "%"], ["falseDenial", "%"]];
+  assert.deepEqual(preview.comparison.map(row => [row.key, row.unit]), expected);
+  assert.deepEqual(live.map(row => [row.key, row.unit]), expected);
+  for (const row of preview.comparison) {
+    for (const branch of ["no-cache", "cache"]) {
+      assert.ok(formatComparisonValue(row, row.values[branch]).endsWith(row.unit));
+    }
+    if (row.unit === "%") assert.equal(row.values["no-cache"].samples.total, row.values.cache.samples.total);
+  }
+  assert.equal(formatComparisonValue(preview.comparison[1], preview.comparison[1].values.cache), "9 lượt");
+  assert.equal(formatComparisonValue(live[0], live[0].values.cache), "Chưa đo");
+  const withoutBlockedCases = summarizePreview(previewQueries.slice(0, 4)).comparison.find(row => row.key === "disclosure");
+  assert.equal(withoutBlockedCases.values.cache.value, null);
+  assert.equal(formatComparisonValue(withoutBlockedCases, withoutBlockedCases.values.cache), "—");
+});
+
+test("Tỷ lệ chỉ tô bên tốt hơn khi hai bên có cùng mẫu số hợp lệ", () => {
+  const row = { ...comparisonRow(80, 90, "higher"), unit: "%", values: {
+    "no-cache": { text: "80", value: 80, samples: { count: 8, total: 10 } },
+    cache: { text: "90", value: 90, samples: { count: 9, total: 10 } },
+  }};
+  assert.equal(getBetterBranch(row), "cache");
+  row.preference = "lower";
+  assert.equal(getBetterBranch(row), "no-cache");
+  for (const samples of [undefined, { count: 18, total: 20 }, { count: 0, total: 0 }, { count: 9, total: Infinity }, { count: 11, total: 10 }]) {
+    assert.equal(getBetterBranch({ ...row, values: { ...row.values, cache: { ...row.values.cache, samples } } }), null);
+  }
 });
 
 test("Dashboard rỗng không biến nhánh không chạy thành usage 0", () => {

@@ -2,6 +2,13 @@
 
 Các mốc ngày tháng bên dưới là lịch sử tại thời điểm thực hiện; mục mới hơn thay thế định hướng cũ khi có thay đổi. Phạm vi và bước tiếp theo hiện hành được tổng hợp ở cuối file.
 
+## 2026-10-28 — Bảng so sánh cùng đơn vị và màu từng nhánh
+
+- Chỉ giữ sáu hàng đối chiếu trực tiếp: độ trễ ms, calls lượt, token và ba tỷ lệ % (câu trả lời đạt yêu cầu, disclosure, false denial). Bỏ Cache Status, Kiểm tra quyền và Semantic false hit khỏi bảng; các thông tin riêng cache/quyền vẫn nằm ở chart, tab nhánh và chi tiết.
+- Mỗi hàng dùng một đơn vị chung cho cả hai cột. Fixture tỷ lệ có số ca/mẫu số cùng tập ở hai bên; không có ca thì unknown. Tỷ lệ khác/thiếu mẫu số không được đánh dấu tốt hơn. Ô tốt hơn theo màu nhánh: Không cache xanh dương, Cache nâu cam, bằng nhau/unknown giữ trung tính. Chưa chốt telemetry hoặc công thức đánh giá thật.
+- Kiểm chứng: lint, typecheck, 45 test logic và production build đạt. Render component thật và Edge dev xác nhận cả hai bên tốt hơn/màu/độ đậm, sáu hàng/đơn vị/mẫu số, lọc, unknown và desktop/mobile. Edge production smoke đạt 72 bố cục hiện có và 27 bố cục dữ liệu mẫu, cùng luồng Chat/ba tab/lọc/chi tiết/cập nhật phản hồi/keyboard, không lỗi runtime. Đã rà ảnh, link và diff; chưa kiểm chứng browser khác hoặc hiệu quả cache thật.
+- Cập nhật thiết kế frontend; bước tiếp theo về baseline/telemetry thật không đổi.
+
 ## 2026-10-28 — Dữ liệu mẫu để xem dashboard
 
 - Theo yêu cầu xem giao diện có số liệu, bật mặc định Xem dữ liệu mẫu tại Số liệu, kèm nhãn dữ liệu giả/không phải kết quả đo; tắt để quay lại dữ liệu phiên Chat. Giữ ba tab trên đầu và các phần đã tinh gọn.
@@ -11,6 +18,7 @@ Các mốc ngày tháng bên dưới là lịch sử tại thời điểm thực
 
 ## 2026-10-28 — Biểu đồ đường hiệu suất theo số truy vấn
 
+- Hiển thị hiện hành: cả hai đường nét liền; phần chồng nhau xen kẽ màu trên nét liên tục, chỉ tại vùng giao, giữ khoảng thiếu dữ liệu. Cập nhật thiết kế frontend; lint/typecheck, 43 test và production build đạt; Edge dev kiểm tra ba chỉ số, mask đoạn trùng, dữ liệu rỗng và ảnh desktop/mobile. Chưa chạy lại production smoke đầy đủ cho thay đổi nét vẽ này.
 - Thay biểu đồ thanh tổng hợp ở Chung bằng hai đường Không cache/Cache theo số truy vấn. Chọn độ trễ/lượt gọi/token từng lượt, thanh chọn Truy vấn hỗ trợ bàn phím/cảm ứng và đọc hai giá trị. Hai tab riêng giữ biểu đồ thanh, bỏ khối tổng lượt gọi LLM và ghi chú dưới biểu đồ. Lần tinh gọn này đã kiểm tra lint/typecheck và Edge dev ở bốn kích thước; chưa chạy lại build hoặc bộ production smoke đầy đủ.
 - Thêm sequence nội bộ cho lượt gửi để giữ thứ tự xuyên hội thoại. Một lượt Cả hai chỉ có một vị trí; không gộp prompt trùng hoặc loại lượt chờ/lỗi. Lọc theo hội thoại đánh lại X từ 1; nhánh không chạy/thiếu hoặc lỗi số đo tạo khoảng trống, không nối giả. Độ trễ chưa đo không vẽ đường; usage demo 0 không được coi là số đo hiệu quả cache. Chưa thêm telemetry/API, timestamp hoặc benchmark.
 - Kiểm chứng: lint, typecheck, production build và 41 test logic đạt. Edge production smoke đạt đổi chỉ số, chọn lượt, nhánh không chạy, bảng/ba tab và 72 bố cục hiện có. Kiểm tra riêng thứ tự gửi qua nhiều hội thoại, câu trùng, lọc/reset, chọn bằng bàn phím, không bịa thời gian và bốn kích thước desktop/mobile; không lỗi React/hydration. Đã rà ảnh, link/diff. Chưa kiểm chứng browser khác hoặc lợi ích cache bằng dữ liệu đo thật.

@@ -46,7 +46,16 @@ export function MetricsTrendPlot({ points, unit, selectedQuery }: {
     <div className="metrics-trend-plot" ref={container}>
       <svg viewBox={`0 0 ${width} 290`} role="img" aria-labelledby={`${id}-title ${id}-description`}>
         <title id={`${id}-title`}>{`Hiệu suất theo ${count} truy vấn · ${unit}`}</title>
-        <desc id={`${id}-description`}>Hai nhánh Không cache và Cache theo thứ tự gửi. Khoảng thiếu dữ liệu không được nối thành đường. Dùng thanh chọn truy vấn phía dưới để đọc giá trị.</desc>
+        <desc id={`${id}-description`}>Hai nhánh Không cache và Cache vẽ nét liền; đoạn trùng xen kẽ hai màu. Khoảng thiếu dữ liệu không được nối thành đường. Dùng thanh chọn truy vấn phía dưới để đọc giá trị.</desc>
+        <defs>
+          <mask id={`${id}-overlap`} maskUnits="userSpaceOnUse" x="0" y="0" width={width} height="290">
+            <g fill="none" stroke="white" strokeWidth="2">
+              {series[0].segments.filter((segment) => segment.length > 1).map((segment, index) => (
+                <polyline key={index} points={segment.map((point) => `${x(point.query)},${y(point.value)}`).join(" ")} />
+              ))}
+            </g>
+          </mask>
+        </defs>
         {[0, 1, 2, 3, 4].map((tick) => (
           <g key={tick}>
             <line x1={left} x2={right} y1={top + tick * (bottom - top) / 4} y2={top + tick * (bottom - top) / 4} className="metrics-gridline" />
@@ -62,6 +71,10 @@ export function MetricsTrendPlot({ points, unit, selectedQuery }: {
             {segments.map((segment, index) => (
               <g key={index}>
                 {segment.length > 1 && <polyline points={segment.map((point) => `${x(point.query)},${y(point.value)}`).join(" ")} />}
+                {branch === "cache" && segment.length > 1 && (
+                  <polyline className="metrics-trend-overlap" aria-hidden="true" mask={`url(#${id}-overlap)`}
+                    points={segment.map((point) => `${x(point.query)},${y(point.value)}`).join(" ")} />
+                )}
                 {segment.map((point) => <circle key={point.query} cx={x(point.query)} cy={y(point.value)} r={branch === "cache" ? 5 : 3.5} data-query={point.query}>
                   <title>{`${branchLabels[branch]} · truy vấn ${point.query}: ${point.value} ${unit}`}</title>
                 </circle>)}

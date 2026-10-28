@@ -115,6 +115,10 @@ try {
   };
   const waitFor = (expression, label = expression) =>
     until(() => evaluate(expression), label);
+  const setMetricsSource = async (source) => {
+    await evaluate(`window.history.pushState(null, '', ${JSON.stringify(`/metrics?source=${source}`)})`);
+    await waitFor(`document.querySelector('.metrics-workspace')?.dataset.metricsSource === ${JSON.stringify(source)}`);
+  };
   const click = async (selector) => {
     await evaluate(
       `document.querySelector(${JSON.stringify(selector)}).scrollIntoView({ block: 'center', behavior: 'instant' })`,
@@ -647,13 +651,14 @@ try {
   assert.equal(await evaluate("document.querySelector('.metrics-kpis-overview .metrics-kpi:first-child > strong').textContent"), "24");
   assert.equal(await evaluate("document.querySelectorAll('.metrics-trend-series circle').length"), 48);
   assert.equal(await evaluate("document.querySelectorAll('.metrics-comparison-table [data-better]').length"), 3);
-  assert.ok(await evaluate("document.querySelector('.metrics-preview-control').textContent.includes('Không phải kết quả đo')"));
+  assert.equal(await evaluate("document.querySelectorAll('.metrics-preview-control, .metrics-toolbar [role=switch]').length"), 0);
+  assert.ok(await evaluate("!document.querySelector('.metrics-toolbar').textContent.includes('Không phải kết quả đo')"));
   await click('[data-metrics-view=general] .metrics-turn-button');
   assert.ok(await evaluate("document.querySelector('[data-metrics-view=general] .metrics-turn-detail').textContent.includes('1.480 ms')"));
   await fill('#metrics-conversation', 'sample-permissions');
   assert.equal(await evaluate("document.querySelector('.metrics-kpis-overview .metrics-kpi:first-child > strong').textContent"), "8");
   assert.equal(await evaluate("document.querySelector('#metrics-query-index').max"), "8");
-  await click('.metrics-preview-control [role=switch]');
+  await setMetricsSource('session');
   assert.equal(await evaluate("document.querySelector('.metrics-workspace').dataset.metricsSource"), "session");
   assert.equal(await evaluate("document.querySelector('#metrics-conversation').value"), "all");
   assert.ok(await evaluate("[...document.querySelector('#metrics-conversation').options].every(option => !option.value.startsWith('sample-'))"));
@@ -687,7 +692,7 @@ try {
   const comparisonBounds = await evaluate("[...document.querySelectorAll('[data-comparison-branch]')].map(card => {const r = card.getBoundingClientRect(); return {top:r.top,left:r.left,right:r.right};})");
   assert.equal(comparisonBounds[0].top, comparisonBounds[1].top);
   assert.ok(comparisonBounds[0].right <= comparisonBounds[1].left);
-  assert.equal(await evaluate("document.querySelectorAll('.metrics-comparison-table tbody tr').length"), 9);
+  assert.equal(await evaluate("document.querySelectorAll('.metrics-comparison-table tbody tr').length"), 6);
   assert.ok(await evaluate("[...document.querySelectorAll('.metrics-comparison-table tbody tr')].every(row => row.children.length === 3 && row.children[1].tagName === 'TH')"));
   assert.equal(await evaluate("document.querySelectorAll('.metrics-comparison-table [data-better]').length"), 0);
   await evaluate("document.querySelector('.metrics-tabs [role=tab]').focus()");
@@ -762,8 +767,8 @@ try {
   await click('.composer button[type="submit"]');
   await click('.sidebar a[href="/metrics"]');
   await waitFor("location.pathname === '/metrics' && !!document.querySelector('#metrics-conversation')");
-  await click('.metrics-preview-control [role=switch]');
-  await waitFor("[...document.querySelectorAll('[data-metrics-view=general] .metrics-stacked-bar')].every(bar => bar.getAttribute('aria-label').includes('0 đang chờ'))");
+  await setMetricsSource('session');
+  await waitFor("(() => { const bars = [...document.querySelectorAll('[data-metrics-view=no-cache] .metrics-stacked-bar, [data-metrics-view=cache] .metrics-stacked-bar')]; return bars.length === 2 && bars.every(bar => bar.getAttribute('aria-label').includes('0 đang chờ')); })()");
   assert.equal(await evaluate("document.querySelector('.metrics-kpis-overview .metrics-kpi:first-child > strong').textContent"), '11');
   assert.equal(await evaluate("document.querySelectorAll('[data-metrics-view=general] .metrics-turns-table tbody tr').length"), 8);
   await click('[data-metrics-view=general] .metrics-pagination button:last-child');
@@ -833,7 +838,7 @@ try {
           await screenshot(`metrics-sample-${branch}-${width}x${height}.png`);
         }
         await click('.metrics-tabs [role=tab]:first-child');
-        await click('.metrics-preview-control [role=switch]');
+        await setMetricsSource('session');
       }
       if (path === "/") {
         assert.equal(await evaluate("document.querySelector('.chat-mode-options input:checked').value"), 'compare');

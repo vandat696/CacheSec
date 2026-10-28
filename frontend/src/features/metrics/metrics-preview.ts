@@ -75,22 +75,22 @@ export function summarizePreview(rows: readonly SampleQuery[]) {
   const quality = rows.filter((row) => row.qualityPassed).length;
   const qualityText = total ? `${percent(quality / total * 100)} · ${quality}/${total}` : "—";
   const qualityValues = [qualityText, `0/${cacheCounts.hit}`, `0/${cacheCounts.rejected}`, `0/${total}`];
-  const measured = (value: number | null, suffix = "") => ({ text: value === null ? "—" : `${number(Math.round(value))}${suffix}`, value });
-  const neutral = (text: string) => ({ text, value: null });
-  const comparisonRow = (key: string, label: string, left: ComparisonRow["values"]["cache"], right = left, preference: ComparisonRow["preference"] = null): ComparisonRow => ({
-    key, label, values: { "no-cache": left, cache: right }, preference,
+  const measured = (value: number | null) => ({ text: value === null ? "—" : number(Math.round(value)), value });
+  const ratio = (count: number, size: number): ComparisonRow["values"]["cache"] => size ? {
+    text: (count / size * 100).toLocaleString("vi-VN", { maximumFractionDigits: 1 }),
+    value: count / size * 100, samples: { count, total: size },
+  } : { text: "—", value: null };
+  const comparisonRow = (key: string, label: string, unit: ComparisonRow["unit"], left: ComparisonRow["values"]["cache"], right = left, preference: ComparisonRow["preference"] = null): ComparisonRow => ({
+    key, label, unit, values: { "no-cache": left, cache: right }, preference,
     comparable: total > 0 && preference !== null,
   });
   const comparison: ComparisonRow[] = [
-    comparisonRow("latency", "Độ trễ", measured(latencies["no-cache"], " ms"), measured(latencies.cache, " ms"), "lower"),
-    comparisonRow("llmCalls", "Lượt gọi LLM", measured(summaries["no-cache"].llmCalls), measured(summaries.cache.llmCalls), "lower"),
-    comparisonRow("llmTokens", "Token LLM", measured(summaries["no-cache"].llmTokens), measured(summaries.cache.llmTokens), "lower"),
-    comparisonRow("cacheStatus", "Cache Status", neutral("Không áp dụng"), neutral(`${cacheCounts.hit} Hit · ${cacheCounts.miss} Miss · ${cacheCounts.rejected} Rejected`)),
-    comparisonRow("permission", "Kiểm tra quyền", neutral(`${total}/${total} đã kiểm tra`), neutral(`${cacheCounts.rejected} cache bị chặn`)),
-    comparisonRow("quality", "Chất lượng câu trả lời", { text: qualityText, value: total ? quality / total : null }, undefined, "higher"),
-    comparisonRow("falseHit", "Semantic false hit", neutral("Không áp dụng"), neutral(qualityValues[1])),
-    comparisonRow("disclosure", "Rò rỉ thông tin", neutral(qualityValues[2])),
-    comparisonRow("falseDenial", "Từ chối nhầm", neutral(qualityValues[3])),
+    comparisonRow("latency", "Độ trễ", "ms", measured(latencies["no-cache"]), measured(latencies.cache), "lower"),
+    comparisonRow("llmCalls", "Lượt gọi LLM", "lượt", measured(summaries["no-cache"].llmCalls), measured(summaries.cache.llmCalls), "lower"),
+    comparisonRow("llmTokens", "Token LLM", "token", measured(summaries["no-cache"].llmTokens), measured(summaries.cache.llmTokens), "lower"),
+    comparisonRow("quality", "Câu trả lời đạt yêu cầu", "%", ratio(quality, total), undefined, "higher"),
+    comparisonRow("disclosure", "Rò rỉ thông tin", "%", ratio(0, cacheCounts.rejected), undefined, "lower"),
+    comparisonRow("falseDenial", "Từ chối nhầm", "%", ratio(0, total), undefined, "lower"),
   ];
   const trend = (metric: TrendMetric): QueryTrendPoint[] => [...rows].sort((left, right) => left.turn.sequence - right.turn.sequence).map((row, index) => ({
     query: index + 1, turnId: row.turn.id, branches: row.turn.branches,
