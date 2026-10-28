@@ -8,7 +8,7 @@
     "start": "next start --hostname 127.0.0.1",
     "lint": "eslint .",
     "typecheck": "tsc --noEmit",
-    "test": "node --experimental-strip-types --test --test-isolation=none scripts/chat-state.test.mjs scripts/documents.test.mjs scripts/workspace-model.test.mjs",
+    "test": "node --experimental-strip-types --test --test-isolation=none scripts/chat-state.test.mjs scripts/documents.test.mjs scripts/workspace-model.test.mjs scripts/metrics-model.test.mjs",
     "test:browser": "node scripts/browser-smoke.mjs"
   },
   "dependencies": {

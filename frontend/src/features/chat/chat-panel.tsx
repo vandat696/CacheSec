@@ -32,7 +32,7 @@ export function ChatPanel({
   onSuggest: (question: string) => void;
 }) {
   const log = useRef<HTMLDivElement>(null);
-  const label = branch === "cache" ? "Có cache" : "Không cache";
+  const label = branch === "cache" ? "Cache" : "Không cache";
   useEffect(() => {
     log.current?.scrollTo({ top: log.current.scrollHeight });
   }, [messages, pending, error, split]);

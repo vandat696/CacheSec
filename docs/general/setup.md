@@ -35,13 +35,15 @@ npm ci
 npm run dev
 ```
 
-Mở http://127.0.0.1:3000 để dùng Chat, hoặc `/documents` để chọn/thả và phân loại tài liệu. Sidebar chỉ có hai khu này. `/chat`, `/settings` và `/experiments` chuyển về Chat; `/ui` giữ thư viện component cho phát triển, không nằm trong điều hướng chính. Chưa gọi AI/upload backend; không cần API key. Xem [tổ chức frontend](../frontend/design.md#tổ-chức-code).
+Mở http://127.0.0.1:3000 để dùng Chat, `/metrics` để xem Số liệu hoặc `/documents` để chọn/thả và phân loại tài liệu. Sidebar theo thứ tự Chat → Số liệu → Tài liệu. `/chat`, `/settings` và `/experiments` chuyển về Chat; `/ui` giữ thư viện component cho phát triển, không nằm trong điều hướng chính. Chưa gọi AI/upload backend; không cần API key. Xem [tổ chức frontend](../frontend/design.md#tổ-chức-code).
 
 Thử luồng: Chat → gửi câu hỏi hoặc tạo chat mới → sang Tài liệu → chọn danh mục rồi chọn/thả tệp → đổi phân loại từng tệp → tìm/lọc danh sách → quay lại Chat. Hội thoại, bản nháp và tệp giữ qua điều hướng trong phiên, mất khi tải lại. Tệp luôn ghi Chờ tải lên: chưa gửi server, chưa parse/embed hoặc được chatbot đọc. Nhãn Mô phỏng đã được bỏ khỏi giao diện; giới hạn thực tế vẫn thể hiện qua phản hồi mẫu, trạng thái tệp và thông số chưa đo/chưa xác minh.
 
 Trong sidebar, bấm **Chat** hoặc mũi tên cạnh đó để mở/thu gọn lịch sử và nút **Chat mới** ngay bên dưới. Mỗi lần mở hiện 5 hội thoại mới tạo nhất; **Hiển thị thêm** mở tiếp từng nhóm 5 khi còn lịch sử. Chọn hội thoại giữ bản nháp và chế độ, kể cả khi đang ở Tài liệu.
 
-Trong Chat, nhấn icon bánh răng nhỏ **Cài đặt chat** ở góc phải thanh trên cùng để chọn Không cache, Có cache hoặc So sánh chia đôi. Chế độ chia đôi có hai vùng hội thoại không viền và một ô nhập gửi cùng prompt sang cả hai; đổi chế độ giữ lịch sử từng nhánh và bản nháp. Khi đang chờ, nút đổi chế độ và Chat mới tạm khóa. Cả hai nhánh vẫn trả lời mẫu, nhánh Có cache chưa thực hiện lưu/tìm/reuse cache hoặc tạo số đo. Reload mất chế độ và lịch sử trong phiên.
+Trong Chat, nhấn icon bánh răng nhỏ **Cài đặt chat** ở góc phải thanh trên cùng để chọn Không cache, Cache hoặc Cả hai. Mở phiên hoặc tải lại mặc định Cả hai. Chế độ Cả hai có hai vùng hội thoại không viền và một ô nhập gửi cùng prompt sang cả hai; đổi chế độ giữ lịch sử từng nhánh và bản nháp. Khi đang chờ, nút đổi chế độ và Chat mới tạm khóa. Cả hai nhánh vẫn trả lời mẫu, nhánh Cache chưa thực hiện lưu/tìm/reuse cache hoặc tạo số đo. Reload mất chế độ và lịch sử trong phiên.
+
+Trang **Số liệu** có ba tab **Chung / Không cache / Cache**, chỉ giữ bộ lọc hội thoại, tổng hợp mọi lượt gửi trong hội thoại đã chọn. Chung có các biểu đồ tổng quan và bảng đối chiếu bên dưới: Không cache bên trái, tiêu chí ở giữa, Cache bên phải; giá trị tốt hơn được in đậm/tô màu khi có phép đo tương đương; hai tab riêng chỉ có biểu đồ, chất lượng/quyền và các lượt chạy nhánh tương ứng. Biểu đồ đường ở Chung dùng số truy vấn làm trục ngang, chọn Độ trễ/lượt gọi/token và kéo thanh Truy vấn để xem hai nhánh từng lượt. Không có số đo thì không vẽ đường độ trễ; nhánh không chạy tạo khoảng trống. Dùng phím trái/phải hoặc Home/End để chuyển tab. Bấm câu hỏi trong bảng để mở năm thông số; bảng phân trang 8 lượt. Usage demo bằng 0 ở nhánh đã chạy, chưa có lượt là dấu gạch; thời gian, hit rate, chất lượng và quyền chưa có phép đo/nhãn. Trang dùng dữ liệu phiên Chat, cập nhật phản hồi đang chờ và mất khi reload; chưa phải benchmark.
 
 ## Hydration warning do trình duyệt sửa HTML
 
@@ -72,9 +74,9 @@ Script mặc định tìm Edge/Chrome tại đường dẫn Windows thông dụn
 
 Thanh nhập và nút Gửi nằm cùng hàng, có cùng thiết kế ở cả ba chế độ. Enter gửi; Shift+Enter xuống dòng. Ô nhập tự giãn khi viết dài và thu gọn sau gửi.
 
-Nhấn **Thông số** ở góc phải (icon biểu đồ trên mobile) để chọn lượt gửi trong hội thoại hiện tại và xem năm trường ở hai cột Không cache/Có cache. Mặc định là lượt mới nhất; câu gửi lại vẫn có mục riêng. Nhánh không chạy ghi Không chạy; demo chưa có hit/miss, thời gian hoặc quyết định quyền thật, lượt gọi/token LLM bằng 0 vì chưa gọi model. Đóng bằng Escape hoặc nút đóng.
+Nhấn **Thông số** ở góc phải (icon biểu đồ trên mobile) để chọn lượt gửi trong hội thoại hiện tại và xem năm trường ở hai cột Không cache/Cache. Mặc định là lượt mới nhất; câu gửi lại vẫn có mục riêng. Nhánh không chạy ghi Không chạy; demo chưa có hit/miss, thời gian hoặc quyết định quyền thật, lượt gọi/token LLM bằng 0 vì chưa gọi model. Đóng bằng Escape hoặc nút đóng.
 
-Browser smoke kiểm tra cả ba chế độ Chat, Tài liệu và cửa sổ Thông số tại chín kích thước (45 bố cục), cùng chọn lượt mới nhất/cũ/trùng, nhánh không chạy, cập nhật đang chờ, không bịa số đo/quyền, ô nhập/Gửi cùng hàng, giãn nhiều dòng, prompt chung, lịch sử từng nhánh, chọn/thả tệp, từ chối tệp lỗi/trùng, phân loại, tìm/lọc, giữ phiên qua route, redirect và UI kit. Lịch sử sidebar được kiểm tra mở/thu gọn, 5 → 10 → toàn bộ, giữ bản nháp/chọn từ Tài liệu, mobile, bàn phím và giảm chuyển động. Tham số `--reference` chỉ chụp thêm bản xuất gốc để đối chiếu nền thiết kế, không dùng nó làm hợp đồng bố cục hiện tại.
+Browser smoke kiểm tra cả ba chế độ Chat, ba tab Số liệu, Tài liệu và cửa sổ Thông số tại chín kích thước (72 bố cục), cùng chọn lượt mới nhất/cũ/trùng, nhánh không chạy, cập nhật đang chờ, không bịa số đo/quyền, ô nhập/Gửi cùng hàng, giãn nhiều dòng, prompt chung, lịch sử từng nhánh, chọn/thả tệp, từ chối tệp lỗi/trùng, phân loại, tìm/lọc, giữ phiên qua route, redirect và UI kit. Dashboard được kiểm tra chuyển tab bằng phím trái/phải/Home/End, giữ bộ lọc, bảng đối chiếu ba cột với tiêu chí ở giữa, bảng/biểu đồ/chi tiết đúng nhánh, ID không trùng, phân trang, hoàn tất phản hồi khi rời Chat và reset khi reload. Lịch sử sidebar được kiểm tra mở/thu gọn, 5 → 10 → toàn bộ, giữ bản nháp/chọn từ Tài liệu, mobile, bàn phím và giảm chuyển động. Tham số `--reference` chỉ chụp thêm bản xuất gốc để đối chiếu nền thiết kế, không dùng nó làm hợp đồng bố cục hiện tại.
 
 Trong backend:
 

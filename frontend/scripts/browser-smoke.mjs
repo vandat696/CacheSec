@@ -339,6 +339,17 @@ try {
   );
 
   await navigate("/");
+  assert.equal(await evaluate("document.querySelector('.chat-mode-options input:checked').value"), "compare");
+  assert.deepEqual(await evaluate("[...document.querySelectorAll('.chat-mode-options label span')].map(label => label.textContent)"), ["Không cache", "Cache", "Cả hai"]);
+  assert.deepEqual(await evaluate("[...document.querySelectorAll('.chat-panel-heading h2')].map(heading => heading.textContent)"), ["Không cache", "Cache"]);
+  await fill('#prompt', 'Mặc định gửi cho cả hai nhánh');
+  await click('.composer button[type="submit"]');
+  await waitFor("document.querySelectorAll('.message.assistant').length === 2");
+  assert.ok(await evaluate("[...document.querySelectorAll('.chat-panel')].every(panel => panel.querySelector('.message.user p').textContent === 'Mặc định gửi cho cả hai nhánh')"));
+  await screenshot('chat-default-both-1440x900.png');
+  await navigate('/');
+  assert.equal(await evaluate("document.querySelector('.chat-mode-options input:checked').value"), "compare");
+  await setChatMode('no-cache');
   assert.ok(await evaluate("!!document.querySelector('.topbar .chat-settings')"));
   assert.equal(await evaluate("document.querySelector('.chat-settings button').textContent.trim()"), "");
   assert.equal(await evaluate("document.querySelectorAll('.chat-heading, .chat-current-mode').length"), 0);
@@ -348,8 +359,9 @@ try {
   await closeMetrics();
   assert.equal(
     await evaluate("document.querySelectorAll('.sidebar nav a.nav').length"),
-    2,
+    3,
   );
+  assert.deepEqual(await evaluate("[...document.querySelectorAll('.sidebar nav a.nav')].map(link => link.textContent.trim())"), ["Chat", "Số liệu", "Tài liệu"]);
   assert.equal(
     await evaluate(
       "document.querySelector('.sidebar').textContent.includes('Cấu hình')",
@@ -628,6 +640,88 @@ try {
   assert.ok(repeatedOptions[0].text.includes("Câu hỏi mẫu") && repeatedOptions[1].text.includes("Câu hỏi mẫu"));
   await closeMetrics();
 
+  // Dashboard reuses session turns without turning demo completion into measurements.
+  await click('.sidebar a[href="/metrics"]');
+  await waitFor("location.pathname === '/metrics' && !!document.querySelector('#metrics-conversation')");
+  assert.equal(await evaluate("document.querySelector('.metrics-workspace').dataset.metricsSource"), "sample");
+  assert.equal(await evaluate("document.querySelector('.metrics-kpis-overview .metrics-kpi:first-child > strong').textContent"), "24");
+  assert.equal(await evaluate("document.querySelectorAll('.metrics-trend-series circle').length"), 48);
+  assert.equal(await evaluate("document.querySelectorAll('.metrics-comparison-table [data-better]').length"), 3);
+  assert.ok(await evaluate("document.querySelector('.metrics-preview-control').textContent.includes('Không phải kết quả đo')"));
+  await click('[data-metrics-view=general] .metrics-turn-button');
+  assert.ok(await evaluate("document.querySelector('[data-metrics-view=general] .metrics-turn-detail').textContent.includes('1.480 ms')"));
+  await fill('#metrics-conversation', 'sample-permissions');
+  assert.equal(await evaluate("document.querySelector('.metrics-kpis-overview .metrics-kpi:first-child > strong').textContent"), "8");
+  assert.equal(await evaluate("document.querySelector('#metrics-query-index').max"), "8");
+  await click('.metrics-preview-control [role=switch]');
+  assert.equal(await evaluate("document.querySelector('.metrics-workspace').dataset.metricsSource"), "session");
+  assert.equal(await evaluate("document.querySelector('#metrics-conversation').value"), "all");
+  assert.ok(await evaluate("[...document.querySelector('#metrics-conversation').options].every(option => !option.value.startsWith('sample-'))"));
+  assert.equal(await evaluate("document.querySelector('.nav[aria-current=page]').textContent.trim()"), "Số liệu");
+  assert.equal(await evaluate("document.querySelector('.metrics-kpis-overview .metrics-kpi:first-child > strong').textContent"), "5");
+  assert.equal(await evaluate("document.querySelectorAll('[data-metrics-view=general] .metrics-turns-table tbody tr').length"), 5);
+  assert.equal(await evaluate("document.querySelector('[data-metrics-view=general] .metrics-empty-ring strong').textContent"), "—");
+  assert.equal(await evaluate("document.querySelectorAll('.metrics-workspace img').length"), 0);
+  await click('[data-metrics-view=general] .metrics-turn-button');
+  assert.ok(await evaluate("!document.querySelector('[data-metrics-view=general] .metrics-turn-detail-region').hidden"));
+  assert.ok(await evaluate("document.querySelector('[data-metrics-view=general] .metrics-turn-detail').textContent.includes('Chưa xác minh')"));
+  assert.equal(await evaluate("document.querySelectorAll('[data-metrics-view=general] .metrics-turn-detail img').length"), 0);
+  await fill('#metrics-chart-kind', 'calls');
+  assert.equal(await evaluate("document.querySelectorAll('.metrics-trend-series circle').length"), 7);
+  assert.equal(await evaluate("document.querySelector('#metrics-query-index').max"), '5');
+  assert.equal(await evaluate("document.querySelector('#metrics-query-index').value"), '5');
+  await fill('#metrics-query-index', '1');
+  assert.ok(await evaluate("document.querySelector('.metrics-trend-inspector').textContent.includes('Không chạy')"));
+  await fill('#metrics-chart-kind', 'tokens');
+  assert.equal(await evaluate("document.querySelectorAll('.metrics-trend-series circle').length"), 7);
+  await fill('#metrics-chart-kind', 'response');
+  assert.equal(await evaluate("document.querySelectorAll('.metrics-trend-series circle, .metrics-trend-series polyline').length"), 0);
+  const dashboardConversations = await evaluate("[...document.querySelector('#metrics-conversation').options].map(item => item.value)");
+  await fill('#metrics-conversation', dashboardConversations.at(-1));
+  assert.equal(await evaluate("document.querySelector('.metrics-kpis-overview .metrics-kpi:first-child > strong').textContent"), "1");
+  await click('[data-metrics-view=general] .metrics-turn-button');
+  assert.ok(await evaluate("document.querySelector('[data-metrics-view=general] .metrics-turn-detail').textContent.includes('Không chạy')"));
+  await fill('#metrics-conversation', 'all');
+  assert.deepEqual(await evaluate("[...document.querySelectorAll('.metrics-tabs [role=tab]')].map(tab => tab.textContent)"), ['Chung', 'Không cache', 'Cache']);
+  assert.equal(await evaluate("document.querySelector('.metrics-tabs [role=tab][aria-selected=true]').textContent"), 'Chung');
+  const comparisonBounds = await evaluate("[...document.querySelectorAll('[data-comparison-branch]')].map(card => {const r = card.getBoundingClientRect(); return {top:r.top,left:r.left,right:r.right};})");
+  assert.equal(comparisonBounds[0].top, comparisonBounds[1].top);
+  assert.ok(comparisonBounds[0].right <= comparisonBounds[1].left);
+  assert.equal(await evaluate("document.querySelectorAll('.metrics-comparison-table tbody tr').length"), 9);
+  assert.ok(await evaluate("[...document.querySelectorAll('.metrics-comparison-table tbody tr')].every(row => row.children.length === 3 && row.children[1].tagName === 'TH')"));
+  assert.equal(await evaluate("document.querySelectorAll('.metrics-comparison-table [data-better]').length"), 0);
+  await evaluate("document.querySelector('.metrics-tabs [role=tab]').focus()");
+  await key('ArrowRight');
+  assert.equal(await evaluate("document.querySelector('.metrics-tabs [role=tab][aria-selected=true]').textContent"), 'Không cache');
+  assert.equal(await evaluate("document.querySelector('[data-metrics-view=no-cache] [data-summary=turns]').textContent"), '4');
+  assert.equal(await evaluate("document.querySelectorAll('[data-metrics-view=no-cache] .metrics-turns-table tbody tr').length"), 4);
+  assert.equal(await evaluate("document.querySelectorAll('[data-metrics-view=no-cache] .metrics-turns-table thead th').length"), 3);
+  assert.equal(await evaluate("document.querySelectorAll('[data-metrics-view=no-cache] .metrics-empty-ring').length"), 0);
+  assert.equal(await evaluate("document.querySelectorAll('[data-metrics-view=no-cache] .metrics-series').length"), 1);
+  await click('[data-metrics-view=no-cache] .metrics-turn-button');
+  assert.equal(await evaluate("document.querySelectorAll('[data-metrics-view=no-cache] .metrics-detail-columns > section').length"), 1);
+  await evaluate("document.querySelector('.metrics-tabs [role=tab][aria-selected=true]').focus()");
+  await key('End');
+  assert.equal(await evaluate("document.querySelector('.metrics-tabs [role=tab][aria-selected=true]').textContent"), 'Cache');
+  assert.equal(await evaluate("document.querySelector('[data-metrics-view=cache] [data-summary=turns]').textContent"), '3');
+  assert.equal(await evaluate("document.querySelectorAll('[data-metrics-view=cache] .metrics-turns-table tbody tr').length"), 3);
+  assert.equal(await evaluate("document.querySelectorAll('[data-metrics-view=cache] .metrics-series').length"), 1);
+  assert.equal(await evaluate("document.querySelectorAll('[data-metrics-view=cache] .metrics-empty-ring').length"), 1);
+  await click('[data-metrics-view=cache] .metrics-turn-button');
+  assert.equal(await evaluate("document.querySelectorAll('[data-metrics-view=cache] .metrics-detail-columns > section').length"), 1);
+  await fill('#metrics-conversation', dashboardConversations.at(-1));
+  assert.equal(await evaluate("document.querySelector('[data-metrics-view=cache] [data-summary=turns]').textContent"), '0');
+  await evaluate("document.querySelector('.metrics-tabs [role=tab][aria-selected=true]').focus()");
+  await key('Home');
+  assert.equal(await evaluate("document.querySelector('.metrics-tabs [role=tab][aria-selected=true]').textContent"), 'Chung');
+  assert.equal(await evaluate("document.querySelector('#metrics-conversation').value"), dashboardConversations.at(-1));
+  await fill('#metrics-conversation', 'all');
+  assert.equal(await evaluate("document.querySelectorAll('[id]').length === new Set([...document.querySelectorAll('[id]')].map(node => node.id)).size"), true);
+  await evaluate('window.scrollTo(0, 0)');
+  await screenshot('metrics-populated-1440x900.png');
+  await click('.sidebar a[href="/"]');
+  await waitFor("location.pathname === '/' && !!document.querySelector('#prompt')");
+
   // Nested history: five initially, incremental reveal, reset, and cross-route selection.
   for (let index = 0; index < 10; index++) {
     await click(".new-conversation");
@@ -658,6 +752,33 @@ try {
   assert.equal(await evaluate("document.querySelector('#prompt').value"), "History draft 10");
   await screenshot("chat-history-1440x900.png");
 
+  // Pagination and a response completing while viewing the dashboard.
+  for (let index = 0; index < 5; index++) {
+    await fill('#prompt', `Lượt kiểm tra dashboard ${index + 1}`);
+    await click('.composer button[type="submit"]');
+    await waitFor("!document.querySelector('.chat-settings button').disabled");
+  }
+  await fill('#prompt', 'Hoàn tất khi đang xem Số liệu');
+  await click('.composer button[type="submit"]');
+  await click('.sidebar a[href="/metrics"]');
+  await waitFor("location.pathname === '/metrics' && !!document.querySelector('#metrics-conversation')");
+  await click('.metrics-preview-control [role=switch]');
+  await waitFor("[...document.querySelectorAll('[data-metrics-view=general] .metrics-stacked-bar')].every(bar => bar.getAttribute('aria-label').includes('0 đang chờ'))");
+  assert.equal(await evaluate("document.querySelector('.metrics-kpis-overview .metrics-kpi:first-child > strong').textContent"), '11');
+  assert.equal(await evaluate("document.querySelectorAll('[data-metrics-view=general] .metrics-turns-table tbody tr').length"), 8);
+  await click('[data-metrics-view=general] .metrics-pagination button:last-child');
+  assert.equal(await evaluate("document.querySelectorAll('[data-metrics-view=general] .metrics-turns-table tbody tr').length"), 3);
+  await click('[data-metrics-view=general] .metrics-turn-button');
+  assert.ok(await evaluate("!document.querySelector('[data-metrics-view=general] .metrics-turn-detail-region').hidden"));
+  await click('[data-metrics-view=general] .metrics-pagination button:first-of-type');
+  assert.equal(await evaluate("document.querySelector('[data-metrics-view=general] .metrics-turn-detail-region').hidden"), true);
+  await cdp('Emulation.setDeviceMetricsOverride', { width: 390, height: 844, deviceScaleFactor: 1, mobile: false });
+  await evaluate('document.querySelector("[data-metrics-view=general] .metrics-turns").scrollIntoView({block:"start",behavior:"instant"})');
+  await click('[data-metrics-view=general] .metrics-turn-button');
+  assert.ok(await evaluate('document.documentElement.scrollWidth <= innerWidth'));
+  await screenshot('metrics-detail-390x844.png');
+  await cdp('Emulation.setDeviceMetricsOverride', { width: 1440, height: 900, deviceScaleFactor: 1, mobile: false });
+
   await navigate("/");
   await openMetrics();
   assert.equal(await evaluate("document.querySelector('.chat-metrics-dialog select').disabled"), true);
@@ -677,7 +798,7 @@ try {
   for (const oldPath of ["/chat", "/settings", "/experiments"]) {
     await cdp("Page.navigate", { url: new URL(oldPath, baseUrl).href });
     await waitFor(
-      "location.pathname === '/' && !!document.querySelector('.welcome')",
+      "location.pathname === '/' && !!document.querySelector('.chat-layout')",
     );
   }
 
@@ -699,8 +820,26 @@ try {
       deviceScaleFactor: 1,
       mobile: false,
     });
-    for (const path of ["/", "/documents"]) {
+    for (const path of ["/", "/metrics", "/documents"]) {
       await navigate(path);
+      if (path === "/metrics") {
+        assert.equal(await evaluate("document.querySelector('.metrics-kpis-overview .metrics-kpi:first-child > strong').textContent"), '24');
+        assert.ok(await evaluate('document.documentElement.scrollWidth <= innerWidth'), `Tràn ngang dữ liệu mẫu: ${width}`);
+        await screenshot(`metrics-sample-general-${width}x${height}.png`);
+        for (const [index, branch] of [[1, 'no-cache'], [2, 'cache']]) {
+          await click(`.metrics-tabs [role=tab]:nth-child(${index + 1})`);
+          assert.ok(await evaluate('document.documentElement.scrollWidth <= innerWidth'), `Tràn ngang dữ liệu mẫu ${branch}: ${width}`);
+          assert.equal(await evaluate(`document.querySelector('[data-metrics-view=${branch}] [data-summary=turns]').textContent`), '24');
+          await screenshot(`metrics-sample-${branch}-${width}x${height}.png`);
+        }
+        await click('.metrics-tabs [role=tab]:first-child');
+        await click('.metrics-preview-control [role=switch]');
+      }
+      if (path === "/") {
+        assert.equal(await evaluate("document.querySelector('.chat-mode-options input:checked').value"), 'compare');
+        await screenshot(`chat-default-both-${width}x${height}.png`);
+        await setChatMode('no-cache');
+      }
       if (path === "/documents") await upload(["policy.txt", "guide.md"]);
       await pause(350);
       assert.ok(
@@ -708,8 +847,29 @@ try {
         `Tràn ngang: ${path} ${width}x${height}`,
       );
       await screenshot(
-        `${path === "/" ? "chat" : "documents"}-${width}x${height}.png`,
+        `${path === "/" ? "chat" : path === "/metrics" ? "metrics" : "documents"}-${width}x${height}.png`,
       );
+      if (path === '/metrics') {
+        assert.equal(await evaluate("document.querySelector('#metrics-query-index').disabled"), true);
+        assert.equal(await evaluate("document.querySelector('.metrics-kpis-overview .metrics-kpi:first-child > strong').textContent"), '0');
+        assert.equal(await evaluate("document.querySelectorAll('[data-metrics-view=general] .metrics-panel').length"), 4);
+        assert.ok(await evaluate("[...document.querySelectorAll('[data-metrics-view=general] .metrics-table-scroll')].every(table => table.scrollWidth === table.clientWidth || getComputedStyle(table).overflowX === 'auto')"));
+        const columns = await evaluate("[...document.querySelectorAll('[data-comparison-branch]')].map(card => {const r = card.getBoundingClientRect(); return {top:r.top,left:r.left,right:r.right};})");
+        assert.equal(columns[0].top, columns[1].top, `Hai cột so sánh: ${width}`);
+        assert.ok(columns[0].right <= columns[1].left);
+        const cells = await evaluate("[...document.querySelector('.metrics-comparison-table tbody tr').children].map(cell => {const r = cell.getBoundingClientRect(); return {left:r.left,right:r.right,top:r.top};})");
+        assert.equal(cells[0].top, cells[1].top);
+        assert.equal(cells[1].top, cells[2].top);
+        assert.ok(cells[0].right <= cells[1].left && cells[1].right <= cells[2].left, `Tiêu chí ở giữa: ${width}`);
+        for (const [index, branch] of [[1, 'no-cache'], [2, 'cache']]) {
+          await click(`.metrics-tabs [role=tab]:nth-child(${index + 1})`);
+          assert.ok(await evaluate('document.documentElement.scrollWidth <= innerWidth'), `Tràn ngang tab ${branch}: ${width}`);
+          assert.equal(await evaluate(`document.querySelector('[data-metrics-view=${branch}] [data-summary=turns]').textContent`), '0');
+          await evaluate('window.scrollTo(0,0)');
+          await screenshot(`metrics-${branch}-${width}x${height}.png`);
+        }
+        await click('.metrics-tabs [role=tab]:first-child');
+      }
       if (path === "/") {
         const baselineComposer = await checkComposerRow(`không cache ${width}x${height}`);
         await setChatMode("cache");
@@ -779,7 +939,7 @@ try {
   await pause(250);
   await evaluate("document.querySelector('.history-toggle').focus()");
   await key("Tab");
-  assert.equal(await evaluate("document.activeElement.getAttribute('href')"), "/documents");
+  assert.equal(await evaluate("document.activeElement.getAttribute('href')"), "/metrics");
   await evaluate(
     "[...document.querySelectorAll('.sidebar a, .sidebar button:not(:disabled)')].filter(control => !control.closest('[inert]')).at(-1).focus()",
   );
@@ -796,6 +956,12 @@ try {
     await evaluate("document.activeElement.getAttribute('aria-label')"),
     "Mở điều hướng",
   );
+  await click('.mobile-toggle');
+  await click('.sidebar a[href="/metrics"]');
+  await waitFor("location.pathname === '/metrics' && !!document.querySelector('#metrics-conversation')");
+  assert.equal(await evaluate("document.querySelector('.sidebar').classList.contains('open')"), false);
+  await navigate('/');
+  await setChatMode('no-cache');
   await cdp("Emulation.setEmulatedMedia", {
     features: [{ name: "prefers-reduced-motion", value: "reduce" }],
   });
@@ -865,7 +1031,7 @@ try {
   }
   assert.deepEqual(errors, [], "Lỗi runtime/React trên trình duyệt");
   console.log(
-    "Đạt: ba chế độ Chat, thanh nhập chung, Thông số theo lượt gửi, prompt mới nhất/trùng/lịch sử, nhánh không chạy, không bịa số đo/quyền, giữ phiên/reset, Tài liệu, UI kit, keyboard và 45 bố cục.",
+    "Đạt: ba chế độ Chat, Thông số theo lượt gửi, Số liệu ba tab/dữ liệu mẫu tách phiên/lọc/biểu đồ/chi tiết, giữ phiên/reset, Tài liệu, UI kit, keyboard, 72 bố cục và 27 bố cục dữ liệu mẫu.",
   );
   console.log(`Ảnh kiểm chứng: ${output}`);
 } catch (error) {

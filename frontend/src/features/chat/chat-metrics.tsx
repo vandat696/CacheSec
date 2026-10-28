@@ -100,7 +100,7 @@ export function ChatMetrics({ conversation }: { conversation: Conversation }) {
               >
                 <div className="chat-metrics-column-heading">
                   <div>
-                    <h3 id={`${id}-${branch}`}>{branch === "cache" ? "Có cache" : "Không cache"}</h3>
+                    <h3 id={`${id}-${branch}`}>{branch === "cache" ? "Cache" : "Không cache"}</h3>
                     <p className="chat-metrics-state" role="status"><Badge tone="neutral">{status}</Badge></p>
                   </div>
                 </div>

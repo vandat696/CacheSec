@@ -2,10 +2,13 @@ import assert from "node:assert/strict";
 import { test } from "node:test";
 import {
   chatReducer,
+  chatModes,
   initialChatState,
 } from "../src/features/chat/chat-state.ts";
 import { createDemoReply } from "../src/features/chat/demo-reply.ts";
 import { getDemoMetricValues, chatMetricDefinitions } from "../src/features/chat/chat-metrics-model.ts";
+
+const baselineChatState = () => chatReducer(initialChatState(), { type: "mode", mode: "no-cache" });
 
 const user = { id: "question", role: "user", text: "Một câu hỏi mẫu" };
 const reply = { id: "answer", role: "assistant", text: "Phản hồi mô phỏng" };
@@ -20,7 +23,7 @@ const send = (state) =>
   });
 
 test("Không gửi rỗng hoặc gửi trùng trong khi đang chờ", () => {
-  const initial = initialChatState();
+  const initial = baselineChatState();
   assert.equal(
     chatReducer(initial, {
       type: "send",
@@ -36,7 +39,7 @@ test("Không gửi rỗng hoặc gửi trùng trong khi đang chờ", () => {
 });
 
 test("Phản hồi thuộc hội thoại gốc dù đã chuyển sang hội thoại khác", () => {
-  let state = chatReducer(initialChatState(), { type: "create", id: "second" });
+  let state = chatReducer(baselineChatState(), { type: "create", id: "second" });
   state = send(state);
   state = chatReducer(state, { type: "select", id: "initial" });
   state = chatReducer(state, {
@@ -59,7 +62,7 @@ test("Phản hồi thuộc hội thoại gốc dù đã chuyển sang hội tho�
 });
 
 test("Giữ bản nháp riêng cho từng hội thoại và không sửa state cũ", () => {
-  const initial = initialChatState();
+  const initial = baselineChatState();
   let state = chatReducer(initial, {
     type: "draft",
     text: "Bản nháp thứ nhất",
@@ -76,7 +79,7 @@ test("Giữ bản nháp riêng cho từng hội thoại và không sửa state c
 });
 
 test("Bỏ qua phản hồi sai hội thoại hoặc đến trễ", () => {
-  const pending = send(initialChatState());
+  const pending = send(baselineChatState());
   assert.equal(
     chatReducer(pending, {
       type: "reply",
@@ -107,7 +110,7 @@ test("Bỏ qua phản hồi sai hội thoại hoặc đến trễ", () => {
 });
 
 test("Lỗi dừng loading và cho phép gửi tiếp", () => {
-  const state = send(initialChatState());
+  const state = send(baselineChatState());
   const failed = chatReducer(state, {
     type: "error",
     conversationId: state.activeId,
@@ -122,7 +125,7 @@ test("Lỗi dừng loading và cho phép gửi tiếp", () => {
 
 test("Giữ câu hỏi nguyên văn để React hiển thị dạng văn bản an toàn", () => {
   const text = '<img src=x onerror="alert(1)">';
-  const state = chatReducer(initialChatState(), {
+  const state = chatReducer(baselineChatState(), {
     type: "send",
     conversationId: "initial",
     requestId: "request",
@@ -142,7 +145,7 @@ test("Hủy mô phỏng khi component unmount", async () => {
 });
 
 test("Chỉ gửi đến nhánh đã chọn; đổi chế độ giữ lịch sử và bản nháp", () => {
-  const initial = initialChatState();
+  const initial = baselineChatState();
   let state = send(initial);
   state = chatReducer(state, {
     type: "reply", conversationId: "initial", requestId: "request",
@@ -160,7 +163,7 @@ test("Chỉ gửi đến nhánh đã chọn; đổi chế độ giữ lịch s�
 });
 
 test("Chia đôi gửi cùng prompt đến hai nhánh và chờ đủ phản hồi", () => {
-  const initial = chatReducer(initialChatState(), { type: "mode", mode: "compare" });
+  const initial = chatReducer(baselineChatState(), { type: "mode", mode: "compare" });
   let state = send(initial);
   assert.deepEqual(state.pending.branches, ["no-cache", "cache"]);
   assert.deepEqual(state.conversations[0].messages, { "no-cache": [user], cache: [user] });
@@ -181,7 +184,7 @@ test("Chia đôi gửi cùng prompt đến hai nhánh và chờ đủ phản h�
 });
 
 test("Lỗi một nhánh không hủy hoặc ghi đè kết quả nhánh kia", () => {
-  let state = send(chatReducer(initialChatState(), { type: "mode", mode: "compare" }));
+  let state = send(chatReducer(baselineChatState(), { type: "mode", mode: "compare" }));
   state = chatReducer(state, {
     type: "error", conversationId: "initial", requestId: "request",
     branch: "cache", error: "Cache lỗi",
@@ -199,20 +202,20 @@ test("Lỗi một nhánh không hủy hoặc ghi đè kết quả nhánh kia", (
 });
 
 test("Bỏ qua nhánh không được gửi, phản hồi trùng và phản hồi của lượt cũ", () => {
-  let state = send(initialChatState());
+  let state = send(baselineChatState());
   const action = { type: "reply", conversationId: "initial", requestId: "request", branch: "no-cache", message: reply };
   assert.equal(chatReducer(state, { ...action, branch: "cache" }), state);
   assert.equal(chatReducer(state, { ...action, requestId: "old-request" }), state);
   state = chatReducer(state, action);
   const next = chatReducer(state, { type: "send", conversationId: "initial", requestId: "next-request", message: user });
   assert.equal(chatReducer(next, action), next);
-  let comparison = send(chatReducer(initialChatState(), { type: "mode", mode: "compare" }));
+  let comparison = send(chatReducer(baselineChatState(), { type: "mode", mode: "compare" }));
   comparison = chatReducer(comparison, action);
   assert.equal(chatReducer(comparison, action), comparison);
 });
 
 test("Chế độ thuộc từng hội thoại; chat mới kế thừa chế độ nhưng có lịch sử rỗng", () => {
-  let state = chatReducer(initialChatState(), { type: "mode", mode: "compare" });
+  let state = chatReducer(baselineChatState(), { type: "mode", mode: "compare" });
   state = chatReducer(state, { type: "create", id: "second" });
   assert.equal(state.conversations[0].mode, "compare");
   assert.deepEqual(state.conversations[0].messages, { "no-cache": [], cache: [] });
@@ -226,7 +229,7 @@ test("Chế độ thuộc từng hội thoại; chat mới kế thừa chế đ�
 });
 
 test("Phản hồi chia đôi vẫn thuộc đúng hội thoại sau khi chuyển lịch sử", () => {
-  let state = chatReducer(initialChatState(), { type: "create", id: "second" });
+  let state = chatReducer(baselineChatState(), { type: "create", id: "second" });
   state = send(chatReducer(state, { type: "mode", mode: "compare" }));
   state = chatReducer(state, { type: "select", id: "initial" });
   for (const branch of ["cache", "no-cache"]) {
@@ -249,11 +252,11 @@ test("Hai chế độ chỉ trả lời mẫu và nói rõ cache chưa triển k
 });
 
 test("Mỗi lượt chia đôi chỉ ghi một prompt; câu trùng vẫn thành hai lượt riêng", () => {
-  const initial = chatReducer(initialChatState(), { type: "mode", mode: "compare" });
+  const initial = chatReducer(baselineChatState(), { type: "mode", mode: "compare" });
   let state = send(initial);
   assert.equal(state.conversations[0].turns.length, 1);
   assert.deepEqual(state.conversations[0].turns[0], {
-    id: "request", prompt: user.text, mode: "compare",
+    id: "request", sequence: 1, prompt: user.text, mode: "compare",
     branches: { "no-cache": { status: "pending" }, cache: { status: "pending" } },
   });
   for (const branch of ["cache", "no-cache"]) {
@@ -270,7 +273,7 @@ test("Mỗi lượt chia đôi chỉ ghi một prompt; câu trùng vẫn thành 
 });
 
 test("Lưu trạng thái từng nhánh đúng lượt, giữ snapshot chế độ và lỗi", () => {
-  let state = send(chatReducer(initialChatState(), { type: "mode", mode: "compare" }));
+  let state = send(chatReducer(baselineChatState(), { type: "mode", mode: "compare" }));
   const pendingTurn = state.conversations[0].turns[0];
   state = chatReducer(state, { type: "error", conversationId: "initial", requestId: "request", branch: "cache", error: "Lỗi mẫu" });
   assert.deepEqual(state.conversations[0].turns[0].branches.cache, { status: "error", error: "Lỗi mẫu" });
@@ -288,7 +291,7 @@ test("Lưu trạng thái từng nhánh đúng lượt, giữ snapshot chế đ�
 });
 
 test("Lượt gửi tách theo hội thoại và không ghi bản nháp hay câu rỗng", () => {
-  let state = chatReducer(initialChatState(), { type: "draft", text: "Bản nháp" });
+  let state = chatReducer(baselineChatState(), { type: "draft", text: "Bản nháp" });
   assert.equal(state.conversations[0].turns.length, 0);
   const empty = chatReducer(state, { type: "send", conversationId: "initial", requestId: "empty", message: { ...user, text: " " } });
   assert.equal(empty, state);
@@ -301,7 +304,7 @@ test("Lượt gửi tách theo hội thoại và không ghi bản nháp hay câu
 });
 
 test("Thông số demo không bịa hit/miss, quyền hoặc thời gian; nhánh không chạy không có số 0 giả", () => {
-  const state = send(initialChatState());
+  const state = send(baselineChatState());
   const turn = state.conversations[0].turns[0];
   assert.equal(chatMetricDefinitions.length, 5);
   assert.deepEqual(getDemoMetricValues(turn, "no-cache"), {
@@ -309,6 +312,19 @@ test("Thông số demo không bịa hit/miss, quyền hoặc thời gian; nhánh
   });
   assert.ok(Object.values(getDemoMetricValues(turn, "cache")).every((value) => value === "Không chạy"));
   assert.ok(Object.values(getDemoMetricValues(undefined, "cache")).every((value) => value === "—"));
-  const compared = send(chatReducer(initialChatState(), { type: "mode", mode: "compare" }));
+  const compared = send(chatReducer(baselineChatState(), { type: "mode", mode: "compare" }));
   assert.equal(getDemoMetricValues(compared.conversations[0].turns[0], "cache").cacheStatus, "Chưa xác định");
+});
+
+test("Chat mặc định Cả hai, gửi cùng prompt tới hai nhánh và giữ nhãn mới", () => {
+  const initial = initialChatState();
+  assert.equal(initial.conversations[0].mode, "compare");
+  assert.deepEqual(chatModes.map(({ label }) => label), ["Không cache", "Cache", "Cả hai"]);
+  const pending = send(initial);
+  assert.deepEqual(pending.pending.branches, ["no-cache", "cache"]);
+  assert.equal(pending.conversations[0].turns.length, 1);
+  assert.deepEqual(pending.conversations[0].messages, { "no-cache": [user], cache: [user] });
+  const created = chatReducer(initial, { type: "create", id: "new" });
+  assert.equal(created.conversations[0].mode, "compare");
+  assert.equal(initialChatState().conversations[0].mode, "compare");
 });

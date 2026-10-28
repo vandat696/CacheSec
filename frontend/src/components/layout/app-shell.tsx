@@ -13,6 +13,7 @@ import { SidebarChat } from "@/features/chat/sidebar-chat";
 
 const navigation = [
   { href: "/", label: "Chat", icon: "chat" },
+  { href: "/metrics", label: "Số liệu", icon: "chart" },
   { href: "/documents", label: "Tài liệu", icon: "book" },
 ] as const;
 

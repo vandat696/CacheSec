@@ -6,11 +6,12 @@ Mục tiêu: đo cache nhanh hơn, tiết kiệm hơn trong điều kiện nào;
 
 ## Trạng thái
 
-Frontend tập trung vào hai khu: Chat nội bộ và Tài liệu. Đã có chat mô phỏng, chọn/thả tệp, phân loại và tìm/lọc danh sách trong phiên. Chưa upload/ingest thật hoặc nối AI; tệp hiển thị Chờ tải lên. FastAPI hiện có endpoint health; Docker Compose có PostgreSQL/pgvector. Xem [hướng dẫn chạy](docs/general/setup.md) và [trạng thái kiểm chứng](docs/general/project-status.md).
+Frontend có ba khu: Chat, Số liệu và Tài liệu. Đã có chat mô phỏng, dashboard tổng hợp phiên, chọn/thả tệp, phân loại và tìm/lọc danh sách. Chưa upload/ingest thật hoặc nối AI; tệp hiển thị Chờ tải lên. FastAPI hiện có endpoint health; Docker Compose có PostgreSQL/pgvector. Xem [hướng dẫn chạy](docs/general/setup.md) và [trạng thái kiểm chứng](docs/general/project-status.md).
 
-## Hai khu chính
+## Các khu chính
 
-- **Chat** (`/`): hỏi đáp nội bộ, lịch sử hội thoại và chat mới; nút bánh răng chọn không cache, có cache hoặc hai khung so sánh dùng chung một ô nhập. Nút Thông số mở cửa sổ so sánh theo từng lượt gửi, mặc định chọn câu gần nhất.
+- **Chat** (`/`): hỏi đáp nội bộ, lịch sử hội thoại và chat mới; mặc định **Cả hai**, hai khung Không cache/Cache dùng chung một ô nhập. Nút bánh răng chọn Không cache, Cache hoặc Cả hai. Nút Thông số mở cửa sổ so sánh theo từng lượt gửi, mặc định chọn câu gần nhất.
+- **Số liệu** (`/metrics`): ba tab Chung / Không cache / Cache. Chung có biểu đồ đường hiệu suất theo số truy vấn và bảng đối chiếu với tiêu chí ở giữa, số liệu hai bên; mỗi tab nhánh có chỉ số, biểu đồ và lượt gửi tương ứng. Dùng chung bộ lọc hội thoại, chỉ tổng hợp phiên; các phép đo và đánh giá chưa có được ghi rõ, không tạo kết quả benchmark giả.
 - **Tài liệu** (`/documents`): chọn hoặc kéo thả tệp, phân loại, tìm và lọc danh sách.
 
 Giữ giao diện tối giản; chưa đưa model, TTL, similarity hoặc tham số nghiên cứu ra luồng người dùng. Ba chế độ chat hiện chỉ có phản hồi mô phỏng, chưa có cache thật; runner và benchmark được hoãn đến khi nền tảng chat/tài liệu hoạt động.

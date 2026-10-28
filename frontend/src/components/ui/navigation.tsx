@@ -8,9 +8,11 @@ export type TabItem = { id: string; label: string; content: ReactNode };
 export function Tabs({
   label,
   items,
+  toolbar,
 }: {
   label: string;
   items: readonly TabItem[];
+  toolbar?: ReactNode;
 }) {
   const [selected, setSelected] = useState(0);
   const id = useId();
@@ -82,6 +84,7 @@ export function Tabs({
           ref={indicator}
         />
       </div>
+      {toolbar}
       {items.map((item, index) => (
         <div
           key={item.id}

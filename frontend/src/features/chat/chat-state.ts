@@ -1,7 +1,7 @@
 export const chatModes = [
   { value: "no-cache", label: "Không cache" },
-  { value: "cache", label: "Có cache" },
-  { value: "compare", label: "So sánh chia đôi" },
+  { value: "cache", label: "Cache" },
+  { value: "compare", label: "Cả hai" },
 ] as const;
 
 export type ChatMode = (typeof chatModes)[number]["value"];
@@ -9,6 +9,7 @@ export type ChatBranch = Exclude<ChatMode, "compare">;
 export type Message = { id: string; role: "user" | "assistant"; text: string };
 export type ChatTurn = {
   id: string;
+  sequence: number;
   prompt: string;
   mode: ChatMode;
   branches: Partial<Record<
@@ -73,7 +74,7 @@ function emptyConversation(id: string, mode: ChatMode): Conversation {
 
 export function initialChatState(): ChatState {
   return {
-    conversations: [emptyConversation("initial", "no-cache")],
+    conversations: [emptyConversation("initial", "compare")],
     activeId: "initial",
     pending: null,
   };
@@ -130,6 +131,7 @@ export function chatReducer(state: ChatState, action: ChatAction): ChatState {
       const errors = { ...conversation.errors };
       const turn: ChatTurn = {
         id: action.requestId,
+        sequence: state.conversations.reduce((total, item) => total + item.turns.length, 0) + 1,
         prompt: action.message.text,
         mode: conversation.mode,
         branches: {},
