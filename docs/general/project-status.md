@@ -1,5 +1,14 @@
 # Trạng thái dự án
 
+## 2026-10-28 — Cân đối chiều cao hàng so sánh
+
+- Đặt sáu hàng nội dung cao 88 px và giữ căn giữa. Cập nhật thiết kế frontend; lint và Edge dev desktop/mobile đạt, xác nhận sáu hàng bằng chiều cao, giữ màu/đơn vị và không tràn ngang. Chưa chạy lại production build cho thay đổi CSS này.
+
+## 2026-10-28 — Cách vẽ biểu đồ theo mẫu tham khảo
+
+- Tăng chiều cao vùng vẽ, làm nhẹ lưới ngang, dấu điểm màu đặc viền trắng, trục giá trị rút gọn có khoảng trống trên đỉnh. Thêm tooltip hai nhánh theo truy vấn khi rê/chạm, bấm chọn đồng bộ thanh truy vấn; giữ màu hiện hành và dữ liệu gốc, đoạn trùng đan màu.
+- Lint/typecheck đạt. Edge dev kiểm tra ba chỉ số, tooltip/chọn điểm, đoạn trùng, nguồn rỗng và bố cục desktop/mobile; đã xem ảnh và rà diff. Cập nhật thiết kế frontend; chưa chạy lại production build/full smoke.
+
 ## 2026-10-28 — Dữ liệu mẫu đủ hơn, bằng, kém
 
 - Bảng mặc định có Cache tốt hơn về hiệu suất, Không cache tốt hơn về chất lượng (100% so với 95,8%), hai hàng quyền bằng nhau (0%). Lưu nhãn chất lượng riêng từng nhánh trong fixture; các tab và bộ lọc cùng tính từ dữ liệu này. Cập nhật thiết kế frontend.

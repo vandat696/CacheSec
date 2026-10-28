@@ -21,6 +21,7 @@
 .metrics-view-summary { margin-bottom: 16px; padding-bottom: 0; }
 .metrics-comparison { margin-bottom: 22px; }
 .metrics-comparison-table { table-layout: fixed; }
+.metrics-comparison-table tbody tr { height: 88px; }
 .metrics-comparison-table col:first-child, .metrics-comparison-table col:last-child { width: 30%; }
 .metrics-comparison-table col:nth-child(2) { width: 40%; }
 .metrics-workspace .metrics-comparison-table th, .metrics-workspace .metrics-comparison-table td { text-align: center; vertical-align: middle; padding: 16px 12px; overflow-wrap: anywhere; }
@@ -64,14 +65,23 @@
 .metrics-trend .metrics-panel-heading { align-items: center; }
 .metrics-trend .nui-field { width: 172px; flex: none; }
 .metrics-trend .nui-field label { position: absolute; width: 1px; height: 1px; clip-path: inset(50%); overflow: hidden; }
-.metrics-trend-plot { width: 100%; margin-top: 12px; }
+.metrics-trend-plot { position: relative; width: 100%; margin-top: 20px; }
 .metrics-trend-plot svg { display: block; width: 100%; }
 .metrics-trend-series { fill: var(--nui-surface); stroke-width: 2; }
 .metrics-trend-series.no-cache { stroke: var(--metrics-baseline); }
 .metrics-trend-series.cache { stroke: var(--metrics-cache); }
 .metrics-trend-series polyline { fill: none; }
+.metrics-trend-series circle { stroke: var(--nui-surface); stroke-width: 2; }
+.metrics-trend-series.no-cache circle { fill: var(--metrics-baseline); }
+.metrics-trend-series.cache circle { fill: var(--metrics-cache); }
+.metrics-trend-plot .metrics-gridline { stroke: #edf0f4; stroke-dasharray: 3 5; }
+.metrics-trend-tooltip { position: absolute; top: 52px; width: 220px; padding: 12px; border: 1px solid var(--nui-border); border-radius: 12px; background: var(--nui-surface); box-shadow: 0 4px 16px #172b4d12; pointer-events: none; font-size: 12px; }
+.metrics-trend-tooltip > span { display: block; margin-bottom: 10px; color: var(--nui-muted); }
+.metrics-trend-tooltip > div { display: flex; align-items: center; gap: 7px; margin-top: 8px; }
+.metrics-trend-tooltip strong { margin-left: auto; font-variant-numeric: tabular-nums; }
+.metrics-trend-tooltip .metrics-key { border-radius: 50%; flex-shrink: 0; }
 .metrics-trend-series .metrics-trend-overlap { stroke: var(--metrics-baseline); stroke-dasharray: 6 6; }
-.metrics-trend-cursor { stroke: var(--nui-control-border); stroke-dasharray: 3 4; }
+.metrics-trend-cursor { stroke: var(--nui-border); }
 .metrics-trend-empty { fill: var(--nui-muted); font-size: 13px; }
 .metrics-trend-inspector { border-top: 1px solid var(--nui-border); padding-top: 14px; }
 .metrics-trend-inspector label { display: block; font-size: 12px; color: var(--nui-muted); }

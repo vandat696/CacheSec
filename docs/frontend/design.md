@@ -68,9 +68,11 @@ Nhánh không được chạy ở lượt đó ghi **Không chạy** cho cả n�
 
 ## Dashboard Số liệu
 
+Sáu hàng nội dung bảng so sánh dùng chiều cao 88 px, căn giữa theo chiều dọc để các tiêu chí một/hai dòng cân đối với hàng có số ca. Nội dung dài vẫn được phép làm hàng cao hơn để tránh cắt chữ.
+
 Fixture mặc định minh họa đủ hơn/bằng/kém trong bảng: Cache tốt hơn ở độ trễ, calls và token; Không cache tốt hơn ở chất lượng (24/24 so với 23/24); hai bên bằng nhau ở rò rỉ và từ chối nhầm (0%). Chất lượng lưu theo từng nhánh/từng truy vấn để bảng, tab nhánh và bộ lọc tính nhất quán; đây chỉ là kịch bản xem UI.
 
-Hai đường hiệu suất dùng cùng độ dày nét 2 px, dấu điểm bán kính 4 px và nền giống nhau. Điểm trùng vị trí chia viền xanh dương/nâu cam; đoạn đường trùng vẫn đan hai màu. Cả hai nhánh dùng chung trục truy vấn và thang giá trị.
+Hai đường hiệu suất dùng cùng độ dày nét 2 px, dấu điểm màu đặc bán kính 4 px có viền nền trắng. Điểm trùng vị trí chia hai màu xanh dương/nâu cam; đoạn đường trùng vẫn đan hai màu. Cả hai nhánh dùng chung trục truy vấn và thang giá trị, có khoảng trống phía trên đỉnh và nhãn trục rút gọn. Vùng vẽ cao hơn, lưới ngang nhẹ theo mẫu tham khảo. Rê chuột hoặc chạm hiển thị hộp giá trị hai nhánh cùng truy vấn; bấm/chạm đồng bộ thanh chọn bên dưới. Giữ thanh chọn để thao tác bàn phím, không làm mượt hoặc thay đổi số liệu để tạo xu hướng giả.
 
 Giá trị so sánh phải hữu hạn và không âm; tỷ lệ phải nằm trong 0–100%, khớp số ca/mẫu số hợp lệ. Giá trị lỗi hiển thị —, không tô bên tốt hơn hoặc hiện số ca gây hiểu nhầm. Hai giá trị hiển thị bằng nhau sau làm tròn giữ trung tính. Tập mẫu rỗng không suy ra độ trễ, usage, mức tiết kiệm hoặc vi phạm bằng 0; không có ca đánh giá thì dùng — thay cho 0/0. Vòng cache không có lượt tra giữ màu trung tính.
 
