@@ -235,6 +235,42 @@ try {
     mobile: false,
   });
   await navigate("/ui");
+  await navigate("/setup");
+  assert.equal(await evaluate("document.querySelector('.sidebar nav a').getAttribute('href')"), '/setup');
+  await fill('#setup-name', 'Thử cấu hình');
+  await fill('#setup-ttl', '7200');
+  await fill('#setup-repeats', '2');
+  await click('.setup-footer button');
+  await waitFor("document.querySelector('.setup-saved')?.textContent.includes('12 lượt')");
+  await fill('#setup-matching', 'exact');
+  assert.equal(await evaluate("document.querySelector('#setup-similarity')"), null);
+  await fill('#setup-location', 'server');
+  await fill('#setup-workload', 'repeat');
+  await fill('#setup-phase', 'warm');
+  await fill('#setup-ttl', '0');
+  await click('.setup-footer button');
+  assert.equal(await evaluate("document.querySelector('.setup-saved')"), null);
+  assert.equal(await evaluate("document.querySelector('#setup-ttl').validity.valid"), false);
+  await fill('#setup-ttl', '120');
+  await click('.setup-footer button');
+  await waitFor("document.querySelector('.setup-saved')?.textContent.includes('v2 · 8 lượt')");
+  await click('.sidebar a[href="/metrics"]');
+  await waitFor("location.pathname === '/metrics'");
+  await click('.sidebar a[href="/setup"]');
+  await waitFor("!!document.querySelector('#setup-location')");
+  assert.equal(await evaluate("document.querySelector('#setup-location').value"), 'server');
+  assert.equal(await evaluate("document.querySelector('#setup-ttl').value"), '120');
+  assert.equal(await evaluate("document.querySelector('#setup-phase').value"), 'warm');
+  for (const width of [360, 390, 820, 1440]) {
+    await cdp('Emulation.setDeviceMetricsOverride', {width,height:1000,deviceScaleFactor:1,mobile:false});
+    assert.ok(await evaluate('document.documentElement.scrollWidth <= innerWidth'));
+    await screenshot(`setup-${width}.png`);
+  }
+  await navigate('/setup');
+  assert.equal(await evaluate("document.querySelector('#setup-location').value"), 'local');
+  assert.equal(await evaluate("document.querySelector('.setup-saved')"), null);
+  await cdp('Emulation.setDeviceMetricsOverride', {width:1440,height:900,deviceScaleFactor:1,mobile:false});
+  await navigate('/ui');
   assert.equal(
     await evaluate("document.querySelectorAll('.catalog-item').length"),
     21,
@@ -363,9 +399,9 @@ try {
   await closeMetrics();
   assert.equal(
     await evaluate("document.querySelectorAll('.sidebar nav a.nav').length"),
-    3,
+    4,
   );
-  assert.deepEqual(await evaluate("[...document.querySelectorAll('.sidebar nav a.nav')].map(link => link.textContent.trim())"), ["Chat", "Số liệu", "Tài liệu"]);
+  assert.deepEqual(await evaluate("[...document.querySelectorAll('.sidebar nav a.nav')].map(link => link.textContent.trim())"), ["Thiết lập", "Chat", "Số liệu", "Tài liệu"]);
   assert.equal(
     await evaluate(
       "document.querySelector('.sidebar').textContent.includes('Cấu hình')",

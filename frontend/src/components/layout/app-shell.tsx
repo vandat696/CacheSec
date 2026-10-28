@@ -12,6 +12,7 @@ import { ChatMetrics } from "@/features/chat/chat-metrics";
 import { SidebarChat } from "@/features/chat/sidebar-chat";
 
 const navigation = [
+  { href: "/setup", label: "Thiết lập", icon: "settings" },
   { href: "/", label: "Chat", icon: "chat" },
   { href: "/metrics", label: "Số liệu", icon: "chart" },
   { href: "/documents", label: "Tài liệu", icon: "book" },

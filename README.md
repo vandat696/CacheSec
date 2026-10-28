@@ -6,15 +6,16 @@ Mục tiêu: đo cache nhanh hơn, tiết kiệm hơn trong điều kiện nào;
 
 ## Trạng thái
 
-Frontend có ba khu: Chat, Số liệu và Tài liệu. Đã có chat mô phỏng, dashboard tổng hợp phiên, chọn/thả tệp, phân loại và tìm/lọc danh sách. Chưa upload/ingest thật hoặc nối AI; tệp hiển thị Chờ tải lên. FastAPI hiện có endpoint health; Docker Compose có PostgreSQL/pgvector. Xem [hướng dẫn chạy](docs/general/setup.md) và [trạng thái kiểm chứng](docs/general/project-status.md).
+Frontend có bốn khu: Thiết lập, Chat, Số liệu và Tài liệu. Đã có chat mô phỏng, dashboard tổng hợp phiên, chọn/thả tệp, phân loại và tìm/lọc danh sách. Chưa upload/ingest thật hoặc nối AI; tệp hiển thị Chờ tải lên. FastAPI hiện có endpoint health; Docker Compose có PostgreSQL/pgvector. Xem [hướng dẫn chạy](docs/general/setup.md) và [trạng thái kiểm chứng](docs/general/project-status.md).
 
 ## Các khu chính
 
+- **Thiết lập** (`/setup`): cấu hình cache và điều kiện thí nghiệm, lưu kế hoạch nháp trong phiên; chưa có bộ chạy benchmark.
 - **Chat** (`/`): hỏi đáp nội bộ, lịch sử hội thoại và chat mới; mặc định **Cả hai**, hai khung Không cache/Cache dùng chung một ô nhập. Nút bánh răng chọn Không cache, Cache hoặc Cả hai. Nút Thông số mở cửa sổ so sánh theo từng lượt gửi, mặc định chọn câu gần nhất.
 - **Số liệu** (`/metrics`): ba tab Chung / Không cache / Cache. Chung có biểu đồ đường hiệu suất theo số truy vấn và bảng đối chiếu với tiêu chí ở giữa, số liệu hai bên; mỗi tab nhánh có chỉ số, biểu đồ và lượt gửi tương ứng. Mặc định hiển thị 24 truy vấn giả để xem giao diện; nguồn phiên Chat được tách riêng, không có công tắc dữ liệu mẫu trên trang. Fixture chỉ phục vụ xem giao diện, chưa phải kết quả benchmark.
 - **Tài liệu** (`/documents`): chọn hoặc kéo thả tệp, phân loại, tìm và lọc danh sách.
 
-Giữ giao diện tối giản; chưa đưa model, TTL, similarity hoặc tham số nghiên cứu ra luồng người dùng. Ba chế độ chat hiện chỉ có phản hồi mô phỏng, chưa có cache thật; runner và benchmark được hoãn đến khi nền tảng chat/tài liệu hoạt động.
+Thiết lập (`/setup`) đứng đầu sidebar, lưu kế hoạch thí nghiệm nháp trong phiên; chưa áp dụng vào Chat hoặc chạy benchmark. Giữ giao diện hỏi đáp tối giản. Ba chế độ chat hiện chỉ có phản hồi mô phỏng, chưa có cache thật; runner và benchmark được hoãn đến khi nền tảng chat/tài liệu hoạt động.
 
 Chat và tệp chỉ được giữ trong phiên, mất khi tải lại. Phân loại không thay thế quyền truy cập; upload, xử lý tài liệu, phân quyền và RAG cần triển khai backend.
 

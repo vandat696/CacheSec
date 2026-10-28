@@ -235,7 +235,7 @@ Các mốc ngày tháng bên dưới là lịch sử tại thời điểm thực
 ### Định hướng đã thống nhất
 
 - Secure local semantic cache là trọng tâm, none/server là đối chiếu.
-- Giao diện hiện tại gồm Chat → Số liệu → Tài liệu theo [thiết kế frontend](../frontend/design.md). Chat có ba chế độ Không cache/Cache/Cả hai, mặc định Cả hai với prompt chung; Số liệu mặc định xem fixture, không có công tắc/mô tả nguồn trên toolbar. Nguồn phiên Chat chưa có số đo/đánh giá thật vẫn tách riêng qua URL cho phát triển/kiểm thử. Runner, benchmark, editor profile và thiết lập kỹ thuật được hoãn đến sau nền tảng chat/tài liệu.
+- Giao diện hiện tại gồm Thiết lập → Chat → Số liệu → Tài liệu theo [thiết kế frontend](../frontend/design.md). Chat có ba chế độ Không cache/Cache/Cả hai, mặc định Cả hai với prompt chung; Số liệu mặc định xem fixture, không có công tắc/mô tả nguồn trên toolbar. Nguồn phiên Chat chưa có số đo/đánh giá thật vẫn tách riêng qua URL cho phát triển/kiểm thử. Thiết lập thí nghiệm nháp đã có tại `/setup`; runner và benchmark vẫn hoãn đến sau nền tảng chat/tài liệu.
 - Next.js, FastAPI/Python, PostgreSQL/pgvector, browser IndexedDB/Dexie.
 - API model trước, local/fine-tune sau; tách LLM/embedding.
 - Tách storage/matching/validation, tránh abstraction quá mức.

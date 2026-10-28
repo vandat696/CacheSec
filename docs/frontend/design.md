@@ -2,27 +2,36 @@
 
 ## Ưu tiên hiện tại
 
-App có ba khu chính, theo yêu cầu ngày 2026-10-27 và bổ sung ngày 2026-10-28:
+App có bốn khu chính, cập nhật ngày 2026-10-29:
+
+- **Thiết lập:** chuẩn bị cấu hình và điều kiện thí nghiệm, lưu bản kế hoạch trong phiên.
 
 - **Chat:** trao đổi với trợ lý nội bộ, lịch sử, chat mới và chọn không cache/có cache/so sánh chia đôi qua nút bánh răng.
 - **Số liệu:** dashboard trực quan bám các tiêu chí đánh giá đồ án, ngay sau Chat và trước Tài liệu.
 - **Tài liệu:** chọn/thả tệp, phân loại và tìm/lọc danh sách.
 
-Theo yêu cầu bổ sung ngày 2026-10-27, so sánh hai nhánh được đặt ngay trong Chat với một ô nhập chung. Các màn thí nghiệm, editor profile/cache và thiết lập kỹ thuật vẫn để sau. Mã nghiên cứu trước đó được giữ riêng, không lắp vào luồng hiện tại. Không đưa model, matching, TTL, similarity hoặc seed ra cho người dùng ở bước này.
+So sánh hai nhánh nằm trong Chat với một ô nhập chung. Yêu cầu ngày 2026-10-29 bổ sung trang Thiết lập tối giản; runner và benchmark vẫn chưa triển khai. Các tham số thí nghiệm chỉ nằm ở Thiết lập, không đưa vào luồng hỏi đáp.
 
 ## Route và trạng thái thực tế
 
 | Route | Giao diện | Giới hạn |
 | --- | --- | --- |
+| `/setup` | Thiết lập cache và kế hoạch thí nghiệm | Chỉ lưu nháp trong phiên; chưa áp dụng vào Chat, cache hay benchmark |
 | `/` | Chat nội bộ, lịch sử trong sidebar, gợi ý hỏi, gửi/sao chép, chat mới và ba chế độ qua nút bánh răng | Phản hồi mẫu; chưa gọi AI/RAG hoặc cache thật |
 | `/metrics` | Dashboard, lọc hội thoại, biểu đồ, đánh giá chất lượng/quyền và chi tiết lượt gửi | Tổng hợp phiên mô phỏng; chưa có telemetry hoặc nhãn đánh giá thật |
 | `/documents` | Chọn nhiều tệp, kéo thả, danh mục khi thêm, đổi danh mục từng tệp, tìm tên/lọc/bỏ khỏi danh sách | Tệp chỉ trong bộ nhớ trình duyệt, chưa tải lên server hay được chatbot đọc |
 | `/chat`, `/settings`, `/experiments` | Chuyển về Chat để giữ liên kết cũ | Không mở lại màn tham số/thí nghiệm |
 | `/ui` | Thư viện 21 component, truy cập trực tiếp cho phát triển | Không có mục điều hướng trong app chính |
 
-Sidebar theo thứ tự Chat → Số liệu → Tài liệu. Lịch sử chat dùng cùng sidebar, không tạo thêm cột điều hướng. Thanh đầu trang Chat giữ Thông số và cài đặt ở góc phải; đã bỏ nhãn Mô phỏng và phần giới hạn mở từ nhãn đó. Nội dung và hành động giữ ngắn, dùng hệ màu/font/border của Nói.
+Sidebar theo thứ tự Thiết lập → Chat → Số liệu → Tài liệu. Lịch sử chat dùng cùng sidebar, không tạo thêm cột điều hướng. Thanh đầu trang Chat giữ Thông số và cài đặt ở góc phải; đã bỏ nhãn Mô phỏng và phần giới hạn mở từ nhãn đó. Nội dung và hành động giữ ngắn, dùng hệ màu/font/border của Nói.
 
 Lịch sử và nút Chat mới nằm lồng ngay dưới mục Chat, trước Số liệu. Mặc định thu gọn; bấm Chat hoặc mũi tên để mở/đóng với hiệu ứng chiều cao và độ mờ (tắt khi giảm chuyển động). Mỗi lần mở hiện 5 hội thoại đầu danh sách, theo thứ tự mới tạo trước; **Hiển thị thêm** mở tiếp từng nhóm 5 và ẩn khi hết. Hội thoại đang chọn được tô nền, tên dài rút gọn bằng dấu ba chấm. Có thể chọn lịch sử từ Số liệu/Tài liệu để trở về đúng hội thoại; giữ bản nháp và chế độ. Trên điện thoại, mở lịch sử giữ drawer để chọn; chọn hội thoại/Chat mới đóng drawer. Nội dung thu gọn không nhận focus hoặc xuất hiện với trình đọc màn hình; nút mũi tên hỗ trợ bàn phím và báo trạng thái mở/đóng.
+
+## Thiết lập thí nghiệm
+
+Trang `/setup` gồm tên thí nghiệm và hai nhóm: cấu hình cache (local/server, exact/semantic, ngưỡng khi semantic, TTL giây) và điều kiện (bộ câu hỏi giả lập, số lần lặp, cold/warm, seed). Baseline Không cache cố định; vị trí cache tách khỏi phạm vi dự kiến riêng người dùng. Ngưỡng 0,9 và TTL 3.600 giây là giá trị nháp, chưa hiệu chỉnh. Không có công tắc bỏ quyền, lựa chọn IAM/mã hóa/model/FL hoặc nút chạy giả. Cold/warm và seed chỉ ghi ý định; chưa reset/preload hoặc xáo trộn câu hỏi.
+
+Lưu thiết lập kiểm tra giới hạn, tạo snapshot cấu hình có revision tăng, ID kế hoạch/thời điểm, danh sách ca, số lượt dự kiến = số ca × số lặp × hai nhánh; results luôn null. Tái sử dụng model và provider workspace; điều hướng client giữ bản đã lưu, rời trang bỏ sửa đổi chưa lưu, tải lại xóa phiên. Quay lại trang điền bản đã lưu mới nhất. Không ghi vào Chat, dashboard fixture, storage hoặc backend. Trước khi chạy thật cần chốt dataset/nhãn quyền, model/embedding, metric/ngưỡng, phiên bản corpus/policy và quy trình warm theo thiết kế đánh giá.
 
 ## Luồng chat
 
