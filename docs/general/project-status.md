@@ -2,6 +2,23 @@
 
 Các mốc ngày tháng bên dưới là lịch sử tại thời điểm thực hiện; mục mới hơn thay thế định hướng cũ khi có thay đổi. Phạm vi và bước tiếp theo hiện hành được tổng hợp ở cuối file.
 
+## 2026-10-28 — Đồng bộ hai đường biểu đồ
+
+- Đồng nhất kích thước/nền dấu điểm của Không cache và Cache, giữ nét liền cùng độ dày và chung thang đo. Điểm trùng chia viền hai màu, đoạn trùng giữ đan màu; không đổi số liệu.
+- Lint/typecheck đạt. Edge dev kiểm tra ba chỉ số ở desktop/mobile, kích thước điểm, nét, lớp đan màu và nguồn rỗng; đã xem ảnh và rà diff. Cập nhật thiết kế frontend; chưa chạy lại production build cho thay đổi trình bày này.
+
+## 2026-10-28 — Sửa lỗi dữ liệu biên trên dashboard
+
+- Không tô bên tốt hơn khi hai số hiển thị bằng nhau sau làm tròn; chặn số âm, NaN/Infinity và tỷ lệ ngoài giới hạn hoặc không khớp số ca. Ẩn số ca đi kèm tỷ lệ không hợp lệ.
+- Tập mẫu rỗng dùng — cho số đo/đánh giá chưa có, bỏ 0/0; thẻ rò rỉ không suy ra 0 khi thiếu ca quyền. Vòng cache không có lượt tra giữ trung tính thay vì thành vòng Rejected đỏ.
+- Thêm bốn ca hồi quy, tái hiện lỗi trước khi sửa. Lint, typecheck, 49 test và production build đạt; render component xác nhận số làm tròn/tỷ lệ sai/vòng rỗng. Edge production smoke đạt 72 bố cục hiện có và 27 bố cục mẫu cùng các luồng Chat/Số liệu/Tài liệu, không lỗi runtime. Đã rà diff và ảnh mobile, cập nhật thiết kế frontend; chưa kiểm chứng browser khác hoặc dữ liệu đo thật.
+
+## 2026-10-28 — Bỏ công tắc dữ liệu mẫu trên dashboard
+
+- Bỏ Xem dữ liệu mẫu và dòng mô tả nguồn trên toolbar; mặc định vẫn giữ 24 truy vấn giả, bộ lọc và cả ba tab. Không thêm banner thay thế; các nhãn mẫu tại biểu đồ/chi tiết vẫn giữ.
+- Giữ nguồn phiên Chat tách biệt tại `/metrics?source=session` cho phát triển/kiểm thử, dùng query client với Suspense; chuyển nguồn/Back không trộn fixture vào Chat, reset bộ lọc/tab/biểu đồ/bảng. Không đổi API hoặc cách lưu phiên.
+- Lint, typecheck, 45 test và production build đạt. Edge dev kiểm tra ba tab ở desktop/mobile, bỏ đúng điều khiển/mô tả, giữ số liệu mẫu/lọc, nguồn phiên và Back. Edge production smoke đạt 72 bố cục hiện có và 27 bố cục mẫu, các luồng Chat/ba tab/lọc/chi tiết/keyboard; không lỗi runtime. Đã rà ảnh, link/diff và cập nhật README, thiết kế frontend, setup; chưa kiểm chứng browser khác hoặc hiệu quả cache thật.
+
 ## 2026-10-28 — Bảng so sánh cùng đơn vị và màu từng nhánh
 
 - Chỉ giữ sáu hàng đối chiếu trực tiếp: độ trễ ms, calls lượt, token và ba tỷ lệ % (câu trả lời đạt yêu cầu, disclosure, false denial). Bỏ Cache Status, Kiểm tra quyền và Semantic false hit khỏi bảng; các thông tin riêng cache/quyền vẫn nằm ở chart, tab nhánh và chi tiết.
@@ -194,7 +211,7 @@ Các mốc ngày tháng bên dưới là lịch sử tại thời điểm thực
 ### Định hướng đã thống nhất
 
 - Secure local semantic cache là trọng tâm, none/server là đối chiếu.
-- Giao diện hiện tại gồm Chat → Số liệu → Tài liệu theo [thiết kế frontend](../frontend/design.md). Chat có ba chế độ Không cache/Cache/Cả hai, mặc định Cả hai với prompt chung; Số liệu mặc định xem fixture có nhãn dữ liệu giả, có công tắc về phiên Chat với số đo/đánh giá chưa có. Runner, benchmark, editor profile và thiết lập kỹ thuật được hoãn đến sau nền tảng chat/tài liệu.
+- Giao diện hiện tại gồm Chat → Số liệu → Tài liệu theo [thiết kế frontend](../frontend/design.md). Chat có ba chế độ Không cache/Cache/Cả hai, mặc định Cả hai với prompt chung; Số liệu mặc định xem fixture, không có công tắc/mô tả nguồn trên toolbar. Nguồn phiên Chat chưa có số đo/đánh giá thật vẫn tách riêng qua URL cho phát triển/kiểm thử. Runner, benchmark, editor profile và thiết lập kỹ thuật được hoãn đến sau nền tảng chat/tài liệu.
 - Next.js, FastAPI/Python, PostgreSQL/pgvector, browser IndexedDB/Dexie.
 - API model trước, local/fine-tune sau; tách LLM/embedding.
 - Tách storage/matching/validation, tránh abstraction quá mức.

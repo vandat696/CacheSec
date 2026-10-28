@@ -119,10 +119,10 @@ function MetricsView({ rows, branch, filterKey, preview }: {
       </div>}
       <section className={`metrics-kpis${branch ? "" : " metrics-kpis-overview"}`} aria-label={`Chỉ số ${branch ? branchLabels[branch] : "chung"}`}>
         {branch ? <>
-          <MetricCard label="Độ trễ" value={preview ? `${Math.round(preview.latencies[branch] ?? 0).toLocaleString("vi-VN")} ms` : "—"} detail={preview ? "Trung bình mỗi truy vấn" : "Chưa đo"} icon="clock" />
+          <MetricCard label="Độ trễ" value={preview?.latencies[branch] != null ? `${Math.round(preview.latencies[branch]).toLocaleString("vi-VN")} ms` : "—"} detail={preview ? "Trung bình mỗi truy vấn" : "Chưa đo"} icon="clock" />
           <MetricCard label="Lượt gọi LLM" value={count(summaries[branch].llmCalls)} detail={branchLabels[branch]} icon="spark" />
           <MetricCard label="Token LLM" value={count(summaries[branch].llmTokens)} detail={branchLabels[branch]} icon="chart" />
-          <MetricCard label="Rò rỉ thông tin" value={preview ? "0" : "—"} detail={preview ? "Kịch bản mẫu" : "Chưa kiểm thử quyền"} icon="shield" />
+          <MetricCard label="Rò rỉ thông tin" value={preview && preview.cacheCounts.rejected > 0 ? "0" : "—"} detail={preview ? "Kịch bản mẫu" : "Chưa kiểm thử quyền"} icon="shield" />
         </> : <>
           <MetricCard label="Total Queries" value={String(summary.turns)} detail="Tổng số câu hỏi" icon="chat" />
           <MetricCard label="Safe Cache Hit Rate" value={preview?.overview.hitRate ?? "—"} detail="Tỷ lệ sử dụng cache hợp lệ" icon="compare" />

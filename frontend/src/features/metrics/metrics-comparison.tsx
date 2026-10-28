@@ -1,5 +1,5 @@
 import { branches } from "./metrics-charts";
-import { formatComparisonValue, getBetterBranch, getDemoComparisonRows, type ComparisonRow } from "./metrics-comparison-model";
+import { formatComparisonValue, getBetterBranch, getDemoComparisonRows, isValidComparisonValue, type ComparisonRow } from "./metrics-comparison-model";
 import type { BranchSummary } from "./metrics-model";
 
 export function MetricsComparisonTable({ rows }: {
@@ -24,7 +24,7 @@ export function MetricsComparisonTable({ rows }: {
               {better === branch ? (
                 <strong>{formatComparisonValue(row, row.values[branch])}<span className="sr-only"> · Tốt hơn</span></strong>
               ) : <span>{formatComparisonValue(row, row.values[branch])}</span>}
-              {row.values[branch].samples && <small className="metrics-comparison-samples">{row.values[branch].samples.count}/{row.values[branch].samples.total} ca</small>}
+              {row.values[branch].samples && isValidComparisonValue(row.unit, row.values[branch]) && <small className="metrics-comparison-samples">{row.values[branch].samples.count}/{row.values[branch].samples.total} ca</small>}
             </td>
           );
           return (

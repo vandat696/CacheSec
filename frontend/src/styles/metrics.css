@@ -71,7 +71,6 @@
 .metrics-trend-series.cache { stroke: var(--metrics-cache); }
 .metrics-trend-series polyline { fill: none; }
 .metrics-trend-series .metrics-trend-overlap { stroke: var(--metrics-baseline); stroke-dasharray: 6 6; }
-.metrics-trend-series.cache circle { fill: transparent; }
 .metrics-trend-cursor { stroke: var(--nui-control-border); stroke-dasharray: 3 4; }
 .metrics-trend-empty { fill: var(--nui-muted); font-size: 13px; }
 .metrics-trend-inspector { border-top: 1px solid var(--nui-border); padding-top: 14px; }

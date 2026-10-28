@@ -184,6 +184,44 @@ test("Dashboard rỗng không biến nhánh không chạy thành usage 0", () =>
   assert.equal(summary.branches["no-cache"].llmTokens, null);
 });
 
+test("Hai giá trị hiển thị bằng nhau sau làm tròn không tô bên tốt hơn", () => {
+  const row = comparisonRow(1000.1, 1000.4);
+  row.values["no-cache"].text = "1.000";
+  row.values.cache.text = "1.000";
+  assert.equal(getBetterBranch(row), null);
+});
+
+test("Tỷ lệ ngoài giới hạn hoặc không khớp số ca không được hiển thị như số đo hợp lệ", () => {
+  for (const invalid of [120, 80]) {
+    const row = { ...comparisonRow(70, invalid, "higher"), unit: "%", values: {
+      "no-cache": { text: "70", value: 70, samples: { count: 7, total: 10 } },
+      cache: { text: String(invalid), value: invalid, samples: { count: 9, total: 10 } },
+    }};
+    assert.equal(getBetterBranch(row), null);
+    assert.equal(formatComparisonValue(row, row.values.cache), "—");
+  }
+});
+
+test("Giá trị lỗi không hiện NaN, Infinity hoặc số âm trong bảng", () => {
+  for (const invalid of [NaN, Infinity, -1]) {
+    const row = comparisonRow(10, invalid);
+    assert.equal(formatComparisonValue(row, row.values.cache), "—");
+  }
+});
+
+test("Mẫu rỗng và tập không có ca đánh giá không suy ra kết quả zero hay 0/0", () => {
+  const empty = summarizePreview([]);
+  assert.deepEqual(empty.qualityValues, ["—", "—", "—", "—"]);
+  assert.equal(empty.summaries.cache.llmCalls, null);
+  assert.equal(empty.summaries["no-cache"].llmTokens, null);
+  assert.equal(empty.overview.callsSaved, "—");
+  assert.equal(empty.overview.tokensSaved, "—");
+  assert.equal(empty.overview.violations, "—");
+  const coldOnly = summarizePreview(previewQueries.slice(0, 4));
+  assert.equal(coldOnly.qualityValues[1], "—");
+  assert.equal(coldOnly.qualityValues[2], "—");
+});
+
 test("Một lượt chia đôi có một mẫu, giữ nhánh lỗi/chờ riêng và không làm mất mẫu lỗi", () => {
   let state = chatReducer(initialChatState(), { type: "mode", mode: "compare" });
   state = send(state, "one");

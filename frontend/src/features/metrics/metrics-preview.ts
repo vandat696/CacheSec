@@ -66,15 +66,16 @@ export function summarizePreview(rows: readonly SampleQuery[]) {
   };
   const summarize = (branch: ChatBranch): BranchSummary => ({
     total, complete: total, pending: 0, error: 0,
-    llmCalls: rows.reduce((sum, row) => sum + row.sample[branch].calls, 0),
-    llmTokens: rows.reduce((sum, row) => sum + row.sample[branch].tokens, 0),
+    llmCalls: total ? rows.reduce((sum, row) => sum + row.sample[branch].calls, 0) : null,
+    llmTokens: total ? rows.reduce((sum, row) => sum + row.sample[branch].tokens, 0) : null,
   });
   const summaries = { "no-cache": summarize("no-cache"), cache: summarize("cache") };
   const latency = (branch: ChatBranch) => total ? rows.reduce((sum, row) => sum + row.sample[branch].response, 0) / total : null;
   const latencies = { "no-cache": latency("no-cache"), cache: latency("cache") };
   const quality = rows.filter((row) => row.qualityPassed).length;
   const qualityText = total ? `${percent(quality / total * 100)} · ${quality}/${total}` : "—";
-  const qualityValues = [qualityText, `0/${cacheCounts.hit}`, `0/${cacheCounts.rejected}`, `0/${total}`];
+  const zeroCases = (size: number) => size ? `0/${size}` : "—";
+  const qualityValues = [qualityText, zeroCases(cacheCounts.hit), zeroCases(cacheCounts.rejected), zeroCases(total)];
   const measured = (value: number | null) => ({ text: value === null ? "—" : number(Math.round(value)), value });
   const ratio = (count: number, size: number): ComparisonRow["values"]["cache"] => size ? {
     text: (count / size * 100).toLocaleString("vi-VN", { maximumFractionDigits: 1 }),
@@ -112,9 +113,9 @@ export function summarizePreview(rows: readonly SampleQuery[]) {
     overview: {
       hitRate: total ? percent(cacheCounts.hit / total * 100) : "—",
       latencyReduction: latencies["no-cache"] ? percent((1 - latencies.cache! / latencies["no-cache"]) * 100) : "—",
-      callsSaved: number(summaries["no-cache"].llmCalls! - summaries.cache.llmCalls!),
-      tokensSaved: number(summaries["no-cache"].llmTokens! - summaries.cache.llmTokens!),
-      violations: "0",
+      callsSaved: total ? number(summaries["no-cache"].llmCalls! - summaries.cache.llmCalls!) : "—",
+      tokensSaved: total ? number(summaries["no-cache"].llmTokens! - summaries.cache.llmTokens!) : "—",
+      violations: total ? "0" : "—",
     },
   };
 }

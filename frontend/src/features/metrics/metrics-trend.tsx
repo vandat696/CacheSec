@@ -48,6 +48,10 @@ export function MetricsTrendPlot({ points, unit, selectedQuery }: {
         <title id={`${id}-title`}>{`Hiệu suất theo ${count} truy vấn · ${unit}`}</title>
         <desc id={`${id}-description`}>Hai nhánh Không cache và Cache vẽ nét liền; đoạn trùng xen kẽ hai màu. Khoảng thiếu dữ liệu không được nối thành đường. Dùng thanh chọn truy vấn phía dưới để đọc giá trị.</desc>
         <defs>
+          <linearGradient id={`${id}-shared-point`} x1="0" y1="0" x2="1" y2="0">
+            <stop offset="50%" stopColor="var(--metrics-baseline)" />
+            <stop offset="50%" stopColor="var(--metrics-cache)" />
+          </linearGradient>
           <mask id={`${id}-overlap`} maskUnits="userSpaceOnUse" x="0" y="0" width={width} height="290">
             <g fill="none" stroke="white" strokeWidth="2">
               {series[0].segments.filter((segment) => segment.length > 1).map((segment, index) => (
@@ -75,7 +79,9 @@ export function MetricsTrendPlot({ points, unit, selectedQuery }: {
                   <polyline className="metrics-trend-overlap" aria-hidden="true" mask={`url(#${id}-overlap)`}
                     points={segment.map((point) => `${x(point.query)},${y(point.value)}`).join(" ")} />
                 )}
-                {segment.map((point) => <circle key={point.query} cx={x(point.query)} cy={y(point.value)} r={branch === "cache" ? 5 : 3.5} data-query={point.query}>
+                {segment.map((point) => <circle key={point.query} cx={x(point.query)} cy={y(point.value)} r={4} data-query={point.query}
+                  style={branch === "cache" && points.some((item) => item.query === point.query && item.values["no-cache"] === point.value)
+                    ? { stroke: `url(#${id}-shared-point)` } : undefined}>
                   <title>{`${branchLabels[branch]} · truy vấn ${point.query}: ${point.value} ${unit}`}</title>
                 </circle>)}
               </g>

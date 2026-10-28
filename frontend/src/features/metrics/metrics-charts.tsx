@@ -96,8 +96,8 @@ export function CacheOutcomes({ counts }: { counts?: CacheCounts }) {
   const missEnd = counts && total ? (counts.hit + counts.miss) / total * 100 : 0;
   return (
     <div className="metrics-cache-outcomes">
-      <div className={`metrics-empty-ring${counts ? " metrics-sample-ring" : ""}`} role="img"
-        style={counts ? { background: `conic-gradient(var(--metrics-hit) 0% ${hitPercent}%, var(--metrics-miss) ${hitPercent}% ${missEnd}%, var(--metrics-rejected) ${missEnd}% 100%)` } : undefined}
+      <div className={`metrics-empty-ring${total > 0 ? " metrics-sample-ring" : ""}`} role="img"
+        style={total > 0 ? { background: `conic-gradient(var(--metrics-hit) 0% ${hitPercent}%, var(--metrics-miss) ${hitPercent}% ${missEnd}%, var(--metrics-rejected) ${missEnd}% 100%)` } : undefined}
         aria-label={counts ? `Dữ liệu mẫu: ${counts.hit} Hit, ${counts.miss} Miss, ${counts.rejected} Rejected trên ${total} lượt tra cache` : "Tỷ lệ cache chưa đo; chưa có kết quả Hit, Miss hoặc Rejected"}>
         <strong>{counts && total ? `${hitPercent.toLocaleString("vi-VN", { maximumFractionDigits: 1 })}%` : "—"}</strong><span>Hit hợp lệ</span>
       </div>

@@ -11,7 +11,7 @@ Frontend có ba khu: Chat, Số liệu và Tài liệu. Đã có chat mô phỏn
 ## Các khu chính
 
 - **Chat** (`/`): hỏi đáp nội bộ, lịch sử hội thoại và chat mới; mặc định **Cả hai**, hai khung Không cache/Cache dùng chung một ô nhập. Nút bánh răng chọn Không cache, Cache hoặc Cả hai. Nút Thông số mở cửa sổ so sánh theo từng lượt gửi, mặc định chọn câu gần nhất.
-- **Số liệu** (`/metrics`): ba tab Chung / Không cache / Cache. Chung có biểu đồ đường hiệu suất theo số truy vấn và bảng đối chiếu với tiêu chí ở giữa, số liệu hai bên; mỗi tab nhánh có chỉ số, biểu đồ và lượt gửi tương ứng. Mặc định xem 24 truy vấn giả có nhãn dữ liệu mẫu; tắt **Xem dữ liệu mẫu** để tổng hợp phiên Chat. Fixture chỉ phục vụ xem giao diện, chưa phải kết quả benchmark.
+- **Số liệu** (`/metrics`): ba tab Chung / Không cache / Cache. Chung có biểu đồ đường hiệu suất theo số truy vấn và bảng đối chiếu với tiêu chí ở giữa, số liệu hai bên; mỗi tab nhánh có chỉ số, biểu đồ và lượt gửi tương ứng. Mặc định hiển thị 24 truy vấn giả để xem giao diện; nguồn phiên Chat được tách riêng, không có công tắc dữ liệu mẫu trên trang. Fixture chỉ phục vụ xem giao diện, chưa phải kết quả benchmark.
 - **Tài liệu** (`/documents`): chọn hoặc kéo thả tệp, phân loại, tìm và lọc danh sách.
 
 Giữ giao diện tối giản; chưa đưa model, TTL, similarity hoặc tham số nghiên cứu ra luồng người dùng. Ba chế độ chat hiện chỉ có phản hồi mô phỏng, chưa có cache thật; runner và benchmark được hoãn đến khi nền tảng chat/tài liệu hoạt động.

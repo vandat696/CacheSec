@@ -13,26 +13,31 @@ export type ComparisonRow = {
   values: Record<ChatBranch, ComparisonValue>;
 };
 
+export function isValidComparisonValue(unit: ComparisonRow["unit"], item: ComparisonValue): item is ComparisonValue & { value: number } {
+  if (item.value === null || !Number.isFinite(item.value) || item.value < 0) return false;
+  if (unit !== "%") return true;
+  const samples = item.samples;
+  return !!samples && Number.isInteger(samples.total) && samples.total > 0 &&
+    Number.isInteger(samples.count) && samples.count >= 0 && samples.count <= samples.total &&
+    item.value <= 100 && Math.abs(item.value - samples.count / samples.total * 100) < 1e-9;
+}
+
 export function getBetterBranch(row: ComparisonRow): ChatBranch | null {
-  if (row.unit === "%") {
-    const leftSamples = row.values["no-cache"].samples;
-    const rightSamples = row.values.cache.samples;
-    const validSamples = (samples: ComparisonValue["samples"]) => samples && Number.isInteger(samples.total) && samples.total > 0 &&
-      Number.isInteger(samples.count) && samples.count >= 0 && samples.count <= samples.total;
-    if (!validSamples(leftSamples) || !validSamples(rightSamples) || leftSamples!.total !== rightSamples!.total) return null;
-  }
-  const left = row.values["no-cache"].value;
-  const right = row.values.cache.value;
-  if (!row.comparable || !row.preference || left === null || right === null ||
-      !Number.isFinite(left) || !Number.isFinite(right) || left < 0 || right < 0 || left === right) {
+  const left = row.values["no-cache"];
+  const right = row.values.cache;
+  if (!row.comparable || !row.preference || !isValidComparisonValue(row.unit, left) || !isValidComparisonValue(row.unit, right) ||
+      left.value === right.value || formatComparisonValue(row, left) === formatComparisonValue(row, right)) {
     return null;
   }
+  if (row.unit === "%" && left.samples?.total !== right.samples?.total) return null;
   const lower = row.preference === "lower";
-  return (lower ? left < right : left > right) ? "no-cache" : "cache";
+  return (lower ? left.value < right.value : left.value > right.value) ? "no-cache" : "cache";
 }
 
 export function formatComparisonValue(row: ComparisonRow, value: ComparisonValue) {
-  return value.value === null ? value.text : `${value.text}${row.unit === "%" ? "" : " "}${row.unit}`;
+  if (value.value === null) return value.text;
+  if (!isValidComparisonValue(row.unit, value)) return "—";
+  return `${value.text}${row.unit === "%" ? "" : " "}${row.unit}`;
 }
 
 export function getDemoComparisonRows(summaries: Record<ChatBranch, BranchSummary>): ComparisonRow[] {
