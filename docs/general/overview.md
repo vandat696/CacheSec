@@ -14,7 +14,7 @@ Giữ giao diện tối giản. So sánh đơn giản nằm trong Chat theo yêu
 
 ## Phạm vi đã có và còn thiếu
 
-Frontend hiện có chat mô phỏng, dashboard Số liệu, chọn/thả tệp, danh sách và phân loại trong phiên. Chưa có API upload, lưu trữ, xử lý tài liệu, xác thực hoặc AI/RAG thật. Tệp chưa tải lên không được trình bày như dữ liệu chatbot đã đọc.
+Frontend hiện có chat mô phỏng, dashboard Số liệu với chế độ dữ liệu mẫu tách khỏi phiên Chat, chọn/thả tệp, danh sách và phân loại trong phiên. Chưa có API upload, lưu trữ, xử lý tài liệu, xác thực hoặc AI/RAG thật. Tệp chưa tải lên không được trình bày như dữ liệu chatbot đã đọc.
 
 Cần chốt hợp đồng tài liệu/ingestion, nguồn identity/tenant, quyền nạp/đọc và giới hạn tệp trước khi nối backend. Phân loại tài liệu chỉ phục vụ sắp xếp, không tự cấp quyền.
 

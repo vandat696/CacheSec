@@ -2,6 +2,13 @@
 
 Các mốc ngày tháng bên dưới là lịch sử tại thời điểm thực hiện; mục mới hơn thay thế định hướng cũ khi có thay đổi. Phạm vi và bước tiếp theo hiện hành được tổng hợp ở cuối file.
 
+## 2026-10-28 — Dữ liệu mẫu để xem dashboard
+
+- Theo yêu cầu xem giao diện có số liệu, bật mặc định Xem dữ liệu mẫu tại Số liệu, kèm nhãn dữ liệu giả/không phải kết quả đo; tắt để quay lại dữ liệu phiên Chat. Giữ ba tab trên đầu và các phần đã tinh gọn.
+- Fixture cố định 24 truy vấn/hai nhánh trong hai hội thoại, gồm 15 Hit, 7 Miss, 2 Rejected sinh lại. Thẻ, ba loại đường, vòng cache, bảng so sánh tô xanh giá trị tốt hơn, chất lượng/quyền và chi tiết dùng cùng nguồn; lọc tính lại mẫu số. Không ghi fixture vào Chat, cache, storage hoặc kết quả đánh giá; chưa thêm backend/telemetry hay chốt công thức nghiên cứu thật.
+- Kiểm chứng: lint, typecheck, production build và 43 test logic đạt. Edge production smoke đạt 72 bố cục hiện có và 27 bố cục dữ liệu mẫu ở chín kích thước; kiểm tra riêng chọn truy vấn/đổi ba chỉ số, màu/độ đậm, chi tiết, lọc và đổi nguồn; không lỗi React/runtime. Đã rà ảnh toàn trang desktop/mobile, tài liệu/link và diff. Chưa kiểm chứng trình duyệt khác hoặc hiệu quả cache thật.
+- Cập nhật README, thiết kế frontend và hướng dẫn chạy. Baseline thật, telemetry và tiêu chí đánh giá có dữ liệu đo vẫn là bước tiếp theo.
+
 ## 2026-10-28 — Biểu đồ đường hiệu suất theo số truy vấn
 
 - Thay biểu đồ thanh tổng hợp ở Chung bằng hai đường Không cache/Cache theo số truy vấn. Chọn độ trễ/lượt gọi/token từng lượt, thanh chọn Truy vấn hỗ trợ bàn phím/cảm ứng và đọc hai giá trị. Hai tab riêng giữ biểu đồ thanh, bỏ khối tổng lượt gọi LLM và ghi chú dưới biểu đồ. Lần tinh gọn này đã kiểm tra lint/typecheck và Edge dev ở bốn kích thước; chưa chạy lại build hoặc bộ production smoke đầy đủ.
@@ -179,7 +186,7 @@ Các mốc ngày tháng bên dưới là lịch sử tại thời điểm thực
 ### Định hướng đã thống nhất
 
 - Secure local semantic cache là trọng tâm, none/server là đối chiếu.
-- Giao diện hiện tại gồm Chat → Số liệu → Tài liệu theo [thiết kế frontend](../frontend/design.md). Chat có ba chế độ Không cache/Cache/Cả hai, mặc định Cả hai với prompt chung; Số liệu tổng hợp phiên, biểu đồ và đánh giá chưa đo/chưa chấm. Runner, benchmark, editor profile và thiết lập kỹ thuật được hoãn đến sau nền tảng chat/tài liệu.
+- Giao diện hiện tại gồm Chat → Số liệu → Tài liệu theo [thiết kế frontend](../frontend/design.md). Chat có ba chế độ Không cache/Cache/Cả hai, mặc định Cả hai với prompt chung; Số liệu mặc định xem fixture có nhãn dữ liệu giả, có công tắc về phiên Chat với số đo/đánh giá chưa có. Runner, benchmark, editor profile và thiết lập kỹ thuật được hoãn đến sau nền tảng chat/tài liệu.
 - Next.js, FastAPI/Python, PostgreSQL/pgvector, browser IndexedDB/Dexie.
 - API model trước, local/fine-tune sau; tách LLM/embedding.
 - Tách storage/matching/validation, tránh abstraction quá mức.

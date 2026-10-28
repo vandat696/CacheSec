@@ -26,8 +26,7 @@ export function MetricsTurns({ rows, visibleBranches = branches, preview }: {
     <section className="metrics-panel metrics-turns" aria-labelledby={`${id}-title`}>
       <div className="metrics-panel-heading">
         <div>
-          <h2 id={`${id}-title`}>Chi tiết lượt gửi</h2>
-          <p>Theo hội thoại và thứ tự gửi · Mở từng lượt để xem thông số</p>
+          <h2 id={`${id}-title`}>Chi tiết từng phiên, lượt chat</h2>
         </div>
         <span className="metrics-session-label">{rows.length} lượt</span>
       </div>
