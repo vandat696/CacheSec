@@ -650,7 +650,7 @@ try {
   assert.equal(await evaluate("document.querySelector('.metrics-workspace').dataset.metricsSource"), "sample");
   assert.equal(await evaluate("document.querySelector('.metrics-kpis-overview .metrics-kpi:first-child > strong').textContent"), "24");
   assert.equal(await evaluate("document.querySelectorAll('.metrics-trend-series circle').length"), 48);
-  assert.equal(await evaluate("document.querySelectorAll('.metrics-comparison-table [data-better]').length"), 3);
+  assert.equal(await evaluate("document.querySelectorAll('.metrics-comparison-table [data-better]').length"), 4);
   assert.equal(await evaluate("document.querySelectorAll('.metrics-preview-control, .metrics-toolbar [role=switch]').length"), 0);
   assert.ok(await evaluate("!document.querySelector('.metrics-toolbar').textContent.includes('Không phải kết quả đo')"));
   await click('[data-metrics-view=general] .metrics-turn-button');

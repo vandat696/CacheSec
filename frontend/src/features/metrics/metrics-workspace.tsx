@@ -82,7 +82,7 @@ function CachePanel({ preview }: { preview?: MetricsPreview }) {
 
 function QualityPanel({ branch, preview }: { branch: ChatBranch; preview?: MetricsPreview }) {
   const id = useId();
-  const metrics = qualityMetrics.map((item, index) => ({ ...item, value: preview?.qualityValues[index] ?? item.value }))
+  const metrics = qualityMetrics.map((item, index) => ({ ...item, value: preview?.qualityValues[branch][index] ?? item.value }))
     .filter((item) => branch === "cache" || !("cacheOnly" in item));
   return (
     <section className="metrics-panel" aria-labelledby={id}>

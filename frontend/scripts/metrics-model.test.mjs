@@ -19,7 +19,12 @@ test("Dữ liệu xem trước nhất quán giữa thẻ, biểu đồ, đối c
     const average = preview.trends.response.reduce((sum, point) => sum + point.values[branch], 0) / 24;
     assert.equal(preview.latencies[branch], average);
   }
-  assert.deepEqual(preview.comparison.filter(row => getBetterBranch(row)).map(row => row.key), ["latency", "llmCalls", "llmTokens"]);
+  assert.deepEqual(preview.comparison.map(row => [row.key, getBetterBranch(row)]), [
+    ["latency", "cache"], ["llmCalls", "cache"], ["llmTokens", "cache"],
+    ["quality", "no-cache"], ["disclosure", null], ["falseDenial", null],
+  ]);
+  assert.equal(preview.qualityValues["no-cache"][0], "100% · 24/24");
+  assert.equal(preview.qualityValues.cache[0], "95,8% · 23/24");
   for (const row of previewQueries) {
     const hit = row.cacheOutcome === "Hit";
     assert.equal(row.sample.cache.calls, hit ? 0 : 1);
@@ -211,15 +216,15 @@ test("Giá trị lỗi không hiện NaN, Infinity hoặc số âm trong bảng"
 
 test("Mẫu rỗng và tập không có ca đánh giá không suy ra kết quả zero hay 0/0", () => {
   const empty = summarizePreview([]);
-  assert.deepEqual(empty.qualityValues, ["—", "—", "—", "—"]);
+  for (const values of Object.values(empty.qualityValues)) assert.deepEqual(values, ["—", "—", "—", "—"]);
   assert.equal(empty.summaries.cache.llmCalls, null);
   assert.equal(empty.summaries["no-cache"].llmTokens, null);
   assert.equal(empty.overview.callsSaved, "—");
   assert.equal(empty.overview.tokensSaved, "—");
   assert.equal(empty.overview.violations, "—");
   const coldOnly = summarizePreview(previewQueries.slice(0, 4));
-  assert.equal(coldOnly.qualityValues[1], "—");
-  assert.equal(coldOnly.qualityValues[2], "—");
+  assert.equal(coldOnly.qualityValues.cache[1], "—");
+  assert.equal(coldOnly.qualityValues.cache[2], "—");
 });
 
 test("Một lượt chia đôi có một mẫu, giữ nhánh lỗi/chờ riêng và không làm mất mẫu lỗi", () => {

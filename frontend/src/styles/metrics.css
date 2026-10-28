@@ -2,9 +2,9 @@
   padding-bottom: 48px;
   --metrics-baseline: #185adb;
   --metrics-cache: #9a541c;
-  --metrics-hit: #15803d;
-  --metrics-miss: #cbd5e1;
-  --metrics-rejected: #dc2626;
+  --metrics-hit: #16a34a;
+  --metrics-miss: #2563eb;
+  --metrics-rejected: #e11d48;
 }
 .metrics-session-label { font-size: 12px; color: var(--nui-muted); white-space: nowrap; }
 .metrics-toolbar { display: flex; align-items: end; flex-wrap: wrap; gap: 16px 28px; margin-top: 20px; }

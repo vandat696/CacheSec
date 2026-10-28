@@ -1,5 +1,15 @@
 # Trạng thái dự án
 
+## 2026-10-28 — Dữ liệu mẫu đủ hơn, bằng, kém
+
+- Bảng mặc định có Cache tốt hơn về hiệu suất, Không cache tốt hơn về chất lượng (100% so với 95,8%), hai hàng quyền bằng nhau (0%). Lưu nhãn chất lượng riêng từng nhánh trong fixture; các tab và bộ lọc cùng tính từ dữ liệu này. Cập nhật thiết kế frontend.
+- Lint, typecheck và 49 test đạt; Edge dev kiểm tra màu hai bên, hàng bằng nhau trung tính, đơn vị/mẫu số, lọc và nguồn phiên ở desktop/mobile. Đã xem ảnh và rà diff; chưa chạy lại production build/full smoke cho lần thay fixture này.
+
+## 2026-10-28 — Tăng độ phân biệt màu vòng cache
+
+- Đổi Hit sang xanh lá #16a34a, Miss sang xanh dương #2563eb, Rejected sang đỏ hồng #e11d48; đồng bộ vòng/chú giải ở Chung và Cache. Cập nhật thiết kế frontend.
+- Lint và kiểm tra Edge dev desktop/mobile đạt: màu khớp, số đếm giữ nguyên, không tràn ngang hoặc lỗi runtime. Chưa chạy lại production build cho thay đổi CSS này.
+
 Các mốc ngày tháng bên dưới là lịch sử tại thời điểm thực hiện; mục mới hơn thay thế định hướng cũ khi có thay đổi. Phạm vi và bước tiếp theo hiện hành được tổng hợp ở cuối file.
 
 ## 2026-10-28 — Đồng bộ hai đường biểu đồ

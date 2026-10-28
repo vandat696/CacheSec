@@ -68,6 +68,8 @@ Nhánh không được chạy ở lượt đó ghi **Không chạy** cho cả n�
 
 ## Dashboard Số liệu
 
+Fixture mặc định minh họa đủ hơn/bằng/kém trong bảng: Cache tốt hơn ở độ trễ, calls và token; Không cache tốt hơn ở chất lượng (24/24 so với 23/24); hai bên bằng nhau ở rò rỉ và từ chối nhầm (0%). Chất lượng lưu theo từng nhánh/từng truy vấn để bảng, tab nhánh và bộ lọc tính nhất quán; đây chỉ là kịch bản xem UI.
+
 Hai đường hiệu suất dùng cùng độ dày nét 2 px, dấu điểm bán kính 4 px và nền giống nhau. Điểm trùng vị trí chia viền xanh dương/nâu cam; đoạn đường trùng vẫn đan hai màu. Cả hai nhánh dùng chung trục truy vấn và thang giá trị.
 
 Giá trị so sánh phải hữu hạn và không âm; tỷ lệ phải nằm trong 0–100%, khớp số ca/mẫu số hợp lệ. Giá trị lỗi hiển thị —, không tô bên tốt hơn hoặc hiện số ca gây hiểu nhầm. Hai giá trị hiển thị bằng nhau sau làm tròn giữ trung tính. Tập mẫu rỗng không suy ra độ trễ, usage, mức tiết kiệm hoặc vi phạm bằng 0; không có ca đánh giá thì dùng — thay cho 0/0. Vòng cache không có lượt tra giữ màu trung tính.
@@ -99,7 +101,7 @@ Trong bảng đối chiếu, giá trị tốt hơn được in đậm và dùng 
 
 Bỏ dòng thông báo nguồn phản hồi mẫu ở đầu dashboard; các giá trị chưa đo/chưa chấm/chưa xác minh vẫn hiển thị đúng tại từng chỉ số. Reload mất dữ liệu phiên. Chưa có kết quả đo, nhãn đánh giá, runner, lưu run hoặc schema telemetry/API. Demo hai nhánh không thay benchmark; cần cặp đo tương đương, tách cold/warm và vị trí/scope cache khi nối phép đo thật. Chưa chốt thêm công thức thống kê, rubric hay chính sách bảo mật.
 
-Giữ tokens Nói, nền trắng/viền trung tính, hai màu nhất quán cho baseline/cache. Riêng kết quả cache dùng Hit xanh lá (#15803d), Miss xám (#cbd5e1), Rejected đỏ (#dc2626), đồng bộ lát vòng và chấm chú giải ở tab Chung/Cache; giữ nhãn và số đếm để đọc không phụ thuộc màu. Sáu thẻ Chung xếp ba cột/hai hàng trên desktop và hai cột/ba hàng trên vùng hẹp; các tab riêng giữ bốn thẻ, giảm xuống hai cột, các panel biểu đồ xếp dọc trên vùng hẹp; bảng đối chiếu Chung giữ ba cột trên mobile, cho phép chữ xuống dòng trong ô để không tràn ngang. Bảng rộng cuộn trong vùng có nhãn và nhận focus bàn phím. Biểu đồ có tên/mô tả và số liệu dạng chữ; trạng thái không chỉ phân biệt bằng màu.
+Giữ tokens Nói, nền trắng/viền trung tính, hai màu nhất quán cho baseline/cache. Riêng kết quả cache dùng Hit xanh lá (#16a34a), Miss xanh dương (#2563eb), Rejected đỏ hồng (#e11d48), đồng bộ lát vòng và chấm chú giải ở tab Chung/Cache; giữ nhãn và số đếm để đọc không phụ thuộc màu. Sáu thẻ Chung xếp ba cột/hai hàng trên desktop và hai cột/ba hàng trên vùng hẹp; các tab riêng giữ bốn thẻ, giảm xuống hai cột, các panel biểu đồ xếp dọc trên vùng hẹp; bảng đối chiếu Chung giữ ba cột trên mobile, cho phép chữ xuống dòng trong ô để không tràn ngang. Bảng rộng cuộn trong vùng có nhãn và nhận focus bàn phím. Biểu đồ có tên/mô tả và số liệu dạng chữ; trạng thái không chỉ phân biệt bằng màu.
 
 ## Luồng tài liệu
 

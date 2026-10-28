@@ -9,7 +9,7 @@ type SampleMeasurement = { response: number; calls: number; tokens: number };
 type SampleQuery = MetricsRow & {
   sample: Record<ChatBranch, SampleMeasurement>;
   cacheOutcome: "Hit" | "Miss" | "Rejected";
-  qualityPassed: boolean;
+  qualityPassed: Record<ChatBranch, boolean>;
 };
 export type CacheCounts = { hit: number; miss: number; rejected: number };
 export type MetricsPreview = ReturnType<typeof summarizePreview>;
@@ -46,7 +46,7 @@ export const previewQueries: readonly SampleQuery[] = Array.from({ length: 24 },
       branches: { "no-cache": { status: "complete" }, cache: { status: "complete" } },
     },
     cacheOutcome,
-    qualityPassed: index !== 9,
+    qualityPassed: { "no-cache": true, cache: index !== 9 },
     sample: {
       "no-cache": { response, calls: 1, tokens },
       cache: { response: hit ? 110 + (index * 29 % 170) : response + 85, calls: hit ? 0 : 1, tokens: hit ? 0 : tokens },
@@ -72,10 +72,14 @@ export function summarizePreview(rows: readonly SampleQuery[]) {
   const summaries = { "no-cache": summarize("no-cache"), cache: summarize("cache") };
   const latency = (branch: ChatBranch) => total ? rows.reduce((sum, row) => sum + row.sample[branch].response, 0) / total : null;
   const latencies = { "no-cache": latency("no-cache"), cache: latency("cache") };
-  const quality = rows.filter((row) => row.qualityPassed).length;
-  const qualityText = total ? `${percent(quality / total * 100)} · ${quality}/${total}` : "—";
+  const quality = {
+    "no-cache": rows.filter((row) => row.qualityPassed["no-cache"]).length,
+    cache: rows.filter((row) => row.qualityPassed.cache).length,
+  };
+  const qualityText = (branch: ChatBranch) => total ? `${percent(quality[branch] / total * 100)} · ${quality[branch]}/${total}` : "—";
   const zeroCases = (size: number) => size ? `0/${size}` : "—";
-  const qualityValues = [qualityText, zeroCases(cacheCounts.hit), zeroCases(cacheCounts.rejected), zeroCases(total)];
+  const branchQuality = (branch: ChatBranch) => [qualityText(branch), zeroCases(cacheCounts.hit), zeroCases(cacheCounts.rejected), zeroCases(total)];
+  const qualityValues = { "no-cache": branchQuality("no-cache"), cache: branchQuality("cache") };
   const measured = (value: number | null) => ({ text: value === null ? "—" : number(Math.round(value)), value });
   const ratio = (count: number, size: number): ComparisonRow["values"]["cache"] => size ? {
     text: (count / size * 100).toLocaleString("vi-VN", { maximumFractionDigits: 1 }),
@@ -89,7 +93,7 @@ export function summarizePreview(rows: readonly SampleQuery[]) {
     comparisonRow("latency", "Độ trễ", "ms", measured(latencies["no-cache"]), measured(latencies.cache), "lower"),
     comparisonRow("llmCalls", "Lượt gọi LLM", "lượt", measured(summaries["no-cache"].llmCalls), measured(summaries.cache.llmCalls), "lower"),
     comparisonRow("llmTokens", "Token LLM", "token", measured(summaries["no-cache"].llmTokens), measured(summaries.cache.llmTokens), "lower"),
-    comparisonRow("quality", "Câu trả lời đạt yêu cầu", "%", ratio(quality, total), undefined, "higher"),
+    comparisonRow("quality", "Câu trả lời đạt yêu cầu", "%", ratio(quality["no-cache"], total), ratio(quality.cache, total), "higher"),
     comparisonRow("disclosure", "Rò rỉ thông tin", "%", ratio(0, cacheCounts.rejected), undefined, "lower"),
     comparisonRow("falseDenial", "Từ chối nhầm", "%", ratio(0, total), undefined, "lower"),
   ];
