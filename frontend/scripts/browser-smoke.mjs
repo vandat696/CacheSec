@@ -237,37 +237,81 @@ try {
   await navigate("/ui");
   await navigate("/setup");
   assert.equal(await evaluate("document.querySelector('.sidebar nav a').getAttribute('href')"), '/setup');
+  assert.deepEqual(await evaluate("[...document.querySelectorAll('.setup-row h2')].map(item => item.textContent)"), [
+    'Experiment Mode', 'Dataset', 'Embedding Benchmark', 'Threshold Benchmark', 'Eviction Benchmark',
+    'Access Control Benchmark', 'Local Training', 'Request Logging', 'Export Results',
+  ]);
+  assert.equal(await evaluate("document.querySelector('.setup-export-controls button').disabled"), true);
   await fill('#setup-name', 'Thử cấu hình');
   await fill('#setup-ttl', '7200');
   await fill('#setup-repeats', '2');
-  await click('.setup-footer button');
-  await waitFor("document.querySelector('.setup-saved')?.textContent.includes('12 lượt')");
-  await fill('#setup-matching', 'exact');
-  assert.equal(await evaluate("document.querySelector('#setup-similarity')"), null);
-  await fill('#setup-location', 'server');
+  await click('.setup-footer button[type="submit"]');
+  await waitFor("document.querySelector('.setup-saved')?.textContent.includes('360 lượt')");
+  await fill('#setup-thresholds', '0.80,');
+  await click('.setup-footer button[type="submit"]');
+  await waitFor("document.querySelector('.setup-error')?.textContent.includes('threshold')");
+  assert.equal(await evaluate("document.querySelector('.setup-saved')"), null);
+  await fill('#setup-thresholds', '0.80, 0.90');
+  await click('.setup-row[aria-labelledby="setup-mode-title"] label:has(input[value="server"])');
   await fill('#setup-workload', 'repeat');
   await fill('#setup-phase', 'warm');
+  await fill('#setup-local-training', 'fl-simulation');
+  await fill('#setup-export-format', 'csv');
+  await click('.setup-row-controls button[role="switch"]');
   await fill('#setup-ttl', '0');
-  await click('.setup-footer button');
+  await click('.setup-footer button[type="submit"]');
   assert.equal(await evaluate("document.querySelector('.setup-saved')"), null);
   assert.equal(await evaluate("document.querySelector('#setup-ttl').validity.valid"), false);
   await fill('#setup-ttl', '120');
-  await click('.setup-footer button');
-  await waitFor("document.querySelector('.setup-saved')?.textContent.includes('v2 · 8 lượt')");
+  await click('.setup-footer button[type="submit"]');
+  await waitFor("document.querySelector('.setup-saved')?.textContent.includes('v2 · 78 cấu hình · 312 lượt')");
+  await evaluate(`(() => {
+    window.setupExports = [];
+    window.setupOriginalObjectUrl = URL.createObjectURL;
+    window.setupOriginalAnchorClick = HTMLAnchorElement.prototype.click;
+    URL.createObjectURL = (blob) => { window.setupExportBlob = blob; return 'blob:setup-test'; };
+    HTMLAnchorElement.prototype.click = function () { window.setupExports.push(this.download); };
+  })()`);
+  await click('.setup-actions button[data-variant="secondary"]');
+  const exported = await evaluate("window.setupExportBlob.text().then(JSON.parse)");
+  assert.equal(exported.results, null);
+  assert.equal(exported.previewOnly, true);
+  assert.equal(exported.configuration.localTraining, 'fl-simulation');
+  assert.equal(exported.configuration.exportFormat, 'csv');
+  assert.deepEqual(exported.configuration.modes, ['none', 'local', 'server']);
+  assert.deepEqual(exported.loggingFields, []);
+  assert.equal(exported.plannedQueries, 312);
+  assert.deepEqual(await evaluate('window.setupExports'), ['cachesec-setup-v2.json']);
+  await evaluate('URL.createObjectURL = window.setupOriginalObjectUrl; HTMLAnchorElement.prototype.click = window.setupOriginalAnchorClick;');
   await click('.sidebar a[href="/metrics"]');
   await waitFor("location.pathname === '/metrics'");
   await click('.sidebar a[href="/setup"]');
-  await waitFor("!!document.querySelector('#setup-location')");
-  assert.equal(await evaluate("document.querySelector('#setup-location').value"), 'server');
+  await waitFor("!!document.querySelector('#setup-documents')");
+  assert.equal(await evaluate("document.querySelector('.setup-options input[value=server]').checked"), true);
   assert.equal(await evaluate("document.querySelector('#setup-ttl').value"), '120');
   assert.equal(await evaluate("document.querySelector('#setup-phase').value"), 'warm');
+  assert.equal(await evaluate("document.querySelector('#setup-local-training').value"), 'fl-simulation');
+  assert.equal(await evaluate("document.querySelector('#setup-export-format').value"), 'csv');
+  assert.equal(await evaluate("document.querySelector('button[role=switch]').getAttribute('aria-checked')"), 'false');
   for (const width of [360, 390, 820, 1440]) {
     await cdp('Emulation.setDeviceMetricsOverride', {width,height:1000,deviceScaleFactor:1,mobile:false});
     assert.ok(await evaluate('document.documentElement.scrollWidth <= innerWidth'));
+    await evaluate("window.scrollTo(0, 0); document.querySelector('main').scrollTo(0, 0)");
     await screenshot(`setup-${width}.png`);
+    await evaluate("document.querySelector('.setup-footer').scrollIntoView({block:'end',behavior:'instant'})");
+    await screenshot(`setup-footer-${width}.png`);
   }
+  await click('.setup-row[aria-labelledby="setup-mode-title"] label:has(input[value="local"])');
+  await click('.setup-row[aria-labelledby="setup-mode-title"] label:has(input[value="server"])');
+  assert.equal(await evaluate("document.querySelector('#setup-thresholds').disabled"), true);
+  assert.equal(await evaluate("document.querySelector('#setup-ttl')"), null);
+  await click('.setup-footer button[type="submit"]');
+  await waitFor("document.querySelector('.setup-saved')?.textContent.includes('v3 · 6 cấu hình · 24 lượt')");
+  await click('.setup-row[aria-labelledby="setup-mode-title"] label:has(input[value="none"])');
+  await click('.setup-footer button[type="submit"]');
+  await waitFor("document.querySelector('.setup-error')?.textContent.includes('Experiment Mode')");
   await navigate('/setup');
-  assert.equal(await evaluate("document.querySelector('#setup-location').value"), 'local');
+  assert.equal(await evaluate("document.querySelector('.setup-options input[value=local]').checked"), true);
   assert.equal(await evaluate("document.querySelector('.setup-saved')"), null);
   await cdp('Emulation.setDeviceMetricsOverride', {width:1440,height:900,deviceScaleFactor:1,mobile:false});
   await navigate('/ui');
@@ -1072,7 +1116,7 @@ try {
   }
   assert.deepEqual(errors, [], "Lỗi runtime/React trên trình duyệt");
   console.log(
-    "Đạt: ba chế độ Chat, Thông số theo lượt gửi, Số liệu ba tab/dữ liệu mẫu tách phiên/lọc/biểu đồ/chi tiết, giữ phiên/reset, Tài liệu, UI kit, keyboard, 72 bố cục và 27 bố cục dữ liệu mẫu.",
+    "Đạt: Thiết lập chín nhóm/validation/xuất cấu hình, ba chế độ Chat, Thông số theo lượt gửi, Số liệu ba tab/dữ liệu mẫu tách phiên/lọc/biểu đồ/chi tiết, giữ phiên/reset, Tài liệu, UI kit, keyboard, 72 bố cục và 27 bố cục dữ liệu mẫu.",
   );
   console.log(`Ảnh kiểm chứng: ${output}`);
 } catch (error) {

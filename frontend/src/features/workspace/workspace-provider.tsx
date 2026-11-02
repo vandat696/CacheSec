@@ -6,6 +6,7 @@ import {
   validateProfile,
   type ExperimentPlan,
   type ProfileDraft,
+  type SetupPlan,
 } from "./workspace-model";
 
 type Workspace = {
@@ -13,6 +14,8 @@ type Workspace = {
   plans: ExperimentPlan[];
   saveProfile: (profile: ProfileDraft) => void;
   addPlan: (plan: ExperimentPlan) => void;
+  setupPlan: SetupPlan | null;
+  saveSetupPlan: (plan: SetupPlan) => void;
 };
 const WorkspaceContext = createContext<Workspace | null>(null);
 
@@ -21,6 +24,7 @@ export function WorkspaceProvider({ children }: { children: ReactNode }) {
     initialProfiles.map((profile) => ({ ...profile })),
   );
   const [plans, setPlans] = useState<ExperimentPlan[]>([]);
+  const [setupPlan, saveSetupPlan] = useState<SetupPlan | null>(null);
   function saveProfile(draft: ProfileDraft) {
     const error = validateProfile(draft);
     if (error) throw new Error(error);
@@ -43,6 +47,8 @@ export function WorkspaceProvider({ children }: { children: ReactNode }) {
         plans,
         saveProfile,
         addPlan: (plan) => setPlans((current) => [plan, ...current]),
+        setupPlan,
+        saveSetupPlan,
       }}
     >
       {children}

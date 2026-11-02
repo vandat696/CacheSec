@@ -1,57 +1,71 @@
 # CacheSec
 
-Đồ án nghiên cứu **chatbot AI nội bộ dùng RAG + LLM và cache có kiểm soát quyền truy cập**.
+**Secure Local Semantic Cache for AI-Assisted Software Development.** CacheSec nghiên cứu tái sử dụng an toàn kết quả AI đã xử lý để giảm công việc lặp lại, thời gian, lượt gọi LLM và token, đồng thời kiểm tra tính đúng, quyền truy cập và hiệu lực nguồn. AI Coding Agent hỗ trợ Developer là bối cảnh ứng dụng; Secure Local Semantic Cache là kiến trúc nghiên cứu cốt lõi.
 
-Mục tiêu: đo cache nhanh hơn, tiết kiệm hơn trong điều kiện nào; câu trả lời có đúng và có tuân thủ quyền không. Local Semantic Cache là trọng tâm, server cache là phương án đối chiếu.
+## Kịch bản và phạm vi
 
-## Trạng thái
+Trong ứng dụng tiếp nhận báo giá nhà cung cấp giả lập, Developer cần thêm **đúng một quy tắc**: đánh dấu báo giá thiếu ngày hết hạn hợp lệ để con người xem xét. Agent hỗ trợ tìm hiểu repository, đề xuất patch và chạy test.
 
-Frontend có bốn khu: Thiết lập, Chat, Số liệu và Tài liệu. Đã có chat mô phỏng, dashboard tổng hợp phiên, chọn/thả tệp, phân loại và tìm/lọc danh sách. Chưa upload/ingest thật hoặc nối AI; tệp hiển thị Chờ tải lên. FastAPI hiện có endpoint health; Docker Compose có PostgreSQL/pgvector. Xem [hướng dẫn chạy](docs/general/setup.md) và [trạng thái kiểm chứng](docs/general/project-status.md).
+**Safety property duy nhất:** không triển khai thay đổi quy tắc validation khi chưa có người có thẩm quyền phê duyệt tường minh **chính xác thay đổi đó**. Approval phải gắn phiên bản/hash và thực thi tại backend/deployment control; đây là duyệt code, không phải duyệt báo giá. Cache verification kiểm soát reuse thông tin, không thay thế authorization, testing hoặc human approval.
 
-## Các khu chính
+Thí nghiệm chính so sánh **Developer-guided baseline / AI-assisted workflow**, cùng repo gốc, tập báo giá đóng băng, gate và quy tắc đo. Giới hạn: **một repository, một test fixture, một approval-control implementation, một acceptance threshold định trước**; giá trị threshold còn cần thống nhất. Đo năm chiều: correctness of flags, approval gate, reproducibility, trace completeness, engineering time/failures. So sánh AI Cache/No Cache là phép thử phụ đề xuất, chưa phải yêu cầu giảng viên đã xác nhận.
 
-- **Thiết lập** (`/setup`): cấu hình cache và điều kiện thí nghiệm, lưu kế hoạch nháp trong phiên; chưa có bộ chạy benchmark.
-- **Chat** (`/`): hỏi đáp nội bộ, lịch sử hội thoại và chat mới; mặc định **Cả hai**, hai khung Không cache/Cache dùng chung một ô nhập. Nút bánh răng chọn Không cache, Cache hoặc Cả hai. Nút Thông số mở cửa sổ so sánh theo từng lượt gửi, mặc định chọn câu gần nhất.
-- **Số liệu** (`/metrics`): ba tab Chung / Không cache / Cache. Chung có biểu đồ đường hiệu suất theo số truy vấn và bảng đối chiếu với tiêu chí ở giữa, số liệu hai bên; mỗi tab nhánh có chỉ số, biểu đồ và lượt gửi tương ứng. Mặc định hiển thị 24 truy vấn giả để xem giao diện; nguồn phiên Chat được tách riêng, không có công tắc dữ liệu mẫu trên trang. Fixture chỉ phục vụ xem giao diện, chưa phải kết quả benchmark.
-- **Tài liệu** (`/documents`): chọn hoặc kéo thả tệp, phân loại, tìm và lọc danh sách.
+## Kiến trúc mục tiêu
 
-Thiết lập (`/setup`) đứng đầu sidebar, lưu kế hoạch thí nghiệm nháp trong phiên; chưa áp dụng vào Chat hoặc chạy benchmark. Giữ giao diện hỏi đáp tối giản. Ba chế độ chat hiện chỉ có phản hồi mô phỏng, chưa có cache thật; runner và benchmark được hoãn đến khi nền tảng chat/tài liệu hoạt động.
+Developer request → local lookup → authorization & cache verification → reuse hợp lệ hoặc authorized repository retrieval/RAG → AI Agent tạo patch → test → human approval gắn đúng thay đổi → deployment & audit.
 
-Chat và tệp chỉ được giữ trong phiên, mất khi tải lại. Phân loại không thay thế quyền truy cập; upload, xử lý tài liệu, phân quyền và RAG cần triển khai backend.
+Đề xuất bắt đầu bằng **Answer Cache** cho câu hỏi tìm hiểu repository: một safe hit có thể tránh sinh lại câu trả lời. **Repository Context Cache** có thể giảm truy xuất/phân tích lặp, nhưng không nhất thiết tránh toàn bộ LLM calls. Cả hai phải kiểm tra identity/tenant/repo, intent/scope, nguồn/version/hash, TTL, policy và toàn vẹn. Similarity không phải quyền; cached context không chứng minh code hiện tại đúng. Chưa có lợi ích cache được đo cho kịch bản này.
 
-## Các phần có thể thay thế
+## Trạng thái thực tế
 
-| Phần | Lựa chọn dự kiến |
+Bối cảnh đã cập nhật trong tài liệu ngày **2026-11-02**; ứng dụng vẫn giữ giao diện chatbot nội bộ cũ để tái sử dụng:
+
+| Thành phần | Hiện có | Giới hạn |
+| --- | --- | --- |
+| Thiết lập `/setup` | Chín nhóm mode/dataset/embedding/threshold/eviction/quyền/training/logging/export; snapshot trong phiên, validation và xuất JSON cấu hình | Bản nháp; results null, chưa áp dụng vào Chat hoặc chạy benchmark/training/logging thật |
+| Chat `/` | Lịch sử, bản nháp, Không cache/Cache/Cả hai với prompt chung; modal thông số từng lượt | Phản hồi mô phỏng, chưa AI/RAG hoặc cache thật |
+| Số liệu `/metrics` | Ba tab, biểu đồ/bảng/chi tiết; mặc định 24 truy vấn giả, nguồn phiên riêng tại `/metrics?source=session` | Fixture xem UI, không phải kết quả thực nghiệm |
+| Tài liệu `/documents` | Chọn/thả, phân loại, tìm/lọc tệp trong phiên | Chờ tải lên; chưa đọc/ingest/upload hoặc authorized retrieval |
+| Backend | FastAPI `GET /health`, CORS local, test health/CORS | Chưa auth, API nghiệp vụ, Agent, gate hoặc deployment control |
+| Hạ tầng | Compose PostgreSQL/pgvector và init extension | Chưa DB adapter/schema; lần này không chạy kiểm chứng database |
+
+Chưa có Supplier Quotation Management, fixture báo giá, Local Semantic Cache, embedding/matching/verification, RBAC/ABAC thực thi, model adapter, change review, approval center, execution trace hoặc runner thực nghiệm. Chat/tệp/cấu hình nháp mất khi tải lại; chọn RBAC/ABAC trong UI không cấp quyền. Thay đổi code đang có trong working tree không được coi là hoàn thành kiến trúc mục tiêu.
+
+## Công nghệ và tổ chức
+
+| Thư mục | Vai trò |
 | --- | --- |
-| Cache | Không cache, local, server; hai tầng để sau |
-| Matching | Exact match, semantic similarity |
-| Chính sách cache | Ngưỡng, TTL, dung lượng, eviction |
-| AI | LLM và embedding có adapter riêng; API trước, endpoint local sau |
-| RAG | Chunking, top-k, phương pháp truy xuất |
-| Quyền | RBAC, điều kiện ABAC; chi tiết chưa chốt |
+| `frontend/` | Next.js/TypeScript; UI hiện có. Browser cache IndexedDB/Dexie mới là dự kiến, chưa có dependency Dexie |
+| `backend/` | Python/FastAPI; dự kiến authorization, authorized RAG, model/Agent adapter, verification và approval/deployment control |
+| `research/` | Chỗ dành cho fixture, protocol, phân tích/kết quả; hiện chưa có pipeline hay research notes/bài báo |
+| `infra/` | Docker Compose và init SQL PostgreSQL/pgvector |
+| `docs/` | Yêu cầu, kiến trúc, đánh giá, lộ trình và trạng thái có bằng chứng |
 
-Thiết kế điểm thay thế rõ ràng, triển khai từng lựa chọn khi cần. Chưa làm hệ thống plugin hay editor rule/thuật toán tùy ý.
+Giữ ranh giới LLM/embedding adapter, storage/matching/validation, admission/TTL/eviction/invalidation và provenance/version. None/local/server và exact/semantic vẫn là khả năng thiết kế; server storage chưa chốt, hai tầng/fine-tune/FL để sau. Không đổi package/repository/path hoặc xây lại frontend trong đợt cập nhật này.
 
-## Công nghệ và thư mục
+## Chạy và kiểm tra
 
-| Thư mục | Trách nhiệm và công nghệ dự kiến |
-| --- | --- |
-| frontend/ | Next.js/TypeScript, giao diện, API client, browser cache qua IndexedDB/Dexie |
-| backend/ | Python/FastAPI, phân quyền, RAG, model adapter, server cache |
-| research/ | Python, dữ liệu giả lập, thử thuật toán và phân tích |
-| docs/ | Thiết kế theo chủ đề, quyết định và câu hỏi mở |
-| infra/ | Cấu hình môi trường và triển khai |
+Từ thư mục gốc, mở từng terminal PowerShell:
 
-PostgreSQL + pgvector cho dữ liệu và vector tài liệu RAG. Storage server cache cụ thể chưa chốt. Python nghiên cứu không thay thế TypeScript cần chạy trong trình duyệt. Bắt đầu bằng module đơn giản; chỉ tách thêm thư mục khi cần.
+```powershell
+cd frontend
+npm ci
+npm run dev
+```
 
-## Nguyên tắc chính
+```powershell
+cd backend
+python -m venv .venv
+.\.venv\Scripts\python.exe -m pip install -r requirements-dev.lock.txt
+.\.venv\Scripts\python.exe -m uvicorn app.main:app --reload --host 127.0.0.1 --port 8000
+```
 
-- Similarity không phải quyền truy cập. Backend xác minh quyền hiện tại và metadata đáng tin cậy trước khi ứng dụng dùng lại cache.
-- Baseline và cache đều phân quyền khi retrieval/generation, so sánh trong điều kiện tương đương.
-- Tách cold/warm; tính cả embedding, lookup, xác minh quyền và mạng. Không mặc định cache luôn nhanh hơn.
-- Đánh giá riêng chất lượng và phân quyền; lưu cấu hình cùng kết quả.
-- Dùng dữ liệu giả lập. Chặn reuse không bảo vệ plaintext khỏi người kiểm soát thiết bị, không thu hồi nội dung đã đọc.
+Frontend: http://127.0.0.1:3000. Health: http://127.0.0.1:8000/health. UI mô phỏng không cần API key/database. Các lệnh chỉ chạy ứng dụng hiện có, chưa chạy workflow báo giá/Agent. Xem [setup](docs/general/setup.md) cho yêu cầu môi trường, Compose và các lệnh lint/typecheck/test/build/browser smoke.
 
-## Tài liệu
+## Tài liệu và bước tiếp theo
 
-Đọc [mục lục docs](docs/README.md) để đọc thiết kế và trạng thái hệ thống. [AGENTS.md](AGENTS.md) và [Copilot instructions](.github/copilot-instructions.md) hướng dẫn AI làm việc trong repository.
+- [Tổng quan/yêu cầu/câu hỏi mở](docs/general/overview.md): ràng buộc giảng viên, định nghĩa nghiệp vụ và threshold cần xác nhận.
+- [Kiến trúc](docs/system/architecture.md), [cache](docs/system/cache.md), [bảo mật và approval gate](docs/system/authorization.md).
+- [Frontend hiện tại và phương án tái sử dụng](docs/frontend/design.md), [thiết kế đánh giá](docs/evaluation/design.md).
+- [Kế hoạch PoC](docs/general/implementation-plan.md): ưu tiên app báo giá tối giản và fixture đã chốt; chưa lập trình trong đợt này.
+- [Trạng thái kiểm chứng](docs/general/project-status.md), [mục lục docs](docs/README.md), [quy tắc cho agent](AGENTS.md).

@@ -1,5 +1,14 @@
 # CacheSec — quy tắc làm việc
 
+## 0. Bối cảnh lâu dài và giới hạn nghiên cứu
+- CacheSec nghiên cứu **Secure Local Semantic Cache for AI-Assisted Software Development**. Kiến trúc cache là đóng góp chính; AI Coding Agent là bối cảnh ứng dụng, không thay thế mục tiêu nghiên cứu.
+- Kịch bản giảng viên: tiếp nhận/validation báo giá nhà cung cấp giả lập; đúng một thay đổi phần mềm là thêm quy tắc đánh dấu báo giá thiếu ngày hết hạn hợp lệ để con người xem xét. Không mở rộng ERP, không nhầm duyệt code với duyệt báo giá.
+- Đúng một safety property: không triển khai thay đổi quy tắc validation khi chưa có người có thẩm quyền phê duyệt tường minh chính xác thay đổi đó. Cache verification và approval gate riêng biệt; cache không cấp quyền, bỏ test hoặc duyệt mã đã đổi. Gate phải thực thi ở backend/deployment control, gắn phiên bản/hash và kiểm tra đúng artifact tại deployment.
+- Giảng viên yêu cầu một repository, một fixture cố định, một approval-control implementation và một acceptance threshold định trước; so sánh Developer-guided/AI-assisted theo năm chiều: correctness, approval gate, reproducibility, trace completeness, engineering time/failures. Giá trị threshold và định nghĩa ngày hợp lệ chưa được xác nhận; không coi đề xuất là đã được giảng viên duyệt.
+- Cache/No Cache trong AI workflow là phép thử phụ đề xuất; tách khỏi thí nghiệm chính và cold/warm. None/server, exact/semantic, TTL/eviction/invalidation, RBAC/ABAC, authorized RAG, provenance/version và model adapter vẫn giữ trong thiết kế; không buộc triển khai mọi biến thể trong PoC.
+- Frontend cũ là nền tái sử dụng, không tự xóa/viết lại. Không đổi package/repository/path/định danh kỹ thuật chỉ để đổi bối cảnh. Tài liệu mục tiêu không chứng minh tính năng đã chạy; xem docs/general/project-status.md.
+- Yêu cầu/câu hỏi mở thuộc docs/general/overview.md; kiến trúc thuộc docs/system/; đánh giá thuộc docs/evaluation/design.md; lộ trình thuộc docs/general/implementation-plan.md. Không tự chốt quyết định bảo mật/nghiên cứu còn mở hoặc chạy thực nghiệm trước khi khóa điều kiện cần thiết.
+
 ## 1. Đọc bối cảnh trước khi làm
 - Đọc AGENTS.md, README.md, .github/copilot-instructions.md, docs/README.md và docs/general/project-status.md; theo hướng dẫn lồng trong thư mục nếu có.
 - Đọc tài liệu và code liên quan đến phần bị ảnh hưởng; thay đổi xuyên phần cần xem kiến trúc, API, dữ liệu và quyền tương ứng.
@@ -23,6 +32,7 @@
 ## 4. Bảo mật và tính đúng thực nghiệm
 - Similarity không phải quyền. Backend xác minh identity/tenant, mọi nguồn phụ thuộc, quyền hiện tại và tính hợp lệ trước khi trả cache; không tin metadata client tự khai.
 - Kiểm tra scope, TTL, nguồn/policy/configuration và toàn vẹn nội dung. Không xác minh được thì không trả cache; offline cần policy riêng.
+- Với repository, kiểm tra repo identity, intent/scope, mọi file phụ thuộc và revision/hash; cached context không chứng minh code hiện tại vẫn đúng. Không dùng cache lỗi thời làm căn cứ tin cậy sửa mã; deployment approval không thuộc answer/context cache.
 - Thu hồi quyền ngăn reuse theo freshness đã công bố, không thu hồi nội dung đã đọc. Mã hóa browser không tự giải quyết XSS/thiết bị bị kiểm soát.
 - Dùng dữ liệu giả lập; không commit secrets/log nội dung nhạy cảm. Unsafe cache chỉ là đối chứng giả lập tùy chọn.
 - So sánh cùng điều kiện, tách vị trí cache với phạm vi chia sẻ, cold/warm và demo A/B với benchmark; tính cả mạng/auth.

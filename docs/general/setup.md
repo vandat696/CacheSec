@@ -1,6 +1,12 @@
 # Chạy môi trường phát triển
 
-Yêu cầu: Node.js 20.9+ (đã kiểm tra máy hiện tại có Node 24), Python 3.12+, Docker Desktop với Linux Engine đang chạy. Frontend dùng npm; backend dùng venv/pip. Chạy các lệnh sau từ thư mục gốc, bằng PowerShell.
+## Phạm vi hướng dẫn
+
+Các lệnh dưới đây chạy **ứng dụng hiện có**, chưa chạy Supplier Quotation Management, AI Coding Agent, Local Semantic Cache hoặc approval/deployment control. Bối cảnh nghiên cứu đã đổi sang AI-assisted software development ngày 2026-11-02; UI chatbot nội bộ vẫn được giữ để tái sử dụng. Xem [hiện trạng](project-status.md) và [lộ trình PoC](implementation-plan.md); chưa có endpoint/lệnh chạy cho các thành phần mục tiêu mới.
+
+Chỉ xem UI mô phỏng cần frontend; không cần backend, Docker/database hoặc API key. Backend health có thể chạy độc lập database. Chỉ cần khởi động Docker khi muốn kiểm tra hạ tầng PostgreSQL/pgvector; hướng dẫn này không yêu cầu cài thêm dịch vụ/model SDK.
+
+Yêu cầu theo thành phần: frontend cần Node.js 20.9+ (mốc kiểm chứng trước ghi nhận Node 24), backend cần Python 3.12+, database cần Docker Desktop với Linux Engine đang chạy. Frontend dùng npm; backend dùng venv/pip. Chạy các lệnh sau từ thư mục gốc, bằng PowerShell.
 
 ## 1. Database
 
@@ -35,7 +41,7 @@ npm ci
 npm run dev
 ```
 
-Mở http://127.0.0.1:3000 để dùng Chat, `/metrics` để xem Số liệu hoặc `/documents` để chọn/thả và phân loại tài liệu. Sidebar theo thứ tự Thiết lập → Chat → Số liệu → Tài liệu. Trang `/setup` chọn cấu hình cache và điều kiện thí nghiệm; Lưu thiết lập tạo kế hoạch trong phiên, chưa chạy hoặc áp dụng vào Chat. Điều hướng giữ bản đã lưu, tải lại sẽ mất. `/chat`, `/settings` và `/experiments` chuyển về Chat; `/ui` giữ thư viện component cho phát triển, không nằm trong điều hướng chính. Chưa gọi AI/upload backend; không cần API key. Xem [tổ chức frontend](../frontend/design.md#tổ-chức-code).
+Mở http://127.0.0.1:3000 để dùng Chat, `/metrics` để xem Số liệu hoặc `/documents` để chọn/thả và phân loại tài liệu. Sidebar theo thứ tự Thiết lập → Chat → Số liệu → Tài liệu. Trang `/setup` có [chín nhóm thông số thí nghiệm](../frontend/design.md#thiết-lập-thí-nghiệm); Lưu thiết lập tạo snapshot trong phiên, chưa chạy hoặc áp dụng vào Chat. Điều hướng giữ bản đã lưu, tải lại sẽ mất. Sau khi lưu có thể Xuất cấu hình JSON; thay đổi form cần lưu lại trước khi xuất. JSON/CSV ở Export Results chỉ chọn định dạng dự kiến, nút xuất kết quả đo chưa hoạt động vì chưa có run. Các alias embedding và manifest tài liệu đều là nháp; RBAC/ABAC, fine-tuning/FL và logging chưa có thực thi backend. `/chat`, `/settings` và `/experiments` chuyển về Chat; `/ui` giữ thư viện component cho phát triển, không nằm trong điều hướng chính. Chưa gọi AI/upload backend; không cần API key. Xem [tổ chức frontend](../frontend/design.md#tổ-chức-code).
 
 Thử luồng: Chat → gửi câu hỏi hoặc tạo chat mới → sang Tài liệu → chọn danh mục rồi chọn/thả tệp → đổi phân loại từng tệp → tìm/lọc danh sách → quay lại Chat. Hội thoại, bản nháp và tệp giữ qua điều hướng trong phiên, mất khi tải lại. Tệp luôn ghi Chờ tải lên: chưa gửi server, chưa parse/embed hoặc được chatbot đọc. Nhãn Mô phỏng đã được bỏ khỏi giao diện; giới hạn thực tế vẫn thể hiện qua phản hồi mẫu, trạng thái tệp và thông số chưa đo/chưa xác minh.
 
@@ -43,7 +49,7 @@ Trong sidebar, bấm **Chat** hoặc mũi tên cạnh đó để mở/thu gọn 
 
 Trong Chat, nhấn icon bánh răng nhỏ **Cài đặt chat** ở góc phải thanh trên cùng để chọn Không cache, Cache hoặc Cả hai. Mở phiên hoặc tải lại mặc định Cả hai. Chế độ Cả hai có hai vùng hội thoại không viền và một ô nhập gửi cùng prompt sang cả hai; đổi chế độ giữ lịch sử từng nhánh và bản nháp. Khi đang chờ, nút đổi chế độ và Chat mới tạm khóa. Cả hai nhánh vẫn trả lời mẫu, nhánh Cache chưa thực hiện lưu/tìm/reuse cache hoặc tạo số đo. Reload mất chế độ và lịch sử trong phiên.
 
-Trang **Số liệu** có ba tab **Chung / Không cache / Cache**, chỉ giữ bộ lọc hội thoại, tổng hợp mọi lượt gửi trong hội thoại đã chọn. Chung có các biểu đồ tổng quan và bảng đối chiếu bên dưới: Không cache bên trái, tiêu chí ở giữa, Cache bên phải; giá trị tốt hơn được in đậm/tô màu khi có phép đo tương đương; hai tab riêng chỉ có biểu đồ, chất lượng/quyền và các lượt chạy nhánh tương ứng. Biểu đồ đường ở Chung dùng số truy vấn làm trục ngang, chọn Độ trễ/lượt gọi/token và kéo thanh Truy vấn để xem hai nhánh từng lượt. Không có số đo thì không vẽ đường độ trễ; nhánh không chạy tạo khoảng trống. Dùng phím trái/phải hoặc Home/End để chuyển tab. Bấm câu hỏi trong bảng để mở năm thông số; bảng phân trang 8 lượt. Usage demo bằng 0 ở nhánh đã chạy, chưa có lượt là dấu gạch; thời gian, hit rate, chất lượng và quyền chưa có phép đo/nhãn. Trang dùng dữ liệu phiên Chat, cập nhật phản hồi đang chờ và mất khi reload; chưa phải benchmark.
+Trang **Số liệu** có ba tab **Chung / Không cache / Cache**, chỉ giữ bộ lọc hội thoại, tổng hợp mọi lượt gửi trong hội thoại đã chọn. Chung có các biểu đồ tổng quan và bảng đối chiếu bên dưới: Không cache bên trái, tiêu chí ở giữa, Cache bên phải; giá trị tốt hơn được in đậm/tô màu khi có phép đo tương đương; hai tab riêng chỉ có biểu đồ, chất lượng/quyền và các lượt chạy nhánh tương ứng. Biểu đồ đường ở Chung dùng số truy vấn làm trục ngang, chọn Độ trễ/lượt gọi/token và kéo thanh Truy vấn để xem hai nhánh từng lượt. Không có số đo thì không vẽ đường độ trễ; nhánh không chạy tạo khoảng trống. Dùng phím trái/phải hoặc Home/End để chuyển tab. Bấm câu hỏi trong bảng để mở năm thông số; bảng phân trang 8 lượt. Usage demo bằng 0 ở nhánh đã chạy, chưa có lượt là dấu gạch; thời gian, hit rate, chất lượng và quyền chưa có phép đo/nhãn. Ở nguồn phiên Chat, dữ liệu cập nhật phản hồi đang chờ và mất khi reload; nguồn mặc định vẫn là fixture UI như mô tả bên dưới, chưa phải benchmark.
 
 Mở Số liệu mặc định xem 24 truy vấn giả trong hai hội thoại, đủ thẻ chỉ số, đường biểu diễn, vòng cache, bảng so sánh và chi tiết. Đã bỏ công tắc Xem dữ liệu mẫu và dòng mô tả nguồn trên toolbar. Khi phát triển/kiểm thử, dùng `/metrics?source=session` để xem nguồn phiên Chat theo quy tắc trên; đổi query bằng điều hướng client giữ phiên, reload vẫn xóa Chat. Đổi nguồn reset bộ lọc/tab/biểu đồ/bảng. Fixture chỉ phục vụ xem UI, không sửa Chat/cache hoặc lưu kết quả nghiên cứu. Xem [thiết kế dữ liệu mẫu](../frontend/design.md#dashboard-số-liệu).
 

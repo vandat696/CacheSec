@@ -6,6 +6,8 @@ import {
   createComparisonPreview,
   createExperimentPlan,
   validateProfile,
+  createSetupPlan,
+  initialSetup,
 } from "../src/features/workspace/workspace-model.ts";
 
 const profiles = () => initialProfiles.map((profile) => ({ ...profile }));
@@ -106,4 +108,59 @@ test("Validate profile chặn TTL, similarity và tên sai", () => {
   ]) {
     assert.equal(typeof validateProfile({ ...profile, ...invalid }), "string");
   }
+});
+
+test("Setup tính ma trận theo mode, không nhân baseline theo threshold/eviction", () => {
+  const draft = { ...initialSetup, modes: ["none", "local", "server"] };
+  const plan = createSetupPlan(draft, "setup-1", "2026-10-29T00:00:00Z", 1);
+  assert.equal(plan.plannedVariants, (1 + 3 * 3 * 2) * 2 * 3);
+  assert.equal(plan.plannedQueries, plan.plannedVariants * 3 * 3);
+  assert.deepEqual(plan.thresholds, [0.8, 0.85, 0.9]);
+  assert.deepEqual(plan.embeddingModels, ["embedding-a", "embedding-b"]);
+  assert.equal(plan.dataset.documentSetRevision, 1);
+  assert.equal(plan.previewOnly, true);
+  assert.equal(plan.results, null);
+  assert.deepEqual(plan.loggingFields, ["duration_ms", "llm_tokens", "cache_status", "authorization_decision"]);
+});
+
+test("Setup chỉ No Cache bỏ qua threshold, eviction, TTL và dung lượng", () => {
+  const plan = createSetupPlan({ ...initialSetup, modes: ["none"], thresholds: "", evictionPolicies: [], ttlSeconds: 0, capacity: 0, requestLogging: false }, "id", "date", 1);
+  assert.equal(plan.plannedVariants, 6);
+  assert.equal(plan.plannedQueries, 54);
+  assert.deepEqual(plan.thresholds, []);
+  assert.deepEqual(plan.loggingFields, []);
+});
+
+test("Setup snapshot không đổi theo bản nháp; lựa chọn training/export không tạo kết quả", () => {
+  const draft = structuredClone(initialSetup);
+  draft.localTraining = "fl-simulation";
+  draft.exportFormat = "csv";
+  const plan = createSetupPlan(draft, "id", "date", 2);
+  draft.modes.push("server");
+  draft.evictionPolicies.pop();
+  draft.accessPolicies.pop();
+  draft.embeddingModels = "changed";
+  assert.deepEqual(plan.configuration.modes, ["none", "local"]);
+  assert.equal(plan.configuration.evictionPolicies.length, 3);
+  assert.equal(plan.configuration.accessPolicies.length, 3);
+  assert.equal(plan.configuration.localTraining, "fl-simulation");
+  assert.equal(plan.configuration.exportFormat, "csv");
+  assert.equal(plan.revision, 2);
+  assert.equal(JSON.parse(JSON.stringify(plan)).results, null);
+});
+
+test("Setup từ chối cấu hình sai, không bỏ qua threshold rỗng hoặc trùng", () => {
+  for (const invalid of [
+    { name: " " }, { modes: [] }, { modes: ["local", "local"] }, { modes: ["unknown"] },
+    { workloadId: "missing" }, { documentSetId: "missing" },
+    { embeddingModels: "" }, { embeddingModels: "a\na" }, { embeddingModels: "a\n" },
+    { embeddingModels: Array.from({ length: 9 }, (_, i) => `model-${i}`).join("\n") },
+    { thresholds: "" }, { thresholds: "0.8," }, { thresholds: "0.8,0.80" },
+    { thresholds: "-0.1" }, { thresholds: "1.1" }, { thresholds: "NaN" }, { thresholds: "0x1" },
+    { evictionPolicies: [] }, { evictionPolicies: ["unknown"] },
+    { accessPolicies: [] }, { accessPolicies: ["unsafe"] },
+    { ttlSeconds: NaN }, { capacity: 0 }, { capacity: 1.5 },
+    { repeats: 0 }, { seed: -1 }, { phase: "unknown" },
+    { localTraining: "unknown" }, { requestLogging: "true" }, { exportFormat: "exe" },
+  ]) assert.throws(() => createSetupPlan({ ...initialSetup, ...invalid }, "id", "date", 1), JSON.stringify(invalid));
 });

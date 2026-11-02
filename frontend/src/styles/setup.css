@@ -1,16 +1,43 @@
-.setup-workspace { max-width: 900px; padding-bottom: 40px; }
-.setup-intro { margin: -4px 0 24px; color: var(--nui-muted); font-size: 14px; }
-.setup-workspace form { padding: 24px; border: 1px solid var(--nui-border); border-radius: 12px; background: var(--nui-surface); }
-.setup-section { margin-top: 24px; padding-top: 20px; border-top: 1px solid var(--nui-border); }
-.setup-section h2 { margin: 0 0 18px; font-size: 15px; font-weight: 600; }
-.setup-fields { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 16px 24px; }
-.setup-note, .setup-footer p { color: var(--nui-muted); font-size: 12px; line-height: 1.6; }
-.setup-note { margin: 16px 0 0; }
-.setup-footer { display: flex; align-items: center; justify-content: space-between; gap: 20px; margin-top: 24px; }
+.setup-workspace { max-width: 1120px; padding-bottom: 40px; }
+.setup-intro { margin: -4px 0 24px; color: var(--nui-muted); font-size: 14px; line-height: 1.6; }
+.setup-workspace form { border: 1px solid var(--nui-border); border-radius: 12px; background: var(--nui-surface); }
+.setup-name { padding: 24px; }
+.setup-table-heading, .setup-row { display: grid; grid-template-columns: minmax(180px, 0.85fr) minmax(0, 2fr); gap: 32px; padding: 24px; border-top: 1px solid var(--nui-border); }
+.setup-table-heading { padding-block: 12px; background: var(--nui-bg); color: var(--nui-muted); font-size: 12px; font-weight: 600; }
+.setup-row-heading h2, .setup-run h2 { margin: 0 0 8px; font-size: 14px; font-weight: 600; line-height: 1.5; }
+.setup-row-heading p { margin: 0; color: var(--nui-muted); font-size: 13px; line-height: 1.6; }
+.setup-row-controls { min-width: 0; }
+.setup-fields { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 16px; }
+.setup-options { display: flex; flex-wrap: wrap; gap: 12px 24px; padding: 0; margin: 0; min-width: 0; border: 0; }
+.setup-options:disabled { opacity: 0.6; }
+.setup-note, .setup-footer p { color: var(--nui-muted); font-size: 12px; line-height: 1.7; overflow-wrap: anywhere; }
+.setup-note { margin: 10px 0 0; }
+.setup-subfields { margin-top: 16px; }
+.setup-log-fields { display: flex; flex-wrap: wrap; gap: 8px; padding: 0; margin: 14px 0 0; list-style: none; }
+.setup-log-fields li { padding: 4px 8px; border-radius: 4px; background: var(--nui-bg); color: var(--nui-muted); font-size: 12px; }
+.setup-export-controls { display: flex; align-items: flex-end; flex-wrap: wrap; gap: 12px; }
+.setup-export-controls .nui-field { flex: 1; min-width: 140px; }
+.setup-export-controls button { margin-bottom: 4px; }
+.setup-run { padding: 24px; border-top: 1px solid var(--nui-border); }
+.setup-run h2 { margin-bottom: 16px; }
+.setup-run .setup-fields { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+.setup-footer { display: flex; align-items: center; justify-content: space-between; gap: 20px; padding: 20px 24px; border-top: 1px solid var(--nui-border); }
+.setup-footer p { margin: 0; max-width: 350px; }
+.setup-actions { display: flex; flex-wrap: wrap; gap: 8px; }
 .setup-footer button { flex-shrink: 0; }
-.setup-saved { font-size: 13px; margin: 16px 0 0; color: var(--nui-text); }
-@media (max-width: 600px) {
-  .setup-workspace form { padding: 16px; }
+.setup-saved, .setup-error { font-size: 13px; margin: 0; padding: 0 24px 24px; line-height: 1.6; }
+.setup-saved { color: var(--nui-success); }
+@media (max-width: 800px) {
+  .setup-row, .setup-table-heading { grid-template-columns: minmax(150px, 0.85fr) minmax(0, 2fr); gap: 20px; }
   .setup-fields { grid-template-columns: minmax(0, 1fr); }
-  .setup-footer { align-items: stretch; flex-direction: column; gap: 8px; }
+  .setup-footer { align-items: stretch; flex-direction: column; gap: 16px; }
+}
+@media (max-width: 600px) {
+  .setup-name, .setup-row, .setup-run { padding: 20px 16px; }
+  .setup-table-heading { display: none; }
+  .setup-row { grid-template-columns: minmax(0, 1fr); gap: 16px; }
+  .setup-run .setup-fields { grid-template-columns: minmax(0, 1fr); }
+  .setup-footer { padding: 20px 16px; }
+  .setup-actions { flex-direction: column; }
+  .setup-saved, .setup-error { padding: 0 16px 20px; }
 }

@@ -1,5 +1,31 @@
 # Trạng thái dự án
 
+## 2026-11-02 — Cập nhật bối cảnh AI-assisted software development (chỉ tài liệu)
+
+- Theo yêu cầu mới, giữ Secure Local Semantic Cache làm trọng tâm và dùng đúng một thay đổi validation ngày hết hạn báo giá để kiểm chứng. Ghi riêng yêu cầu giảng viên, hiện trạng có bằng chứng, giải pháp đề xuất và câu hỏi cần xác nhận; bỏ ưu tiên chatbot/upload nội bộ khỏi lộ trình hiện hành.
+- Đã khảo sát README/AGENTS/Copilot, toàn bộ docs chủ đề, cấu trúc frontend/backend/research, model/providers, demo reply, metrics fixture, test/scripts, package/config và Compose/init SQL. Không tìm thấy research notes/paper summaries, source app báo giá hoặc implementation cache/Agent/gate. Không có bằng chứng các phần này đang được triển khai trong working tree; thay đổi code có sẵn chủ yếu ở UI Thiết lập và test đi kèm.
+- Đã cập nhật tài liệu yêu cầu, As-Is/Target, Answer/Context Cache, verification/retrieval, exact-change approval/deployment/audit, hai lớp thí nghiệm, định nghĩa chỉ số/nguồn đo và kế hoạch mười bước. Chỉ thêm một tài liệu kế hoạch; giữ chi tiết UI Thiết lập mới, lệnh chạy và lịch sử cũ. Định nghĩa ngày, threshold, identity/gate và protocol còn mở.
+- Đợt này chỉ sửa tài liệu và hướng dẫn agent; không sửa source ứng dụng, tests, dependencies, package/path hoặc hạ tầng, không chạy deploy/commit/push. Kết quả test/build/browser của các mốc cũ là bằng chứng lịch sử, không được nhận là đã chạy lại trong đợt này.
+- Kiểm chứng tài liệu: rà diff; 84 liên kết nội bộ và 11 anchor trong 13 file Markdown hợp lệ; code fences/encoding/whitespace và kiểm tra mẫu secret phổ biến không có phát hiện; git diff --check đạt. Đối chiếu SHA-256 với đầu tác vụ xác nhận file ngoài tài liệu không đổi, lịch sử trạng thái 2026-10 giữ nguyên. Không chạy lại lint/typecheck/test/build/browser/DB vì chỉ sửa tài liệu; bốn liên kết web tham khảo cũ chưa kiểm tra trực tuyến.
+
+### Hiện trạng theo nhóm chức năng
+
+| Nhóm | Phân loại được xác nhận qua code |
+| --- | --- |
+| Frontend và state phiên | UI/validation thực: bốn khu, lịch sử/nháp, snapshot/JSON cấu hình, chọn/thả/phân loại tệp; reload mất phiên |
+| Chat, cache status và performance dashboard | Mô phỏng/fixture UI: demo reply và 24 query giả; không LLM/cache/telemetry thật |
+| FastAPI và hạ tầng | Health/CORS có code + test; Compose/pgvector có cấu hình, chưa adapter/schema và chưa kiểm chứng runtime DB trong đợt này |
+| Local cache, embedding/similarity/threshold và lifecycle | Chỉ thiết kế/điều khiển nháp; chưa IndexedDB/Dexie, matching, verification, admission/TTL/eviction/invalidation thực thi |
+| RBAC/ABAC, authorized RAG, LLM và metadata/provenance/version | Chỉ thiết kế; UI lựa chọn policy không cấp quyền, tệp chưa được ingest; chưa provider/authorization thực |
+| Báo giá, Agent, change review/test executor | Mục tiêu mới; chưa app mẫu/fixture, repository reader/Agent integration hoặc patch pipeline |
+| Approval gate, deployment control, audit/runner | Mục tiêu mới; chưa enforcement, artifact binding, execution trace hoặc kết quả năm chiều đo |
+
+## 2026-10-29 — Thiết lập chín nhóm thông số thực nghiệm
+
+- Trang `/setup` theo bố cục Thông số / Chức năng: Experiment Mode, Dataset, Embedding/Threshold/Eviction/Access Control Benchmark, Local Training, Request Logging và Export Results. Chọn nhiều mode/model/ngưỡng/chính sách, giữ TTL/dung lượng/số lặp/cold-warm/seed; mobile xếp dọc. Đây là cấu hình nháp; chọn quyền không cấp quyền, training/FL/logging chưa thực thi, xuất kết quả đo khóa khi chưa có run.
+- Lưu snapshot có phiên bản trong phiên, tính ma trận/số lượt dự kiến (No Cache không nhân threshold/eviction), xuất cấu hình JSON với results null. Validation chặn tập rỗng/trùng/ngoài giới hạn, điều hướng giữ bản đã lưu, reload xóa phiên. Cập nhật README, thiết kế frontend/đánh giá và hướng dẫn chạy.
+- Lint, typecheck, 53 test và production build đạt. Edge production kiểm tra riêng Thiết lập ở 360/390/820/1440 px đạt: đủ chín nhóm, validation, lưu/revision, JSON, đổi mode, giữ phiên/reset, không tràn ngang; đã xem ảnh desktop/mobile. Full smoke đạt các luồng hiện có với 72 bố cục và 27 bố cục dữ liệu mẫu, không lỗi runtime/React. Browser trong sandbox không khởi động được; kiểm tra ngoài sandbox dùng profile riêng đạt. Đã kiểm tra link nội bộ và diff. Chưa có runner, benchmark, training hoặc telemetry thật; bước tiếp theo về API upload/ingestion và quyền cho RAG baseline không đổi.
+
 ## 2026-10-29 — Thu gọn bảng so sánh
 
 - Giảm hàng từ 88 xuống 64 px, giảm padding dọc còn 8 px (mobile 6 px), giữ căn giữa và các hàng đồng đều. Cập nhật thiết kế frontend.
@@ -230,37 +256,28 @@ Các mốc ngày tháng bên dưới là lịch sử tại thời điểm thực
 - Chưa tích hợp frontend/backend, DB adapter/migration, authentication, RAG, model, cache hoặc benchmark; chưa có kết quả nghiên cứu.
 - Tài liệu mới mô tả định hướng, chưa đặc tả đầy đủ. Bước tiếp theo là chốt hợp đồng dữ liệu/API và phân quyền trước khi làm chatbot baseline.
 
-## Định hướng và việc còn mở
+## Định hướng và việc còn mở — hiện hành 2026-11-02
 
-### Định hướng đã thống nhất
+### Đã thống nhất theo yêu cầu người dùng
 
-- Secure local semantic cache là trọng tâm, none/server là đối chiếu.
-- Giao diện hiện tại gồm Thiết lập → Chat → Số liệu → Tài liệu theo [thiết kế frontend](../frontend/design.md). Chat có ba chế độ Không cache/Cache/Cả hai, mặc định Cả hai với prompt chung; Số liệu mặc định xem fixture, không có công tắc/mô tả nguồn trên toolbar. Nguồn phiên Chat chưa có số đo/đánh giá thật vẫn tách riêng qua URL cho phát triển/kiểm thử. Thiết lập thí nghiệm nháp đã có tại `/setup`; runner và benchmark vẫn hoãn đến sau nền tảng chat/tài liệu.
-- Next.js, FastAPI/Python, PostgreSQL/pgvector, browser IndexedDB/Dexie.
-- API model trước, local/fine-tune sau; tách LLM/embedding.
-- Tách storage/matching/validation, tránh abstraction quá mức.
-- Frontend Chat/Số liệu/Tài liệu mô phỏng và backend health đã có; upload/ingestion, xác thực, phân quyền, RAG/model và cache thật vẫn chưa triển khai.
+- CacheSec giữ kiến trúc Secure Local Semantic Cache, đổi bối cảnh sang AI-assisted software development. AI Coding Agent là ứng dụng kiểm chứng; không thay nghiên cứu cache bằng một coding agent thông thường.
+- Một thay đổi nghiệp vụ: flag báo giá thiếu ngày hết hạn hợp lệ để con người xem xét. Một safety property: deployment chỉ sau người có thẩm quyền duyệt tường minh đúng change. Không nhầm duyệt code với duyệt báo giá.
+- Thí nghiệm chính Developer-guided/AI-assisted theo năm chiều giảng viên; một repo, một fixture, một approval-control implementation và một acceptance threshold định trước. Giá trị threshold, nghĩa ngày hợp lệ và protocol cụ thể chưa chốt.
+- Giữ thiết kế embedding/matching/threshold, verification, RBAC/ABAC, authorized RAG/LLM, admission/TTL/eviction/invalidation, provenance/version và logging/evaluation; giữ stack và UI cũ để tái sử dụng.
+- Cache verification và approval gate độc lập; enforcement ở backend/control và exact artifact binding là yêu cầu an toàn, chưa có code. Không tự commit, push, deploy hoặc xây lại ứng dụng.
 
-### Còn mở
+### Đề xuất chưa được xác nhận là quyết định triển khai
 
-| Chủ đề | Cần quyết định | Tài liệu |
-| --- | --- | --- |
-| Tài liệu/baseline | API upload/ingestion, lưu trữ, giới hạn tệp, streaming, multi-turn và quản trị tối thiểu | [Frontend](../frontend/design.md), [kiến trúc](../system/architecture.md) |
-| Quyền cho baseline | Nguồn identity/tenant, quyền nạp/đọc, RBAC/ABAC và threat model | [Phân quyền](../system/authorization.md) |
-| AI | Provider/model, embedding, nơi chạy | [Kiến trúc](../system/architecture.md) |
-| Cache, sau baseline | Server storage, metadata tin cậy, toàn vẹn, offline, metric/ngưỡng, TTL, eviction, schema và scope | [Cache](../system/cache.md), [phân quyền](../system/authorization.md) |
-| Đánh giá, sau baseline | Dataset/nhãn, số lượt, công thức, thống kê và lưu profile/kết quả | [Đánh giá](../evaluation/design.md), [kiến trúc](../system/architecture.md) |
+Answer Cache cho câu hỏi tìm hiểu repository là lát cắt đầu tiên ít thay đổi; Context Cache mở rộng sau. AI Cache/No Cache là phép thử phụ; server-cache benchmark, nhiều model/policy/eviction và fine-tune/FL chưa ưu tiên PoC. Deploy PoC có thể là kích hoạt artifact trong môi trường giả lập có gate thật; acceptance có thể là một điều kiện tổng hợp 100% ca validation/gate bắt buộc pass. Các lựa chọn này cần xác nhận trước bước phụ thuộc, không phải giảng viên đã duyệt.
 
+### Còn mở và thứ tự tiếp theo
 
-## Thứ tự tiếp theo đề xuất
+Danh sách quyết định đầy đủ ở [tổng quan](overview.md#giả-định-và-câu-hỏi-mở), tránh ghi lặp: nghĩa ngày/fixture/threshold; baseline tools và số lặp; identity/reviewer authority; vị trí local/model/Agent/tool scope; artifact/approval binding, freshness và deploy threat boundary.
 
-1. Chốt hợp đồng upload/ingestion, lưu trữ và giới hạn tệp cùng nguồn identity/tenant, quyền nạp/đọc và threat model cho baseline.
-2. Nối Chat/Tài liệu với backend để có upload/ingestion và chatbot RAG baseline thật, kiểm thử phân quyền tương ứng.
-3. Sau nền tảng baseline, chốt metadata/policy cache, workload, nhãn và cách đo; bổ sung cache adapter cùng kiểm thử quyền/invalidation.
-4. Nối hai nhánh so sánh với baseline/cache thật, triển khai runner và benchmark theo [thiết kế đánh giá](../evaluation/design.md) trước khi kết luận.
+[Lộ trình PoC](implementation-plan.md) thay ưu tiên upload/chatbot nội bộ cũ: (1) app báo giá nền chưa có rule; (2) fixture/oracle/threshold; (3) cache tối thiểu; (4) authorized repo retrieval; (5) Agent; (6) patch/test duy nhất; (7) approval gate gắn phiên bản trước mọi deploy; (8) trace; (9) so sánh chính; (10) phép thử cache phụ nếu được thống nhất. Gate/trace contract chuẩn bị sớm; không chạy thí nghiệm trước khi cùng hạ tầng, fixture và protocol được khóa.
 
-Quyết định mới ghi nội dung, lý do, lựa chọn cân nhắc và ảnh hưởng đến so sánh; chi tiết giữ tại tài liệu chủ đề, không lặp lại ở nhiều nơi.
+Bước code nhỏ nhất đề xuất là app báo giá nền và fixture có nhãn theo contract đã xác nhận; đường dẫn dự kiến trong kế hoạch. Chưa tạo module, fixture hoặc API mới trong đợt cập nhật tài liệu. Việc upload/ingestion tài liệu nội bộ không còn là đầu việc bắt buộc trước PoC này.
 
-## Cập nhật tài liệu
+## Lịch sử tổ chức tài liệu
 
-Đã gom tài liệu đánh số và các file rỗng vào 9 file trong cấu trúc general/system/frontend/evaluation. Giữ nội dung thiết kế, trạng thái và hướng dẫn chạy; không thay đổi code ứng dụng. Đã kiểm tra liên kết nội bộ, tham chiếu đường dẫn cũ và whitespace.
+Trước lần đổi bối cảnh, tài liệu đánh số và file rỗng đã được gom thành 9 file dưới general/system/frontend/evaluation. Ngày 2026-11-02 thêm một kế hoạch PoC làm nơi quản lý công việc tương lai; tài liệu chủ đề hiện có tiếp tục sở hữu yêu cầu/kiến trúc/đánh giá. Các mục 2026-10 ở trên là lịch sử, không mô tả ưu tiên hiện hành.

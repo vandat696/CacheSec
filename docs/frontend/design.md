@@ -1,6 +1,28 @@
 # Thiết kế frontend
 
-## Ưu tiên hiện tại
+## Định hướng mục tiêu — chưa chuyển đổi ứng dụng
+
+Từ 2026-11-02, CacheSec nghiên cứu Secure Local Semantic Cache for AI-Assisted Software Development trong [kịch bản báo giá duy nhất](../general/overview.md). Đợt này chỉ cập nhật tài liệu; code/route/nhãn hiện tại, kể cả metadata mô tả chatbot nội bộ trong `src/app/layout.tsx`, vẫn giữ để chuyển dần sau. Các phần UI chi tiết bên dưới mô tả **As-Is**, không phải workflow Agent/approval đã hoạt động.
+
+| Thành phần hiện có | Tái sử dụng mục tiêu | Cần bổ sung, chưa triển khai |
+| --- | --- | --- |
+| Chat `/`, lịch sử và ô nhập chung | Developer Workspace: request tìm hiểu repo và yêu cầu đúng một thay đổi code | Repo/snapshot/scope, context có provenance, Agent adapter/tool status; không coi hai phản hồi mẫu là Agent |
+| Vòng Hit/Miss/Rejected, modal thông số | Cache Lookup & Verification Trace | Candidate/score/intent, source hashes, backend verification và lý do reject; hiện chưa có cache visualization/trace thật |
+| Số liệu `/metrics` | Workflow Evaluation và Cache Evaluation tách biệt | Năm chiều chính Developer-guided/AI-assisted; phần phụ AI Cache/No Cache/cold-warm; telemetry và mẫu số thật |
+| Thiết lập `/setup` | Experiment Configuration | Frozen source/fixture/gate/acceptance versions, model/Agent/tool policy, reset/preload protocol; không tự dùng manifest nội bộ cũ |
+| Tài liệu `/documents` | Nguồn repository/provenance được phép | Snapshot/file/symbol và quyền đọc hiện tại; không biến chọn tệp trong phiên thành authorized RAG |
+| Chưa có | Change Review | Diff chính xác, base/patch/artifact/fixture/test hashes, test results và trạng thái lỗi |
+| Chưa có | Approval Center | Reviewer/authority, quyết định tường minh đúng change, trạng thái backend/control và deployment audit |
+
+Đây là phương án kiến trúc, **chưa chốt route mới hoặc thay sidebar**. Tái sử dụng components/layout/tokens và state patterns; không xóa màn cũ hoặc đổi package/path trong lần cập nhật. UI comparison Cache/No Cache được giữ làm nền phép thử phụ, không đổi tên nó thành so sánh Developer-guided/AI-assisted khi chưa có hai workflow thật.
+
+Luồng mục tiêu: Developer request → cache/retrieval trace → Agent proposal → diff/test → human approval → deployment decision/audit. Câu hỏi tra cứu có thể kết thúc ở answer đã xác minh; thao tác deploy phải kiểm soát ở backend, nút UI không cấp phép. Cache verification không thay approval, test pass không thành approved, mã/artifact đổi sau duyệt phải thể hiện revision mới cần test/approval lại.
+
+UI tương lai cần hiển thị rõ trạng thái mô phỏng/đo thật theo dữ liệu, unknown/error/timeout và IDs/digests của evidence; tránh trình bày local hit là “đã được duyệt triển khai”. Approval dùng cho code, không dùng làm quyết định chấp nhận báo giá. Thiết kế gate và payload tin cậy thuộc [authorization](../system/authorization.md), protocol/mẫu số thuộc [evaluation](../evaluation/design.md); UI không tự tính quyền hoặc dựng approval log.
+
+Fine-tune/FL, sweep nhiều policy/embedding/eviction và server-cache benchmark trong UI cũ chưa là phạm vi PoC ưu tiên. Xem [lộ trình](../general/implementation-plan.md) trước thay giao diện.
+
+## UI đang có (As-Is)
 
 App có bốn khu chính, cập nhật ngày 2026-10-29:
 
@@ -29,9 +51,27 @@ Lịch sử và nút Chat mới nằm lồng ngay dưới mục Chat, trước S
 
 ## Thiết lập thí nghiệm
 
-Trang `/setup` gồm tên thí nghiệm và hai nhóm: cấu hình cache (local/server, exact/semantic, ngưỡng khi semantic, TTL giây) và điều kiện (bộ câu hỏi giả lập, số lần lặp, cold/warm, seed). Baseline Không cache cố định; vị trí cache tách khỏi phạm vi dự kiến riêng người dùng. Ngưỡng 0,9 và TTL 3.600 giây là giá trị nháp, chưa hiệu chỉnh. Không có công tắc bỏ quyền, lựa chọn IAM/mã hóa/model/FL hoặc nút chạy giả. Cold/warm và seed chỉ ghi ý định; chưa reset/preload hoặc xáo trộn câu hỏi.
+Mục này ghi lại UI nháp hiện có để bảo toàn công việc trước. Dataset tài liệu nội bộ, alias embedding, threshold/TTL mặc định và ma trận dự kiến **không phải fixture hoặc protocol báo giá đã được chốt**. Chưa chuyển cấu hình này sang yêu cầu thực nghiệm mới.
 
-Lưu thiết lập kiểm tra giới hạn, tạo snapshot cấu hình có revision tăng, ID kế hoạch/thời điểm, danh sách ca, số lượt dự kiến = số ca × số lặp × hai nhánh; results luôn null. Tái sử dụng model và provider workspace; điều hướng client giữ bản đã lưu, rời trang bỏ sửa đổi chưa lưu, tải lại xóa phiên. Quay lại trang điền bản đã lưu mới nhất. Không ghi vào Chat, dashboard fixture, storage hoặc backend. Trước khi chạy thật cần chốt dataset/nhãn quyền, model/embedding, metric/ngưỡng, phiên bản corpus/policy và quy trình warm theo thiết kế đánh giá.
+Trang `/setup` dùng hai cột **Thông số / Chức năng** trên desktop; mobile xếp tên, mô tả và điều khiển của từng nhóm theo chiều dọc. Tên thí nghiệm ở đầu; chín nhóm theo yêu cầu ngày 2026-10-29:
+
+| Thông số | Điều khiển |
+| --- | --- |
+| Experiment Mode | Chọn một hoặc nhiều No Cache / Local Cache / Server Cache; mặc định No Cache và Local Cache. Cache có TTL giây và dung lượng mục; scope dự kiến riêng người dùng, tách khỏi vị trí lưu. |
+| Dataset | Chọn bộ câu hỏi cơ bản/lặp lại và manifest tài liệu nội bộ giả lập v1 (Quy chế nhân sự, Hướng dẫn IT). Chưa phải corpus đã nạp hoặc tệp trong trang Tài liệu. |
+| Embedding Benchmark | Nhập 1–8 ID/alias model, mỗi dòng một giá trị khác nhau. embedding-a/b là alias nháp, chưa gắn provider/model/revision thật. |
+| Threshold Benchmark | Nhập 1–20 ngưỡng semantic từ 0 đến 1, dùng dấu chấm thập phân và dấu phẩy phân tách; không nhận giá trị rỗng/trùng. Mặc định 0.80, 0.85, 0.90 chưa hiệu chỉnh. |
+| Eviction Benchmark | Chọn FIFO / LRU / LFU, mặc định cả ba. Threshold và eviction không áp dụng khi chỉ chọn No Cache. |
+| Access Control Benchmark | Chọn RBAC / ABAC / RBAC + ABAC, mặc định cả ba; chỉ là cấu hình thử nghiệm, không cấp quyền hoặc bỏ xác minh backend. |
+| Local Training | Tắt / Fine-tuning cục bộ / FL mô phỏng, mặc định Tắt. Chỉ lưu ý định, chưa có pipeline hay model đích. |
+| Request Logging | Bật/tắt yêu cầu ghi duration_ms, llm_tokens, cache_status, authorization_decision; mặc định bật. Chưa ghi log thật; không ghi nội dung nhạy cảm hoặc tự sinh quyết định quyền. |
+| Export Results | Chọn JSON/CSV cho kết quả tương lai; nút Xuất kết quả khóa khi chưa có run. Xuất cấu hình JSON là hành động riêng sau khi lưu bản nháp. |
+
+Điều kiện chạy giữ số lần lặp, cold/warm và seed. Cold/warm và seed chỉ ghi ý định, chưa reset/preload hoặc xáo trộn. TTL 3.600 giây và dung lượng 100 mục là nháp. UI này cấu hình semantic benchmark, không còn điều khiển exact/semantic của trang cũ; model profile nghiên cứu cũ vẫn giữ riêng.
+
+Lưu thiết lập kiểm tra giới hạn và tạo `setup-plan` có schemaVersion, revision tăng, ID/thời điểm, snapshot các lựa chọn, manifest tài liệu và danh sách ca; results luôn null. Số cấu hình dự kiến = số embedding × số mô hình quyền × tổng biến thể theo mode: No Cache có một biến thể, mỗi mode cache có số threshold × số eviction. Số lượt dự kiến = số cấu hình × số ca × số lặp; đây là ma trận ý định, không phải lượt đã chạy hoặc bằng chứng phép đo tương đương. Cần cô lập biến nghiên cứu khi phân tích theo [thiết kế đánh giá](../evaluation/design.md).
+
+Model/provider workspace giữ snapshot thiết lập riêng với kế hoạch hai profile cũ. Điều hướng client giữ bản đã lưu; rời trang bỏ sửa đổi chưa lưu, quay lại điền bản lưu mới nhất; tải lại xóa phiên. Sửa bất kỳ lựa chọn nào khóa xuất cấu hình đến khi lưu lại. JSON xuất có previewOnly và results null, không chứa fixture dashboard hoặc kết quả giả. Không ghi vào Chat, storage hoặc backend. Trước khi chạy thật cần chốt dataset/nhãn quyền, model/embedding, metric/ngưỡng, phiên bản corpus/policy, logging và quy trình warm. Đổi embedding phải re-embed hoặc tách namespace; lựa chọn RBAC/ABAC/FL trên UI chưa chốt chính sách quyền hoặc phương pháp nghiên cứu thực thi.
 
 ## Luồng chat
 
@@ -137,12 +177,14 @@ Hiện không đọc nội dung, parse, chunk, embed, upload hoặc lập chỉ 
 | `src/features/chat/` | Context giữ phiên, hook điều phối, reducer, UI và phản hồi mẫu tách riêng |
 | `src/features/metrics/` | Lọc/tổng hợp demo, thứ tự/đoạn đường theo truy vấn, biểu đồ và dashboard; không suy diễn telemetry/quyền |
 | `src/features/documents/` | Model/validation/lọc, provider giữ File trong phiên và màn tài liệu |
-| `src/features/comparison/`, `experiments/`, `settings/`, `workspace/` | Phần nghiên cứu đã hoãn, không nằm trong luồng app hiện tại |
+| `src/features/setup/` | Trang thiết lập chín nhóm thông số và xuất cấu hình nháp |
+| `src/features/workspace/` | Model/validation và provider giữ cấu hình thiết lập trong phiên; các profile/kế hoạch nghiên cứu cũ giữ riêng |
+| `src/features/comparison/`, `experiments/`, `settings/` | Phần nghiên cứu đã hoãn, không nằm trong luồng app hiện tại |
 | `src/features/ui-library/` | Catalog và mã ví dụ cho phát triển |
 | `src/styles/` | Tokens, UI chung, layout, chat, metrics và documents |
 | `scripts/` | Test state/validation và browser smoke |
 | `design-reference/` | Bản xuất thiết kế gốc, không chạy script DOM trong app |
 
-Bản gốc nằm tại [frontend/design-reference](../../frontend/design-reference/). Chế độ browser `--reference` chỉ sửa lỗi cú pháp `$$let` trong response preview để chụp ảnh, không sửa bản gốc. Bố cục app hiện tại gồm Chat, Số liệu và Tài liệu theo yêu cầu mới.
+Bản gốc nằm tại [frontend/design-reference](../../frontend/design-reference/). Chế độ browser `--reference` chỉ sửa lỗi cú pháp `$$let` trong response preview để chụp ảnh, không sửa bản gốc. Bố cục app hiện tại gồm Thiết lập, Chat, Số liệu và Tài liệu.
 
 Đổi màu/font tại `styles/tokens.css`; đổi điều hướng tại `components/layout/app-shell.tsx`. Client API tương lai thuộc `src/lib/` theo [kiến trúc](../system/architecture.md), không đặt upload/RAG/auth vào component trình bày. Xem [hướng dẫn chạy và kiểm tra](../general/setup.md#kiểm-tra).
