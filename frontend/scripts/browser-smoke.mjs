@@ -7,6 +7,7 @@ import { mkdir, mkdtemp, readFile, writeFile } from "node:fs/promises";
 import { createServer } from "node:http";
 import { resolve, join, extname } from "node:path";
 import { fileURLToPath } from "node:url";
+import { checkDeveloperPreview } from "./developer-browser-check.mjs";
 
 const frontend = fileURLToPath(new URL("..", import.meta.url));
 const output = join(frontend, "test-results", "browser");
@@ -234,9 +235,11 @@ try {
     deviceScaleFactor: 1,
     mobile: false,
   });
+  await checkDeveloperPreview({ cdp, navigate, evaluate, waitFor, click, fill, key, screenshot });
+  if (!process.argv.includes("--developer-only")) {
   await navigate("/ui");
   await navigate("/setup");
-  assert.equal(await evaluate("document.querySelector('.sidebar nav a').getAttribute('href')"), '/setup');
+  assert.equal(await evaluate("document.querySelector('.sidebar nav a').getAttribute('href')"), '/workspace');
   assert.deepEqual(await evaluate("[...document.querySelectorAll('.setup-row h2')].map(item => item.textContent)"), [
     'Experiment Mode', 'Dataset', 'Embedding Benchmark', 'Threshold Benchmark', 'Eviction Benchmark',
     'Access Control Benchmark', 'Local Training', 'Request Logging', 'Export Results',
@@ -443,9 +446,9 @@ try {
   await closeMetrics();
   assert.equal(
     await evaluate("document.querySelectorAll('.sidebar nav a.nav').length"),
-    4,
+    5,
   );
-  assert.deepEqual(await evaluate("[...document.querySelectorAll('.sidebar nav a.nav')].map(link => link.textContent.trim())"), ["Thiết lập", "Chat", "Số liệu", "Tài liệu"]);
+  assert.deepEqual(await evaluate("[...document.querySelectorAll('.sidebar nav a.nav')].map(link => link.textContent.trim())"), ["Workspace", "Thiết lập", "Chat", "Số liệu", "Tài liệu"]);
   assert.equal(
     await evaluate(
       "document.querySelector('.sidebar').textContent.includes('Cấu hình')",
@@ -1114,9 +1117,12 @@ try {
       }
     }
   }
+  }
   assert.deepEqual(errors, [], "Lỗi runtime/React trên trình duyệt");
   console.log(
-    "Đạt: Thiết lập chín nhóm/validation/xuất cấu hình, ba chế độ Chat, Thông số theo lượt gửi, Số liệu ba tab/dữ liệu mẫu tách phiên/lọc/biểu đồ/chi tiết, giữ phiên/reset, Tài liệu, UI kit, keyboard, 72 bố cục và 27 bố cục dữ liệu mẫu.",
+    process.argv.includes("--developer-only")
+      ? "Đạt: Developer Workspace, diff, cache scenarios, test/approval mẫu, invalidation theo revision, nhập an toàn, keyboard và 16 bố cục."
+      : "Đạt: Developer Workspace (16 bố cục), Thiết lập chín nhóm/validation/xuất cấu hình, ba chế độ Chat, Thông số theo lượt gửi, Số liệu ba tab/dữ liệu mẫu tách phiên/lọc/biểu đồ/chi tiết, giữ phiên/reset, Tài liệu, UI kit, keyboard, 72 bố cục và 27 bố cục dữ liệu mẫu.",
   );
   console.log(`Ảnh kiểm chứng: ${output}`);
 } catch (error) {

@@ -17,7 +17,7 @@ Kiến trúc nghiên cứu là Secure Local Semantic Cache; bối cảnh mục t
 | PostgreSQL/pgvector | [compose](../../infra/compose.yaml), [init SQL](../../infra/init.sql) | Cấu hình hạ tầng, chưa schema/adapter/migration hoặc kiểm chứng DB trong lượt khảo sát |
 | Research | `research/datasets/`, `research/results/` | Chỗ dành sẵn; không có fixture báo giá, protocol chạy hoặc ghi chú bài báo được tìm thấy |
 
-Trong code hiện tại không có IndexedDB/Dexie, matching/verification, Agent adapter, patch executor, approval/deployment gate hoặc execution trace. Thay đổi chưa commit tập trung vào UI Thiết lập và test/tài liệu đi kèm; không có service cache đang triển khai được tìm thấy. Tình trạng kiểm thử lịch sử và khảo sát hiện tại tách ở [project status](../general/project-status.md).
+Trong code hiện tại không có IndexedDB/Dexie, matching/verification, Agent adapter, patch executor hoặc approval/deployment gate. Sau khảo sát tài liệu, đã thêm `/workspace` xem trước với diff/test/approval/nhật ký UI mô phỏng trong `frontend/src/features/developer/`; chưa đọc repo, chạy test nghiệp vụ, xác thực reviewer, tạo artifact hoặc audit log backend. Xem [frontend](../frontend/design.md) cho hành vi bản mẫu và [project status](../general/project-status.md) cho mốc kiểm chứng. Bảng khảo sát ban đầu bên trên ghi bốn màn cũ; điều hướng hiện tại thêm Workspace đứng đầu.
 
 ## Target Architecture — hai thành phần logic, một repository
 

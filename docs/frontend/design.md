@@ -1,8 +1,23 @@
 # Thiết kế frontend
 
-## Định hướng mục tiêu — chưa chuyển đổi ứng dụng
+## Developer Workspace — bản xem trước ngày 2026-11-02
 
-Từ 2026-11-02, CacheSec nghiên cứu Secure Local Semantic Cache for AI-Assisted Software Development trong [kịch bản báo giá duy nhất](../general/overview.md). Đợt này chỉ cập nhật tài liệu; code/route/nhãn hiện tại, kể cả metadata mô tả chatbot nội bộ trong `src/app/layout.tsx`, vẫn giữ để chuyển dần sau. Các phần UI chi tiết bên dưới mô tả **As-Is**, không phải workflow Agent/approval đã hoạt động.
+Đã thêm route `/workspace` và mục Workspace đầu sidebar, dùng chung tokens Nói, Button/Select/Checkbox/Icon và app shell. Các route Chat, Thiết lập, Số liệu và Tài liệu giữ hành vi cũ. Metadata gốc mô tả định hướng Secure Local Semantic Cache cho phát triển phần mềm; trang mới có title Developer Workspace · CacheSec.
+
+Desktop đặt hội thoại và nguồn tham chiếu bên trái, diff/test/approval/trace bên phải; dưới 1200 px xếp dọc. Header nêu đúng một nhiệm vụ ngày hết hạn báo giá. Banner Bản xem trước và nhãn mẫu phân biệt nội dung UI với dữ liệu thực nghiệm.
+
+- Hội thoại có request mẫu ban đầu, gợi ý và ô nhập; phản hồi từ fixture cục bộ, không gọi model hoặc đọc repo. Nội dung người nhập được React render dạng text. Enter gửi, Shift+Enter xuống dòng.
+- Thẻ Local Semantic Cache đổi giữa Hit/Miss/Rejected mẫu, giải thích reuse hoặc fallback theo nguồn. Không thực hiện lookup/verification, không sinh latency/calls/tokens hoặc tự cấp quyền.
+- Tab Thay đổi có diff/bản gốc của `quotation_demo/service.py` minh họa, chưa phải file thật; `policy.is_valid_expiration` là placeholder cho định nghĩa ngày chưa chốt. Thử bản sửa khác đổi revision/nội dung mẫu và đặt lại test/approval.
+- Tab Kiểm thử có bốn ca hiển thị và nút Xem kết quả mẫu. Các trạng thái Đạt là fixture UI có sẵn, không phải test nghiệp vụ đã chạy, fixture đóng băng hoặc acceptance threshold. Ngày hết hạn/múi giờ còn mở được ghi riêng.
+- Tab Phê duyệt mô phỏng reviewer/developer. Chỉ cho duyệt mẫu sau xem kết quả, xác nhận diff đúng revision và chọn reviewer; có Yêu cầu chỉnh sửa. Đổi revision/vai trò đặt lại duyệt. Đây là logic trình bày, **không phải RBAC/ABAC hoặc approval gate backend**. Artifact/hash chưa có và Triển khai luôn khóa.
+- Nhật ký ghi thứ tự thao tác demo trong phiên, không giả timestamp/digest hoặc audit evidence. Bắt đầu lại xóa trạng thái nhiệm vụ mẫu. State nằm trong component; rời route rồi quay lại hoặc reload bắt đầu phiên mẫu mới.
+
+Model/reducer và fixture tách khỏi UI tại `src/features/developer/`; CSS scope ở `styles/developer.css`. Test logic kiểm tra điều kiện duyệt và revision stale của mô phỏng; browser check kiểm tra thao tác, keyboard, không tràn ngang và không giả deployment. Những test này không chứng minh safety property backend. So sánh workflow và cache dashboard thật vẫn chưa triển khai.
+
+## Định hướng mục tiêu còn lại
+
+Từ 2026-11-02, CacheSec nghiên cứu Secure Local Semantic Cache for AI-Assisted Software Development trong [kịch bản báo giá duy nhất](../general/overview.md). Workspace ở trên là bước xem thử UI; bảng dưới là định hướng tích hợp thật. Các phần chi tiết về bốn màn cũ bên dưới tiếp tục mô tả **As-Is**, không phải workflow Agent/approval đã hoạt động.
 
 | Thành phần hiện có | Tái sử dụng mục tiêu | Cần bổ sung, chưa triển khai |
 | --- | --- | --- |
@@ -11,10 +26,10 @@ Từ 2026-11-02, CacheSec nghiên cứu Secure Local Semantic Cache for AI-Assis
 | Số liệu `/metrics` | Workflow Evaluation và Cache Evaluation tách biệt | Năm chiều chính Developer-guided/AI-assisted; phần phụ AI Cache/No Cache/cold-warm; telemetry và mẫu số thật |
 | Thiết lập `/setup` | Experiment Configuration | Frozen source/fixture/gate/acceptance versions, model/Agent/tool policy, reset/preload protocol; không tự dùng manifest nội bộ cũ |
 | Tài liệu `/documents` | Nguồn repository/provenance được phép | Snapshot/file/symbol và quyền đọc hiện tại; không biến chọn tệp trong phiên thành authorized RAG |
-| Chưa có | Change Review | Diff chính xác, base/patch/artifact/fixture/test hashes, test results và trạng thái lỗi |
-| Chưa có | Approval Center | Reviewer/authority, quyết định tường minh đúng change, trạng thái backend/control và deployment audit |
+| Tab Thay đổi ở Workspace (mẫu) | Change Review thật | Diff chính xác, base/patch/artifact/fixture/test hashes, test results và trạng thái lỗi |
+| Tab Phê duyệt ở Workspace (mẫu) | Approval Center thật | Reviewer/authority, quyết định tường minh đúng change, trạng thái backend/control và deployment audit |
 
-Đây là phương án kiến trúc, **chưa chốt route mới hoặc thay sidebar**. Tái sử dụng components/layout/tokens và state patterns; không xóa màn cũ hoặc đổi package/path trong lần cập nhật. UI comparison Cache/No Cache được giữ làm nền phép thử phụ, không đổi tên nó thành so sánh Developer-guided/AI-assisted khi chưa có hai workflow thật.
+Đây là phương án kiến trúc tích hợp thật, chưa chốt thêm route ngoài `/workspace` xem trước. Tái sử dụng components/layout/tokens và state patterns; không xóa màn cũ hoặc đổi package/path. UI comparison Cache/No Cache được giữ làm nền phép thử phụ, không đổi tên nó thành so sánh Developer-guided/AI-assisted khi chưa có hai workflow thật.
 
 Luồng mục tiêu: Developer request → cache/retrieval trace → Agent proposal → diff/test → human approval → deployment decision/audit. Câu hỏi tra cứu có thể kết thúc ở answer đã xác minh; thao tác deploy phải kiểm soát ở backend, nút UI không cấp phép. Cache verification không thay approval, test pass không thành approved, mã/artifact đổi sau duyệt phải thể hiện revision mới cần test/approval lại.
 
@@ -24,7 +39,7 @@ Fine-tune/FL, sweep nhiều policy/embedding/eviction và server-cache benchmark
 
 ## UI đang có (As-Is)
 
-App có bốn khu chính, cập nhật ngày 2026-10-29:
+Ngoài Workspace xem trước, bốn khu cũ được giữ từ mốc 2026-10-29:
 
 - **Thiết lập:** chuẩn bị cấu hình và điều kiện thí nghiệm, lưu bản kế hoạch trong phiên.
 
@@ -38,6 +53,7 @@ So sánh hai nhánh nằm trong Chat với một ô nhập chung. Yêu cầu ng�
 
 | Route | Giao diện | Giới hạn |
 | --- | --- | --- |
+| `/workspace` | Developer Workspace xem trước | Chat, diff, test, approval và trace mô phỏng; chưa có backend/Agent/deployment |
 | `/setup` | Thiết lập cache và kế hoạch thí nghiệm | Chỉ lưu nháp trong phiên; chưa áp dụng vào Chat, cache hay benchmark |
 | `/` | Chat nội bộ, lịch sử trong sidebar, gợi ý hỏi, gửi/sao chép, chat mới và ba chế độ qua nút bánh răng | Phản hồi mẫu; chưa gọi AI/RAG hoặc cache thật |
 | `/metrics` | Dashboard, lọc hội thoại, biểu đồ, đánh giá chất lượng/quyền và chi tiết lượt gửi | Tổng hợp phiên mô phỏng; chưa có telemetry hoặc nhãn đánh giá thật |
@@ -45,7 +61,7 @@ So sánh hai nhánh nằm trong Chat với một ô nhập chung. Yêu cầu ng�
 | `/chat`, `/settings`, `/experiments` | Chuyển về Chat để giữ liên kết cũ | Không mở lại màn tham số/thí nghiệm |
 | `/ui` | Thư viện 21 component, truy cập trực tiếp cho phát triển | Không có mục điều hướng trong app chính |
 
-Sidebar theo thứ tự Thiết lập → Chat → Số liệu → Tài liệu. Lịch sử chat dùng cùng sidebar, không tạo thêm cột điều hướng. Thanh đầu trang Chat giữ Thông số và cài đặt ở góc phải; đã bỏ nhãn Mô phỏng và phần giới hạn mở từ nhãn đó. Nội dung và hành động giữ ngắn, dùng hệ màu/font/border của Nói.
+Sidebar theo thứ tự Workspace → Thiết lập → Chat → Số liệu → Tài liệu. Lịch sử chat dùng cùng sidebar, không tạo thêm cột điều hướng. Thanh đầu trang Chat giữ Thông số và cài đặt ở góc phải; đã bỏ nhãn Mô phỏng và phần giới hạn mở từ nhãn đó. Nội dung và hành động giữ ngắn, dùng hệ màu/font/border của Nói.
 
 Lịch sử và nút Chat mới nằm lồng ngay dưới mục Chat, trước Số liệu. Mặc định thu gọn; bấm Chat hoặc mũi tên để mở/đóng với hiệu ứng chiều cao và độ mờ (tắt khi giảm chuyển động). Mỗi lần mở hiện 5 hội thoại đầu danh sách, theo thứ tự mới tạo trước; **Hiển thị thêm** mở tiếp từng nhóm 5 và ẩn khi hết. Hội thoại đang chọn được tô nền, tên dài rút gọn bằng dấu ba chấm. Có thể chọn lịch sử từ Số liệu/Tài liệu để trở về đúng hội thoại; giữ bản nháp và chế độ. Trên điện thoại, mở lịch sử giữ drawer để chọn; chọn hội thoại/Chat mới đóng drawer. Nội dung thu gọn không nhận focus hoặc xuất hiện với trình đọc màn hình; nút mũi tên hỗ trợ bàn phím và báo trạng thái mở/đóng.
 
@@ -175,6 +191,7 @@ Hiện không đọc nội dung, parse, chunk, embed, upload hoặc lập chỉ 
 | `src/components/layout/` | Sidebar Chat/Số liệu/Tài liệu, drawer mobile, khung trang |
 | `src/components/ui/` | Component React dùng chung, không gọi API/storage |
 | `src/features/chat/` | Context giữ phiên, hook điều phối, reducer, UI và phản hồi mẫu tách riêng |
+| `src/features/developer/` | Developer Workspace xem trước: fixture/reducer, hội thoại, diff/test/approval/trace mô phỏng |
 | `src/features/metrics/` | Lọc/tổng hợp demo, thứ tự/đoạn đường theo truy vấn, biểu đồ và dashboard; không suy diễn telemetry/quyền |
 | `src/features/documents/` | Model/validation/lọc, provider giữ File trong phiên và màn tài liệu |
 | `src/features/setup/` | Trang thiết lập chín nhóm thông số và xuất cấu hình nháp |
@@ -185,6 +202,6 @@ Hiện không đọc nội dung, parse, chunk, embed, upload hoặc lập chỉ 
 | `scripts/` | Test state/validation và browser smoke |
 | `design-reference/` | Bản xuất thiết kế gốc, không chạy script DOM trong app |
 
-Bản gốc nằm tại [frontend/design-reference](../../frontend/design-reference/). Chế độ browser `--reference` chỉ sửa lỗi cú pháp `$$let` trong response preview để chụp ảnh, không sửa bản gốc. Bố cục app hiện tại gồm Thiết lập, Chat, Số liệu và Tài liệu.
+Bản gốc nằm tại [frontend/design-reference](../../frontend/design-reference/). Chế độ browser `--reference` chỉ sửa lỗi cú pháp `$$let` trong response preview để chụp ảnh, không sửa bản gốc. Bố cục app hiện tại gồm Workspace, Thiết lập, Chat, Số liệu và Tài liệu.
 
 Đổi màu/font tại `styles/tokens.css`; đổi điều hướng tại `components/layout/app-shell.tsx`. Client API tương lai thuộc `src/lib/` theo [kiến trúc](../system/architecture.md), không đặt upload/RAG/auth vào component trình bày. Xem [hướng dẫn chạy và kiểm tra](../general/setup.md#kiểm-tra).

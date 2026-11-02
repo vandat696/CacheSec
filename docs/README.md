@@ -2,7 +2,7 @@
 
 Hồ sơ thiết kế và trạng thái hệ thống. Nội dung dự kiến không đồng nghĩa đã triển khai; xem project-status để biết kiểm chứng thực tế.
 
-Định hướng hiện hành từ 2026-11-02: **Secure Local Semantic Cache for AI-Assisted Software Development**, kiểm chứng bằng đúng một thay đổi validation ngày hết hạn báo giá. UI chatbot nội bộ cũ vẫn là As-Is để tái sử dụng. Yêu cầu giảng viên, đề xuất kỹ thuật và hiện trạng được ghi riêng; lịch sử trong project-status không thay phạm vi mới.
+Định hướng hiện hành từ 2026-11-02: **Secure Local Semantic Cache for AI-Assisted Software Development**, kiểm chứng bằng đúng một thay đổi validation ngày hết hạn báo giá. Có thêm Workspace xem trước tại `/workspace`; UI chatbot nội bộ cũ vẫn được giữ để tái sử dụng. Yêu cầu giảng viên, đề xuất kỹ thuật và hiện trạng được ghi riêng; lịch sử trong project-status không thay phạm vi mới.
 
 | Nhóm | Tài liệu | Nội dung |
 | --- | --- | --- |
@@ -13,7 +13,7 @@ Hồ sơ thiết kế và trạng thái hệ thống. Nội dung dự kiến kh�
 | System | [Kiến trúc](system/architecture.md) | As-Is có bằng chứng, Target hai thành phần, tám bước cache/Agent/test/approval/deploy |
 | System | [Cache](system/cache.md) | Answer/Context Cache, Hit/Miss/Rejected, verification, metadata và lifecycle |
 | System | [Phân quyền](system/authorization.md) | RBAC/ABAC, verifier, exact-change approval gate, deployment binding và threat model |
-| Frontend | [Thiết kế](frontend/design.md) | UI As-Is và phương án tái sử dụng; workspace/review/approval chưa triển khai |
+| Frontend | [Thiết kế](frontend/design.md) | Workspace/review/approval UI mô phỏng, bốn màn cũ và phương án tích hợp thật |
 | Evaluation | [Thiết kế đánh giá](evaluation/design.md) | So sánh chính năm chiều, phép thử cache phụ, mẫu số/nguồn đo, fixture và threshold |
 
 ## Cách đọc và cập nhật

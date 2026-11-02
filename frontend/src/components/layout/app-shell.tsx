@@ -12,6 +12,7 @@ import { ChatMetrics } from "@/features/chat/chat-metrics";
 import { SidebarChat } from "@/features/chat/sidebar-chat";
 
 const navigation = [
+  { href: "/workspace", label: "Workspace", icon: "code" },
   { href: "/setup", label: "Thiết lập", icon: "settings" },
   { href: "/", label: "Chat", icon: "chat" },
   { href: "/metrics", label: "Số liệu", icon: "chart" },
@@ -146,6 +147,9 @@ export function AppShell({ children }: { children: ReactNode }) {
                 <Icon name="menu" />
               </Button>
               <span className="workspace-brand">CacheSec</span>
+              {pathname === "/workspace" && (
+                <span className="developer-topbar-context">Workspace <span>/</span> Báo giá nhà cung cấp</span>
+              )}
             </div>
             {pathname === "/" && (
               <div className="chat-topbar-actions" role="group" aria-label="Công cụ chat">

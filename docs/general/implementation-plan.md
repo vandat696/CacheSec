@@ -4,6 +4,8 @@
 
 Lập ngày 2026-11-02; **chưa thực hiện các bước lập trình dưới đây**. Chỉ khảo sát và cập nhật tài liệu trong đợt này. Lộ trình thay thứ tự cũ “upload tài liệu nội bộ → chatbot baseline → cache”; không dựng lại app trước khi xác nhận nghiệp vụ, fixture và acceptance. Phạm vi và câu hỏi mở do [tổng quan](overview.md) sở hữu, protocol do [đánh giá](../evaluation/design.md) sở hữu.
 
+Cập nhật cùng ngày sau yêu cầu xem web: đã dựng UI preview `/workspace` theo [thiết kế frontend](../frontend/design.md). Đây là công việc xem thử giao diện, chưa hoàn thành bước app báo giá/cache/Agent/gate của lộ trình; nghiệp vụ và các quyết định nghiên cứu vẫn chưa chốt.
+
 Giữ một repo, một fixture được đóng băng trước run, một gate implementation chung và một acceptance rule định trước. Đúng một feature change là flag báo giá thiếu ngày hết hạn hợp lệ. Gate, cache và trace là hạ tầng nghiên cứu dùng chung, được chuẩn bị trước và không tính như các feature changes khác mà Agent được giao trong thí nghiệm. Không tự commit, push hoặc deploy.
 
 ## Giữ, điều chỉnh và bổ sung

@@ -7,7 +7,7 @@ import "./globals.css";
 
 export const metadata: Metadata = {
   title: "CacheSec",
-  description: "Chat nội bộ và quản lý tài liệu công ty",
+  description: "Secure Local Semantic Cache cho quy trình phát triển phần mềm có AI hỗ trợ",
 };
 
 export default function RootLayout({

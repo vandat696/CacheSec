@@ -1,5 +1,17 @@
 # Trạng thái dự án
 
+## 2026-11-02 — Quy tắc giao diện ít chữ
+
+- Theo yêu cầu người dùng, bổ sung quy tắc tối giản chữ vào AGENTS.md: chỉ giữ nội dung cần cho thao tác, bỏ giải thích thừa/lặp, mở chi tiết khi cần. Chỉ cập nhật quy tắc, chưa rút gọn giao diện hiện tại; kiểm tra nội dung và diff, không chạy test ứng dụng.
+
+## 2026-11-02 — Developer Workspace xem trước
+
+- Theo yêu cầu xem web dựa trên phần đã làm, thêm `/workspace` và mục Workspace đầu sidebar. Tái sử dụng app shell, màu sắc và component hiện có; giữ Chat/Thiết lập/Số liệu/Tài liệu.
+- UI gồm nhiệm vụ validation ngày hết hạn, hội thoại mẫu, ba kịch bản cache, diff/bản gốc, ca kiểm thử mẫu, phê duyệt theo revision và nhật ký thao tác. Đổi revision xóa quyết định/kết quả mẫu cũ; vai trò chỉ mô phỏng, nút triển khai luôn khóa. Giao diện responsive và điều hướng tab bằng bàn phím.
+- Chưa có repository reader, Agent, cache verification, test executor, identity hoặc approval/deployment backend. Dữ liệu và kết quả hiển thị là minh họa, không phải fixture đóng băng hay bằng chứng thực nghiệm; ngày hợp lệ và acceptance threshold vẫn mở. Rời Workspace hoặc reload reset phiên mẫu.
+- Kiểm chứng: lint, typecheck, 57 test logic và production build đạt; Edge kiểm tra riêng Workspace đạt 16 bố cục (bốn tab × bốn kích thước). Full smoke trên production đạt cả Workspace, các luồng cũ, 72 bố cục và 27 bố cục dữ liệu mẫu; không lỗi runtime/React. Đã xem ảnh desktop/mobile, kiểm tra 82 liên kết nội bộ không thiếu đích và rà diff/whitespace. Browser chạy ngoài sandbox bằng profile riêng. Chưa kiểm chứng các trình duyệt khác hoặc tích hợp backend.
+- Cập nhật README, hướng dẫn chạy, thiết kế frontend, kiến trúc As-Is và lộ trình. Bước tiếp theo là nhận phản hồi bố cục; tích hợp thật vẫn cần khóa contract nghiệp vụ/fixture/gate theo kế hoạch PoC.
+
 ## 2026-11-02 — Cập nhật bối cảnh AI-assisted software development (chỉ tài liệu)
 
 - Theo yêu cầu mới, giữ Secure Local Semantic Cache làm trọng tâm và dùng đúng một thay đổi validation ngày hết hạn báo giá để kiểm chứng. Ghi riêng yêu cầu giảng viên, hiện trạng có bằng chứng, giải pháp đề xuất và câu hỏi cần xác nhận; bỏ ưu tiên chatbot/upload nội bộ khỏi lộ trình hiện hành.
