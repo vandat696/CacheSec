@@ -1,5 +1,19 @@
 # Trạng thái dự án
 
+## 2026-11-07 — Chuẩn hóa PascalCase/camelCase cho file React/TypeScript
+
+- Theo yêu cầu người dùng, đổi file component .tsx sang PascalCase (ChartFrame.tsx, AppShell.tsx, Select.tsx), hook/helper/model/data .ts sang camelCase (useField.ts, chartFormat.ts, chatState.ts). Giữ tên framework/entry page.tsx, layout.tsx, index.ts; thư mục feature, Python và JS DOM/bundle giữ quy ước riêng. Tổng cộng 102 file TypeScript đổi tên; cập nhật import, snippets, nhãn source trong UI kit, test và link docs cùng lượt.
+- Sửa luật AGENTS và bản đồ source, bật forceConsistentCasingInFileNames. Hai đổi tên chỉ khác hoa/thường Button/Icon được ghi vào Git index bằng rename; giữ nguyên blob index trước đó và các thay đổi nội dung chưa stage. Không commit hoặc stage các nội dung khác.
+- Kiểm chứng: frontend lint/typecheck, 57 test logic và production build đạt. Edge full smoke đạt Workspace, Thiết lập, Chat, Số liệu, Tài liệu, UI kit, keyboard và responsive; không lỗi runtime/React. Kiểm tra exact casing cho 321 import nội bộ, 21 nhãn source và 20 snippet qua helper; snippet Toast dùng đường dẫn mới. Rà 137 link/anchor tài liệu; so hash xác nhận backend và template JS/CSS giữ nguyên nội dung. Các quyết định nghiên cứu và trạng thái nghiệp vụ không thay đổi.
+
+## 2026-11-07 — Refactor tổ chức source và cập nhật quy tắc
+
+- Bổ sung AGENTS về ownership theo feature/domain, đặt tên theo trách nhiệm, mỗi component công khai một file, composition/class theo nhu cầu và phân biệt source/bundle. [Bản đồ source](../system/code-organization.md) ghi cấu trúc và file cần mở khi sửa từng phần; không coi OOP là yêu cầu đổi React sang class hoặc thêm tầng rỗng.
+- Frontend tách UI thành forms/charts/navigation/feedback/data/diagrams; catalog definition/snippet và preview riêng theo từng template. Workspace cấu hình cũ đổi thành experiment-config, tách profile/comparison/plan/setup models và provider; Workspace IDE giữ route/feature riêng. Snippet sao chép dùng import mới; phần Mã tích hợp hiển thị source thực tế.
+- Backend main.py còn composition ASGI; control sở hữu settings/health router, shared/postgres.py chứa PostgresDatabase, app báo giá có domain/quotation và persistence/PostgresQuotationRepository/migrations/SQL riêng. Test đi theo ownership; giữ CLI/ASGI, env, API và định danh/checksum SQL. Migration replay trên DB đã áp dụng trả applied = []. Không thêm nghiệp vụ, thay fixture hoặc chạy thực nghiệm.
+- Template JS tách 21 component + helper thành 26 source modules đọc được; build/check sinh bundle NoiUI v2.0.0 giữ cách nhúng defer. Catalog data/page, demo shell và prototype legacy tách riêng; sửa lỗi cú pháp $$let có sẵn ở source demo, bỏ workaround vá response browser. Không thêm dependency ứng dụng; Prettier chỉ dùng như công cụ tạm để format.
+- Kiểm chứng: frontend lint/typecheck, 57 test logic và production build đạt; backend Ruff/format và 58 test (gồm PostgreSQL thật) đạt. Edge production full smoke đạt Workspace, thiết lập, Chat/Số liệu/Tài liệu/UI kit, keyboard và responsive; --reference thêm kiểm tra tương tác/lifecycle của 21 template JS và ảnh tham chiếu. Đã chụp UI catalog hiện tại desktop/mobile, xác nhận nhãn source; không lỗi runtime/React. Cảnh báo Node module detection và TestClient/httpx có sẵn còn tồn tại. Quyền/API app báo giá và các điều kiện nghiên cứu còn mở như trước.
+
 ## 2026-11-07 — Hoàn thành lát cắt schema/migration/storage báo giá
 
 - Thêm package app.quotation_demo độc lập HTTP/control/cache: domain models, PostgreSQL store create/get/list và config QUOTATION_ riêng, không fallback sang DSN control. Schema quotation_demo.quotations có đúng sáu cột; tiền giữ nguyên chuỗi thập phân, expires_on kiểu JSON giữ SQL NULL (missing) khác JSON null và giá trị ngày sai. Chưa có rule expiration_review, API/UI hoặc runtime validation.
@@ -15,7 +29,7 @@
 
 ## 2026-11-07 — Bắt đầu code nền PostgreSQL/readiness (một phần T05)
 
-- Theo yêu cầu chuyển sang code, thêm [adapter PostgreSQL](../../backend/app/database.py) dùng Psycopg, kết nối theo thao tác với commit/rollback/close, secret DSN và connect/statement timeout. Không có schema/migration, retry ngầm hoặc tự tạo extension. Adapter độc lập HTTP, workflow và nghiệp vụ báo giá; không chốt thay quyền/integrity/executor/gate còn mở.
+- Theo yêu cầu chuyển sang code, thêm [adapter PostgreSQL](../../backend/app/shared/postgres.py) dùng Psycopg, kết nối theo thao tác với commit/rollback/close, secret DSN và connect/statement timeout. Không có schema/migration, retry ngầm hoặc tự tạo extension. Adapter độc lập HTTP, workflow và nghiệp vụ báo giá; không chốt thay quyền/integrity/executor/gate còn mở.
 - Thêm GET /ready: query DB thành công mới trả 200; chưa cấu hình hoặc DB lỗi trả 503 với mã trạng thái ngắn, không lộ DSN/exception. GET /health vẫn không gọi DB. Readiness hiện chỉ kiểm tra PostgreSQL, chưa chứng minh schema/model/quyền/workflow sẵn sàng; vector chưa là dependency bắt buộc.
 - Kiểm chứng: Ruff lint/format, pip check và 23 test backend đạt; hai test PostgreSQL thật skip do chưa đặt CACHESEC_TEST_DATABASE_URL và Docker Linux Engine chưa chạy. Có test lỗi qua driver thật với DSN sai, nhưng không tính là DB integration đã đạt. Còn cảnh báo deprecation TestClient/httpx từ dependency, không đổi thêm dependency ngoài nhu cầu driver. Chưa chạy frontend hoặc thực nghiệm.
 - Cập nhật README, setup, API/architecture và lộ trình. T05 vẫn chưa hoàn thành; tiếp theo chuẩn bị schema/migration từ T03 và control T04, kiểm chứng kết nối/transaction trên DB thật khi có môi trường. Acceptance nghiên cứu vẫn chờ cô; app báo giá, Agent, cache và gate chưa được triển khai.

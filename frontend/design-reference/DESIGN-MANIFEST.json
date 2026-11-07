@@ -4,16 +4,43 @@
   "entryFile": "index.html",
   "sourceFiles": {
     "all": [
-      "app.js",
-      "catalog.js",
+      "demo-shell.js",
+      "catalog/data.js",
+      "catalog/page.js",
       "index.html",
-      "kit.js",
+      "legacy/extended-kit-prototype.js",
       "styles.css",
       "templates/components.css",
       "templates/components.js",
       "templates/manifest.json",
       "templates/README.md",
-      "templates/tokens.css"
+      "templates/tokens.css",
+      "templates/src/core/dom.js",
+      "templates/src/core/lifecycle.js",
+      "templates/src/core/field.js",
+      "templates/src/core/svg.js",
+      "templates/src/charts/chart.js",
+      "templates/src/controls/button.js",
+      "templates/src/controls/text-input.js",
+      "templates/src/controls/textarea.js",
+      "templates/src/controls/select.js",
+      "templates/src/controls/checkbox.js",
+      "templates/src/controls/switch.js",
+      "templates/src/navigation/tabs.js",
+      "templates/src/feedback/badge.js",
+      "templates/src/feedback/alert.js",
+      "templates/src/feedback/dialog.js",
+      "templates/src/navigation/dropdown.js",
+      "templates/src/feedback/toast.js",
+      "templates/src/controls/number-input.js",
+      "templates/src/controls/slider.js",
+      "templates/src/data/stat-card.js",
+      "templates/src/data/progress-bar.js",
+      "templates/src/data/data-table.js",
+      "templates/src/charts/line-chart.js",
+      "templates/src/charts/bar-chart.js",
+      "templates/src/charts/donut-chart.js",
+      "templates/src/diagrams/flow-diagram.js"
     ],
     "html": [
       "index.html"
@@ -24,10 +51,37 @@
       "templates/tokens.css"
     ],
     "scriptsAndComponents": [
-      "app.js",
-      "catalog.js",
-      "kit.js",
-      "templates/components.js"
+      "demo-shell.js",
+      "catalog/data.js",
+      "catalog/page.js",
+      "legacy/extended-kit-prototype.js",
+      "templates/components.js",
+      "templates/src/core/dom.js",
+      "templates/src/core/lifecycle.js",
+      "templates/src/core/field.js",
+      "templates/src/core/svg.js",
+      "templates/src/charts/chart.js",
+      "templates/src/controls/button.js",
+      "templates/src/controls/text-input.js",
+      "templates/src/controls/textarea.js",
+      "templates/src/controls/select.js",
+      "templates/src/controls/checkbox.js",
+      "templates/src/controls/switch.js",
+      "templates/src/navigation/tabs.js",
+      "templates/src/feedback/badge.js",
+      "templates/src/feedback/alert.js",
+      "templates/src/feedback/dialog.js",
+      "templates/src/navigation/dropdown.js",
+      "templates/src/feedback/toast.js",
+      "templates/src/controls/number-input.js",
+      "templates/src/controls/slider.js",
+      "templates/src/data/stat-card.js",
+      "templates/src/data/progress-bar.js",
+      "templates/src/data/data-table.js",
+      "templates/src/charts/line-chart.js",
+      "templates/src/charts/bar-chart.js",
+      "templates/src/charts/donut-chart.js",
+      "templates/src/diagrams/flow-diagram.js"
     ],
     "assets": [
       "templates/manifest.json",
@@ -93,9 +147,10 @@
   },
   "interactions": {
     "source": [
-      "app.js",
-      "catalog.js",
-      "kit.js",
+      "demo-shell.js",
+      "catalog/data.js",
+      "catalog/page.js",
+      "legacy/extended-kit-prototype.js",
       "templates/components.js"
     ],
     "requiredStates": [
@@ -190,5 +245,6 @@
     "Preserve or rebuild JS interactions for meaningful UX actions.",
     "Validate screenshots at desktop/tablet/mobile viewports with no horizontal overflow.",
     "Keep landing pages, in-app modules, and OS widgets as separate implementation surfaces."
-  ]
+  ],
+  "refactorNote": "Runtime entries split by responsibility; original UI templates API remains v2.0.0. Legacy extended kit is archived, not loaded."
 }

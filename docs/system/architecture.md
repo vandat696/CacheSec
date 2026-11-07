@@ -8,12 +8,12 @@ Kiến trúc nghiên cứu là Secure Local Semantic Cache; bối cảnh mục t
 
 | Phần hiện có | Bằng chứng trong repo | Hành vi/giới hạn |
 | --- | --- | --- |
-| Next.js App Router | [layout](../../frontend/src/app/layout.tsx), [app shell](../../frontend/src/components/layout/app-shell.tsx) | Bốn khu Thiết lập/Chat/Số liệu/Tài liệu; providers giữ bộ nhớ phiên, chưa nối API nghiệp vụ |
-| Chat | [use-chat](../../frontend/src/features/chat/use-chat.ts), [demo-reply](../../frontend/src/features/chat/demo-reply.ts) | Hai nhánh gọi mô phỏng có delay; không LLM, không lookup, không telemetry thật |
-| Số liệu | [metrics-preview](../../frontend/src/features/metrics/metrics-preview.ts), [metrics-model](../../frontend/src/features/metrics/metrics-model.ts) | Fixture UI 24 query hoặc dữ liệu phiên; không kết quả benchmark |
-| Thiết lập | [setup-workspace](../../frontend/src/features/setup/setup-workspace.tsx), [workspace-model](../../frontend/src/features/workspace/workspace-model.ts) | Validation/snapshot/JSON results null; không runner hoặc cấp quyền |
-| Tài liệu | [document-model](../../frontend/src/features/documents/document-model.ts), [provider](../../frontend/src/features/documents/documents-provider.tsx) | Giữ File/metadata trong phiên; không đọc/upload/index |
-| FastAPI | [main.py](../../backend/app/main.py), [test health](../../backend/tests/test_health.py) | Chỉ GET /health xác nhận process liveness và CORS local; không auth/DB/model |
+| Next.js App Router | [layout](../../frontend/src/app/layout.tsx), [app shell](../../frontend/src/components/layout/AppShell.tsx) | Bốn khu Thiết lập/Chat/Số liệu/Tài liệu; providers giữ bộ nhớ phiên, chưa nối API nghiệp vụ |
+| Chat | [useChat](../../frontend/src/features/chat/useChat.ts), [demoReply](../../frontend/src/features/chat/demoReply.ts) | Hai nhánh gọi mô phỏng có delay; không LLM, không lookup, không telemetry thật |
+| Số liệu | [metricsPreview](../../frontend/src/features/metrics/metricsPreview.ts), [metricsModel](../../frontend/src/features/metrics/metricsModel.ts) | Fixture UI 24 query hoặc dữ liệu phiên; không kết quả benchmark |
+| Thiết lập | [SetupWorkspace](../../frontend/src/features/setup/SetupWorkspace.tsx), [experiment-config](../../frontend/src/features/experiment-config/) | Validation/snapshot/JSON results null; không runner hoặc cấp quyền |
+| Tài liệu | [documentModel](../../frontend/src/features/documents/documentModel.ts), [provider](../../frontend/src/features/documents/DocumentsProvider.tsx) | Giữ File/metadata trong phiên; không đọc/upload/index |
+| FastAPI | [main.py](../../backend/app/main.py), [test health](../../backend/tests/control/test_health.py) | Chỉ GET /health xác nhận process liveness và CORS local; không auth/DB/model |
 | PostgreSQL/pgvector | [compose](../../infra/compose.yaml), [init SQL](../../infra/init.sql) | Cấu hình hạ tầng, chưa schema/adapter/migration hoặc kiểm chứng DB trong lượt khảo sát |
 | Research | `research/datasets/`, `research/results/` | Chỗ dành sẵn; không có fixture báo giá, protocol chạy hoặc ghi chú bài báo được tìm thấy |
 
@@ -95,11 +95,11 @@ Browser và nội dung repository/LLM không có thẩm quyền cấp quyền ho
 
 ## Dữ liệu/API và tổ chức dự kiến
 
-Backend hiện có **GET /health** cho process liveness và **GET /ready** cho PostgreSQL probe; response và giới hạn tại [API nền](api.md#endpoint-nền-đã-triển-khai). [Database adapter](../../backend/app/database.py) không phụ thuộc HTTP, workflow hoặc app báo giá; mở connection theo thao tác, commit/rollback/close qua context manager của Psycopg. Không retry transaction hoặc tạo schema/extension tự động. Phần lưu trữ báo giá đã triển khai được mô tả ngay dưới; LLM, cache, authority và API workflow vẫn chưa được triển khai.
+Backend hiện có **GET /health** cho process liveness và **GET /ready** cho PostgreSQL probe; response và giới hạn tại [API nền](api.md#endpoint-nền-đã-triển-khai). [Database adapter](../../backend/app/shared/postgres.py) không phụ thuộc HTTP, workflow hoặc app báo giá; mở connection theo thao tác, commit/rollback/close qua context manager của Psycopg. Không retry transaction hoặc tạo schema/extension tự động. Phần lưu trữ báo giá đã triển khai được mô tả ngay dưới; LLM, cache, authority và API workflow vẫn chưa được triển khai.
 
 ### Lưu trữ báo giá đã triển khai
 
-Lát cắt ngày 2026-11-07 có [domain models](../../backend/app/quotation_demo/models.py), [PostgreSQL store](../../backend/app/quotation_demo/storage.py) và [migration CLI](../../backend/app/quotation_demo/migrate.py), chưa có API/runtime validation hoặc UI báo giá thật. Package app không import app.main/app.config, HTTP, Agent hoặc cache; chỉ dùng adapter kết nối trung lập. QUOTATION_DATABASE_URL là cấu hình riêng, không tự fallback sang DATABASE_URL của control. Local hiện dùng chung PostgreSQL nhưng tách schema; đây là ranh giới sở hữu, chưa phải phân quyền database đã thực thi.
+Lát cắt ngày 2026-11-07 có [domain models](../../backend/app/quotation_demo/domain/quotation.py), [PostgreSQL store](../../backend/app/quotation_demo/persistence/postgres_quotation_repository.py) và [migration CLI](../../backend/app/quotation_demo/migrate.py), chưa có API/runtime validation hoặc UI báo giá thật. Package app không import app.main/app.config, HTTP, Agent hoặc cache; chỉ dùng adapter kết nối trung lập. QUOTATION_DATABASE_URL là cấu hình riêng, không tự fallback sang DATABASE_URL của control. Local hiện dùng chung PostgreSQL nhưng tách schema; đây là ranh giới sở hữu, chưa phải phân quyền database đã thực thi.
 
 Schema quotation_demo có bảng quotations với **đúng sáu cột**:
 
@@ -114,7 +114,7 @@ Schema quotation_demo có bảng quotations với **đúng sáu cột**:
 
 DecimalString nhận dạng `[+-]?[0-9]+(\.[0-9]+)?` trên toàn chuỗi; không nhận exponent/whitespace/NaN/Infinity hoặc ép JSON number thành string. Đây là kiểm tra biểu diễn, chưa thêm quy tắc tiền dương/min/max hoặc currency. expires_on nhận giá trị JSON hữu hạn, kể cả chuỗi ngày sai/rỗng, boolean, số, array/object. Dùng JSON thay vì JSONB vì không cần truy vấn/index ngày và cần giữ đầu vào; không chuyển ngày sai thành null. Model dùng model_fields_set để nhớ missing; khi xuất wire phải dùng exclude_unset=True để không biến missing thành null. Các giới hạn JSON/encoding của storage vẫn áp dụng; không coi lỗi lưu trữ là ngày đã được validate.
 
-PostgresQuotationStore nhận connection do caller quản lý transaction; create/get/list không tự commit hoặc cấp quyền. get không tìm thấy trả None; list dùng keyset UUID tăng dần, mặc định 50 mục, đọc limit+1 để tạo next_cursor. Thứ tự là UUID, không phải ngày tạo; từng trang đọc snapshot tại statement hiện tại, chưa bảo đảm snapshot nhất quán qua nhiều request. Cursor không phải quyền; policy/giới hạn HTTP và scope vẫn phải thiết kế tại T04 trước công khai API. Không tạo service wrapper rỗng khi chưa có logic nghiệp vụ cần tách thêm.
+PostgresQuotationRepository nhận connection do caller quản lý transaction; create/get/list không tự commit hoặc cấp quyền. get không tìm thấy trả None; list dùng keyset UUID tăng dần, mặc định 50 mục, đọc limit+1 để tạo next_cursor. Thứ tự là UUID, không phải ngày tạo; từng trang đọc snapshot tại statement hiện tại, chưa bảo đảm snapshot nhất quán qua nhiều request. Cursor không phải quyền; policy/giới hạn HTTP và scope vẫn phải thiết kế tại T04 trước công khai API. Không tạo service wrapper rỗng khi chưa có logic nghiệp vụ cần tách thêm.
 
 Metadata migration nằm riêng ở quotation_demo.schema_migrations (name PK, checksum, applied_at timestamptz). Runner lấy transaction advisory lock cho app, xác minh version/checksum đã áp dụng rồi chạy batch trong transaction. Checksum SHA-256 của SQL UTF-8 chuẩn hóa CRLF thành LF để không lệch giữa Windows/Linux; đây là phát hiện sửa migration, không phải cơ chế chứng thực artifact/approval. Chạy lại là no-op và giữ dữ liệu; migration lạ/checksum đổi bị từ chối, SQL lỗi rollback cả schema/history mới trong batch. Nếu gọi trong transaction có sẵn, caller vẫn quyết định commit cuối; CLI chỉ báo ok sau khi commit thành công. Migration table có version nhưng không tự chứng minh mọi DDL trong DB chưa bị sửa ngoài runner.
 

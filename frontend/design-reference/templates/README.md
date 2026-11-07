@@ -4,7 +4,9 @@ Bộ 21 template HTML/CSS/JavaScript thuần. Mỗi template có tên theo chứ
 
 ## Lấy tài nguyên vào app
 
-Sao chép cả thư mục `templates/` vào app. Chỉ cần hai stylesheet và một script bên dưới; không cần `app.js`, `kit.js`, `catalog.js` hoặc `styles.css` của trang mẫu.
+Sao chép cả thư mục templates/ vào app. Runtime chỉ cần hai stylesheet và bundle bên dưới; không cần demo-shell.js, catalog/, legacy/ hoặc styles.css của trang mẫu.
+
+Source nằm tại `src/<nhóm>/<tên-component>.js`; helper DOM/lifecycle/field/SVG ở src/core. manifest.json ghi source theo tên component. components.js là bundle sinh tự động, giữ API NoiUI v2.0.0; không sửa tay. Từ frontend chạy `npm run templates:build` sau khi sửa và `npm run templates:check` để kiểm tra đồng bộ. Build dùng TypeScript có sẵn trong dev dependencies; app nhúng chỉ tải bundle, không cần Node/TypeScript. Catalog và ví dụ tách khỏi implementation; CSS giữ dạng dễ đọc và thứ tự cascade hiện có.
 
 ```html
 <link rel="stylesheet" href="templates/tokens.css">

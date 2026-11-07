@@ -4,24 +4,26 @@ from threading import Barrier
 import psycopg
 import pytest
 
-from app.quotation_demo import migrate
-from app.quotation_demo.migrate import Migration, MigrationError, apply_migrations
+from app.quotation_demo.persistence import migrations as migrate
+from app.quotation_demo.persistence.migrations import Migration, MigrationError, apply_migrations
 
 
 def test_migration_replay_preserves_existing_records(quotation_database) -> None:
-    from app.quotation_demo.models import QuotationCreate
-    from app.quotation_demo.storage import PostgresQuotationStore
+    from app.quotation_demo.domain.quotation import QuotationCreate
+    from app.quotation_demo.persistence.postgres_quotation_repository import (
+        PostgresQuotationRepository,
+    )
 
     with quotation_database.connection() as connection:
         assert apply_migrations(connection) == ("001_create_quotations.sql",)
-        record = PostgresQuotationStore(connection).create(
+        record = PostgresQuotationRepository(connection).create(
             QuotationCreate(
                 supplier_name="test", description="test", total_amount="1", currency="VND"
             )
         )
     with quotation_database.connection() as connection:
         assert apply_migrations(connection) == ()
-        assert PostgresQuotationStore(connection).get(record.id) == record
+        assert PostgresQuotationRepository(connection).get(record.id) == record
 
 
 def test_unknown_or_modified_migration_is_refused(quotation_database) -> None:

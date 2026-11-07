@@ -145,7 +145,7 @@ Giá trị so sánh phải hữu hạn và không âm; tỷ lệ phải nằm tr
 
 Trang `/metrics` mở trực tiếp từ sidebar. Thanh tab **Chung**, **Không cache**, **Cache** nằm đầu nội dung trang, trước bộ lọc dùng chung, mặc định Chung. Bỏ tiêu đề hiển thị Số liệu, nhãn Phiên hiện tại và câu mô tả ở đầu; giữ tên trang ẩn cho trình đọc màn hình. Dùng component Tabs hiện có, hỗ trợ phím trái/phải, Home/End; chỉ panel đang chọn xuất hiện và nhận focus. Chuyển tab giữ bộ lọc hội thoại; mỗi tab có biểu đồ, phân trang và chi tiết riêng, đổi bộ lọc đưa bảng về trang đầu và đóng chi tiết.
 
-Trang mặc định hiển thị dữ liệu mẫu để xem bố cục có số liệu; đã bỏ công tắc Xem dữ liệu mẫu và dòng mô tả nguồn cạnh bộ lọc theo yêu cầu. Các nhãn mẫu trong biểu đồ/chi tiết vẫn phân biệt fixture với số đo thật. Fixture cố định gồm 24 truy vấn Cả hai trong hai hội thoại riêng: 15 Hit, 7 Miss, 2 Rejected; Rejected bỏ cache và sinh lại. Thẻ, đường biểu diễn, vòng cache, bảng đối chiếu và chi tiết cùng lấy từ một nguồn trong `metrics-preview.ts`; lọc tính lại tổng/mẫu số. Chỉ trong fixture, độ trễ là trung bình ms/truy vấn, mức giảm là phần trăm giữa hai trung bình; hit rate tính Hit/24 lượt tra, calls/token tiết kiệm là hiệu tổng hai nhánh. Các tỷ lệ chất lượng và ca quyền có mẫu số; giá trị 0 là kịch bản giả, không phải chứng minh an toàn. Những phép tính này phục vụ xem giao diện, chưa chốt đặc tả đánh giá thật.
+Trang mặc định hiển thị dữ liệu mẫu để xem bố cục có số liệu; đã bỏ công tắc Xem dữ liệu mẫu và dòng mô tả nguồn cạnh bộ lọc theo yêu cầu. Các nhãn mẫu trong biểu đồ/chi tiết vẫn phân biệt fixture với số đo thật. Fixture cố định gồm 24 truy vấn Cả hai trong hai hội thoại riêng: 15 Hit, 7 Miss, 2 Rejected; Rejected bỏ cache và sinh lại. Thẻ, đường biểu diễn, vòng cache, bảng đối chiếu và chi tiết cùng lấy từ một nguồn trong `metricsPreview.ts`; lọc tính lại tổng/mẫu số. Chỉ trong fixture, độ trễ là trung bình ms/truy vấn, mức giảm là phần trăm giữa hai trung bình; hit rate tính Hit/24 lượt tra, calls/token tiết kiệm là hiệu tổng hai nhánh. Các tỷ lệ chất lượng và ca quyền có mẫu số; giá trị 0 là kịch bản giả, không phải chứng minh an toàn. Những phép tính này phục vụ xem giao diện, chưa chốt đặc tả đánh giá thật.
 
 Nguồn phiên vẫn có tại `/metrics?source=session` cho phát triển/kiểm thử, dùng `ChatProvider` và cập nhật khi phản hồi về dù đang rời Chat; `/metrics` hoặc nguồn khác dùng fixture. Thay query qua điều hướng client giữ phiên; tải lại vẫn xóa dữ liệu Chat. Dữ liệu mẫu không ghi vào hội thoại, cache, storage hoặc kết quả đánh giá. Đổi nguồn đặt bộ lọc về tất cả, chọn lại Chung, reset biểu đồ/bảng và đóng chi tiết; Back/Forward cập nhật đúng nguồn, không lưu lựa chọn vào storage. Trang dùng Suspense cho nguồn phụ thuộc query. Các quy tắc chưa đo/chưa chấm bên dưới áp dụng cho **dữ liệu phiên Chat**, độc lập với fixture xem trước.
 
@@ -197,7 +197,7 @@ Hiện không đọc nội dung, parse, chunk, embed, upload hoặc lập chỉ 
 | `src/features/metrics/` | Lọc/tổng hợp demo, thứ tự/đoạn đường theo truy vấn, biểu đồ và dashboard; không suy diễn telemetry/quyền |
 | `src/features/documents/` | Model/validation/lọc, provider giữ File trong phiên và màn tài liệu |
 | `src/features/setup/` | Trang thiết lập chín nhóm thông số và xuất cấu hình nháp |
-| `src/features/workspace/` | Model/validation và provider giữ cấu hình thiết lập trong phiên; các profile/kế hoạch nghiên cứu cũ giữ riêng |
+| `src/features/experiment-config/` | Model/validation và provider giữ cấu hình thiết lập trong phiên; các profile/kế hoạch nghiên cứu cũ giữ riêng |
 | `src/features/comparison/`, `experiments/`, `settings/` | Phần nghiên cứu đã hoãn, không nằm trong luồng app hiện tại |
 | `src/features/ui-library/` | Catalog và mã ví dụ cho phát triển |
 | `src/styles/` | Tokens, UI chung, layout, chat, metrics và documents |
@@ -206,4 +206,4 @@ Hiện không đọc nội dung, parse, chunk, embed, upload hoặc lập chỉ 
 
 Bản gốc nằm tại [frontend/design-reference](../../frontend/design-reference/). Chế độ browser `--reference` chỉ sửa lỗi cú pháp `$$let` trong response preview để chụp ảnh, không sửa bản gốc. Bố cục app hiện tại gồm Workspace, Thiết lập, Chat, Số liệu và Tài liệu.
 
-Đổi màu/font tại `styles/tokens.css`; đổi điều hướng tại `components/layout/app-shell.tsx`. Client API tương lai thuộc `src/lib/` theo [kiến trúc](../system/architecture.md), không đặt upload/RAG/auth vào component trình bày. Xem [hướng dẫn chạy và kiểm tra](../general/setup.md#kiểm-tra).
+Đổi màu/font tại `styles/tokens.css`; đổi điều hướng tại `components/layout/AppShell.tsx`. Client API tương lai thuộc `src/lib/` theo [kiến trúc](../system/architecture.md), không đặt upload/RAG/auth vào component trình bày. Xem [hướng dẫn chạy và kiểm tra](../general/setup.md#kiểm-tra).

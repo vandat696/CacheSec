@@ -1,5 +1,5 @@
 import type { Metadata } from "next";
-import { SetupWorkspace } from "@/features/setup/setup-workspace";
+import { SetupWorkspace } from "@/features/setup/SetupWorkspace";
 
 export const metadata: Metadata = { title: "Thiết lập · CacheSec" };
 

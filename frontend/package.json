@@ -8,7 +8,9 @@
     "start": "next start --hostname 127.0.0.1",
     "lint": "eslint .",
     "typecheck": "tsc --noEmit",
-    "test": "node --experimental-strip-types --test --test-isolation=none scripts/chat-state.test.mjs scripts/documents.test.mjs scripts/workspace-model.test.mjs scripts/metrics-model.test.mjs scripts/developer-preview.test.mjs",
+    "templates:build": "node scripts/build-ui-templates.mjs",
+    "templates:check": "node scripts/build-ui-templates.mjs --check",
+    "test": "node --experimental-strip-types --test --test-isolation=none scripts/chat-state.test.mjs scripts/documents.test.mjs scripts/experiment-config.test.mjs scripts/metrics-model.test.mjs scripts/developer-preview.test.mjs",
     "test:browser": "node scripts/browser-smoke.mjs"
   },
   "dependencies": {

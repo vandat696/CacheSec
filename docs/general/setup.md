@@ -45,7 +45,7 @@ App dùng QUOTATION_DATABASE_URL trong backend/.env, không tự dùng DATABASE_
 
 Lần đầu trả status = ok, scope = quotation_demo và applied = [001_create_quotations.sql]; chạy lại applied = [] và giữ dữ liệu. CLI chỉ báo ok sau commit. Lỗi cấu hình/kết nối/history trả exit code 1 và mã lỗi ngắn, không DSN/exception. Migration có transaction/advisory lock/checksum, không chạy tự động trong /health hoặc /ready. Schema, quy ước missing/null và phục hồi batch lỗi ở [kiến trúc dữ liệu](../system/architecture.md#lưu-trữ-báo-giá-đã-triển-khai).
 
-Sử dụng [QuotationCreate/QuotationRecord](../../backend/app/quotation_demo/models.py) và [PostgresQuotationStore](../../backend/app/quotation_demo/storage.py) qua connection do caller quản lý; create/get/list chưa có HTTP endpoint. get không thấy trả None; list trả items/next_cursor theo UUID, mặc định 50 mục. Xuất model với exclude_unset=True để giữ thiếu expires_on khác null. Chưa có validation ngày hoặc cờ expiration_review, không ghi dữ liệu nghiên cứu/seed khi migrate.
+Sử dụng [QuotationCreate/QuotationRecord](../../backend/app/quotation_demo/domain/quotation.py) và [PostgresQuotationRepository](../../backend/app/quotation_demo/persistence/postgres_quotation_repository.py) qua connection do caller quản lý; create/get/list chưa có HTTP endpoint. get không thấy trả None; list trả items/next_cursor theo UUID, mặc định 50 mục. Xuất model với exclude_unset=True để giữ thiếu expires_on khác null. Chưa có validation ngày hoặc cờ expiration_review, không ghi dữ liệu nghiên cứu/seed khi migrate.
 
 ## 3. Frontend (terminal khác)
 
@@ -85,7 +85,7 @@ Nếu console báo hydration mismatch tại `RootLayout`/`<body>` hoặc `<div>`
 
 ## Kiểm tra
 
-Trong frontend: `npm run lint`, `npm run typecheck`, `npm test`, `npm run build`. Các test dùng Node test runner và đọc TypeScript trực tiếp; dùng Node 24 như môi trường đã kiểm tra. Node có thể cảnh báo tự nhận dạng ES module cho file TypeScript; cảnh báo này không làm test thất bại.
+Trong frontend: `npm run templates:build` sau khi s?a source template, `npm run templates:check` ?? ki?m tra bundle; sau ?? `npm run lint`, `npm run typecheck`, `npm test`, `npm run build`. Các test dùng Node test runner và đọc TypeScript trực tiếp; dùng Node 24 như môi trường đã kiểm tra. Node có thể cảnh báo tự nhận dạng ES module cho file TypeScript; cảnh báo này không làm test thất bại.
 
 Kiểm tra tương tác và responsive bằng Edge/Chrome headless (không thêm test framework):
 
@@ -113,7 +113,7 @@ Trong backend:
 .\.venv\Scripts\python.exe -m pytest
 ```
 
-Test PostgreSQL thật là opt-in: đặt CACHESEC_TEST_DATABASE_URL trong môi trường terminal tới DB phát triển/test rồi chạy `.\.venv\Scripts\python.exe -m pytest tests/test_database_integration.py`. Biến này không đọc từ .env, không mặc định dùng DATABASE_URL của ứng dụng. Test đọc server/extension metadata và round-trip với bảng TEMP chỉ tồn tại trong session; không xóa dữ liệu/bảng app. Không đặt biến thì hai test này skip, không có nghĩa kết nối DB thật đã đạt. Đây là test hạ tầng, không phải fixture thực nghiệm báo giá.
+Test PostgreSQL thật là opt-in: đặt CACHESEC_TEST_DATABASE_URL trong môi trường terminal tới DB phát triển/test rồi chạy `.\.venv\Scripts\python.exe -m pytest tests/shared/test_postgres_integration.py`. Biến này không đọc từ .env, không mặc định dùng DATABASE_URL của ứng dụng. Test đọc server/extension metadata và round-trip với bảng TEMP chỉ tồn tại trong session; không xóa dữ liệu/bảng app. Không đặt biến thì hai test này skip, không có nghĩa kết nối DB thật đã đạt. Đây là test hạ tầng, không phải fixture thực nghiệm báo giá.
 
 Với cùng biến môi trường, chạy `.\.venv\Scripts\python.exe -m pytest tests/quotation_demo` để kiểm tra domain/store/migrations. Các test PostgreSQL báo giá tạo database mới tên `cachesec_test_quotations_<UUID>` trên server đã chỉ định; user test cần CREATEDB. Fixture chỉ dọn database do chính nó tạo thành công, không reset/drop database được cấu hình trong URL. Test kiểm tra commit/rollback, migration replay/checksum/concurrency, SQL parameters, phân trang và missing/null/ngày sai; dữ liệu này không phải fixture benchmark. Thiếu biến thì phần PostgreSQL skip, phần domain vẫn chạy.
 

@@ -7,7 +7,7 @@ from psycopg import sql
 from psycopg.conninfo import make_conninfo
 from pydantic import SecretStr
 
-from app.database import Database
+from app.shared.postgres import PostgresDatabase
 
 
 @pytest.fixture
@@ -29,7 +29,7 @@ def quotation_database():
                 "Quotation tests require CREATE DATABASE on the test server.", pytrace=False
             )
         try:
-            yield Database(
+            yield PostgresDatabase(
                 SecretStr(make_conninfo(url, dbname=name)),
                 connect_timeout_seconds=3,
                 statement_timeout_ms=5000,

@@ -7,7 +7,7 @@ import {
   filterDocuments,
   fileKey,
   isDocumentCategory,
-} from "../src/features/documents/document-model.ts";
+} from "../src/features/documents/documentModel.ts";
 
 const file = (name, text = "Nội dung giả lập", lastModified = 1) =>
   new File([text], name, { lastModified });

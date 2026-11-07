@@ -1,7 +1,7 @@
 import assert from "node:assert/strict";
 import { test } from "node:test";
-import { canPreviewApproval, developerPreviewReducer as reduce, initialDeveloperPreview } from "../src/features/developer/developer-preview-model.ts";
-import { previewDiff } from "../src/features/developer/developer-preview-data.ts";
+import { canPreviewApproval, developerPreviewReducer as reduce, initialDeveloperPreview } from "../src/features/developer/developerPreviewModel.ts";
+import { previewDiff } from "../src/features/developer/developerPreviewData.ts";
 
 function reviewed() {
   return reduce(reduce(initialDeveloperPreview(), { type: "tests" }), { type: "acknowledge", checked: true });

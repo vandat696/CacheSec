@@ -3,31 +3,364 @@
   "version": "2.0.0",
   "runtime": "browser",
   "namespace": "NoiUI",
-  "styles": ["tokens.css", "components.css"],
+  "styles": [
+    "tokens.css",
+    "components.css"
+  ],
   "script": "components.js",
   "documentation": "README.md",
-  "returnContract": ["element", "destroy()"],
+  "returnContract": [
+    "element",
+    "destroy()"
+  ],
   "components": [
-    {"name":"Button","group":"controls","options":["label","variant","disabled","onClick"],"methods":["setLoading(boolean)"]},
-    {"name":"TextInput","group":"controls","options":["label","value","type","placeholder","required","disabled","help","error","validate","onChange"],"methods":["getValue()","setValue(value)","validate()"]},
-    {"name":"Textarea","group":"controls","options":["label","value","placeholder","required","disabled","help","validate","onChange"],"methods":["getValue()","setValue(value)","validate()"]},
-    {"name":"Select","group":"controls","options":["label","value","options","required","disabled","help","onChange"],"methods":["getValue()","setValue(value)","validate()"]},
-    {"name":"Checkbox","group":"controls","options":["label","checked","disabled","onChange"],"methods":["getValue()","setValue(boolean)"]},
-    {"name":"Switch","group":"controls","options":["label","checked","disabled","onChange"],"methods":["getValue()","setValue(boolean)"]},
-    {"name":"Tabs","group":"navigation","options":["label","items","selectedIndex","onChange"],"methods":["select(index)"]},
-    {"name":"Badge","group":"feedback","options":["label","tone"],"methods":[]},
-    {"name":"Alert","group":"feedback","options":["title","description","tone"],"methods":[]},
-    {"name":"Dialog","group":"feedback","options":["title","description","cancelLabel","confirmLabel","onConfirm","onClose"],"methods":["open()","close()"]},
-    {"name":"Dropdown","group":"navigation","options":["label","items","onSelect"],"methods":["open()","close()"]},
-    {"name":"Toast","group":"feedback","options":["message","duration"],"methods":["show(message)"]},
-    {"name":"NumberInput","group":"controls","options":["label","value","min","max","step","required","disabled","help","error","validate","onChange"],"methods":["getValue()","setValue(value)","validate()"]},
-    {"name":"Slider","group":"controls","options":["label","value","min","max","step","disabled","help","onChange"],"methods":["getValue()","setValue(value)","validate()"]},
-    {"name":"StatCard","group":"data","options":["label","value","description"],"methods":[]},
-    {"name":"ProgressBar","group":"data","options":["label","value","max","unit"],"methods":["setValue(value,max)"]},
-    {"name":"DataTable","group":"data","options":["caption","columns","rows"],"methods":["setData(rows)"]},
-    {"name":"LineChart","group":"charts","options":["title","unit","data"],"methods":["setData(data)"]},
-    {"name":"BarChart","group":"charts","options":["title","unit","data"],"methods":["setData(data)"]},
-    {"name":"DonutChart","group":"charts","options":["title","unit","data"],"methods":["setData(data)"]},
-    {"name":"FlowDiagram","group":"diagrams","options":["nodes","selectedId","onSelect"],"methods":["select(id)"]}
-  ]
+    {
+      "name": "Button",
+      "group": "controls",
+      "options": [
+        "label",
+        "variant",
+        "disabled",
+        "onClick"
+      ],
+      "methods": [
+        "setLoading(boolean)"
+      ],
+      "source": "src/controls/button.js"
+    },
+    {
+      "name": "TextInput",
+      "group": "controls",
+      "options": [
+        "label",
+        "value",
+        "type",
+        "placeholder",
+        "required",
+        "disabled",
+        "help",
+        "error",
+        "validate",
+        "onChange"
+      ],
+      "methods": [
+        "getValue()",
+        "setValue(value)",
+        "validate()"
+      ],
+      "source": "src/controls/text-input.js"
+    },
+    {
+      "name": "Textarea",
+      "group": "controls",
+      "options": [
+        "label",
+        "value",
+        "placeholder",
+        "required",
+        "disabled",
+        "help",
+        "validate",
+        "onChange"
+      ],
+      "methods": [
+        "getValue()",
+        "setValue(value)",
+        "validate()"
+      ],
+      "source": "src/controls/textarea.js"
+    },
+    {
+      "name": "Select",
+      "group": "controls",
+      "options": [
+        "label",
+        "value",
+        "options",
+        "required",
+        "disabled",
+        "help",
+        "onChange"
+      ],
+      "methods": [
+        "getValue()",
+        "setValue(value)",
+        "validate()"
+      ],
+      "source": "src/controls/select.js"
+    },
+    {
+      "name": "Checkbox",
+      "group": "controls",
+      "options": [
+        "label",
+        "checked",
+        "disabled",
+        "onChange"
+      ],
+      "methods": [
+        "getValue()",
+        "setValue(boolean)"
+      ],
+      "source": "src/controls/checkbox.js"
+    },
+    {
+      "name": "Switch",
+      "group": "controls",
+      "options": [
+        "label",
+        "checked",
+        "disabled",
+        "onChange"
+      ],
+      "methods": [
+        "getValue()",
+        "setValue(boolean)"
+      ],
+      "source": "src/controls/switch.js"
+    },
+    {
+      "name": "Tabs",
+      "group": "navigation",
+      "options": [
+        "label",
+        "items",
+        "selectedIndex",
+        "onChange"
+      ],
+      "methods": [
+        "select(index)"
+      ],
+      "source": "src/navigation/tabs.js"
+    },
+    {
+      "name": "Badge",
+      "group": "feedback",
+      "options": [
+        "label",
+        "tone"
+      ],
+      "methods": [],
+      "source": "src/feedback/badge.js"
+    },
+    {
+      "name": "Alert",
+      "group": "feedback",
+      "options": [
+        "title",
+        "description",
+        "tone"
+      ],
+      "methods": [],
+      "source": "src/feedback/alert.js"
+    },
+    {
+      "name": "Dialog",
+      "group": "feedback",
+      "options": [
+        "title",
+        "description",
+        "cancelLabel",
+        "confirmLabel",
+        "onConfirm",
+        "onClose"
+      ],
+      "methods": [
+        "open()",
+        "close()"
+      ],
+      "source": "src/feedback/dialog.js"
+    },
+    {
+      "name": "Dropdown",
+      "group": "navigation",
+      "options": [
+        "label",
+        "items",
+        "onSelect"
+      ],
+      "methods": [
+        "open()",
+        "close()"
+      ],
+      "source": "src/navigation/dropdown.js"
+    },
+    {
+      "name": "Toast",
+      "group": "feedback",
+      "options": [
+        "message",
+        "duration"
+      ],
+      "methods": [
+        "show(message)"
+      ],
+      "source": "src/feedback/toast.js"
+    },
+    {
+      "name": "NumberInput",
+      "group": "controls",
+      "options": [
+        "label",
+        "value",
+        "min",
+        "max",
+        "step",
+        "required",
+        "disabled",
+        "help",
+        "error",
+        "validate",
+        "onChange"
+      ],
+      "methods": [
+        "getValue()",
+        "setValue(value)",
+        "validate()"
+      ],
+      "source": "src/controls/number-input.js"
+    },
+    {
+      "name": "Slider",
+      "group": "controls",
+      "options": [
+        "label",
+        "value",
+        "min",
+        "max",
+        "step",
+        "disabled",
+        "help",
+        "onChange"
+      ],
+      "methods": [
+        "getValue()",
+        "setValue(value)",
+        "validate()"
+      ],
+      "source": "src/controls/slider.js"
+    },
+    {
+      "name": "StatCard",
+      "group": "data",
+      "options": [
+        "label",
+        "value",
+        "description"
+      ],
+      "methods": [],
+      "source": "src/data/stat-card.js"
+    },
+    {
+      "name": "ProgressBar",
+      "group": "data",
+      "options": [
+        "label",
+        "value",
+        "max",
+        "unit"
+      ],
+      "methods": [
+        "setValue(value,max)"
+      ],
+      "source": "src/data/progress-bar.js"
+    },
+    {
+      "name": "DataTable",
+      "group": "data",
+      "options": [
+        "caption",
+        "columns",
+        "rows"
+      ],
+      "methods": [
+        "setData(rows)"
+      ],
+      "source": "src/data/data-table.js"
+    },
+    {
+      "name": "LineChart",
+      "group": "charts",
+      "options": [
+        "title",
+        "unit",
+        "data"
+      ],
+      "methods": [
+        "setData(data)"
+      ],
+      "source": "src/charts/line-chart.js"
+    },
+    {
+      "name": "BarChart",
+      "group": "charts",
+      "options": [
+        "title",
+        "unit",
+        "data"
+      ],
+      "methods": [
+        "setData(data)"
+      ],
+      "source": "src/charts/bar-chart.js"
+    },
+    {
+      "name": "DonutChart",
+      "group": "charts",
+      "options": [
+        "title",
+        "unit",
+        "data"
+      ],
+      "methods": [
+        "setData(data)"
+      ],
+      "source": "src/charts/donut-chart.js"
+    },
+    {
+      "name": "FlowDiagram",
+      "group": "diagrams",
+      "options": [
+        "nodes",
+        "selectedId",
+        "onSelect"
+      ],
+      "methods": [
+        "select(id)"
+      ],
+      "source": "src/diagrams/flow-diagram.js"
+    }
+  ],
+  "sources": [
+    "src/core/dom.js",
+    "src/core/lifecycle.js",
+    "src/core/field.js",
+    "src/core/svg.js",
+    "src/charts/chart.js",
+    "src/controls/button.js",
+    "src/controls/text-input.js",
+    "src/controls/textarea.js",
+    "src/controls/select.js",
+    "src/controls/checkbox.js",
+    "src/controls/switch.js",
+    "src/navigation/tabs.js",
+    "src/feedback/badge.js",
+    "src/feedback/alert.js",
+    "src/feedback/dialog.js",
+    "src/navigation/dropdown.js",
+    "src/feedback/toast.js",
+    "src/controls/number-input.js",
+    "src/controls/slider.js",
+    "src/data/stat-card.js",
+    "src/data/progress-bar.js",
+    "src/data/data-table.js",
+    "src/charts/line-chart.js",
+    "src/charts/bar-chart.js",
+    "src/charts/donut-chart.js",
+    "src/diagrams/flow-diagram.js"
+  ],
+  "generated": [
+    "components.js"
+  ],
+  "build": "node scripts/build-ui-templates.mjs"
 }

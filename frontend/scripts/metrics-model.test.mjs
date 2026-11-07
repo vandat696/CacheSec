@@ -1,10 +1,10 @@
 import assert from "node:assert/strict";
 import { test } from "node:test";
-import { initialChatState, chatReducer } from "../src/features/chat/chat-state.ts";
-import { selectBranchRows, selectMetricsRows, summarizeDemoMetrics } from "../src/features/metrics/metrics-model.ts";
-import { formatComparisonValue, getBetterBranch, getDemoComparisonRows } from "../src/features/metrics/metrics-comparison-model.ts";
-import { getDemoQueryTrend, getTrendSegments } from "../src/features/metrics/metrics-trend-model.ts";
-import { getMetricsPreview, previewQueries, summarizePreview } from "../src/features/metrics/metrics-preview.ts";
+import { initialChatState, chatReducer } from "../src/features/chat/chatState.ts";
+import { selectBranchRows, selectMetricsRows, summarizeDemoMetrics } from "../src/features/metrics/metricsModel.ts";
+import { formatComparisonValue, getBetterBranch, getDemoComparisonRows } from "../src/features/metrics/metricsComparisonModel.ts";
+import { getDemoQueryTrend, getTrendSegments } from "../src/features/metrics/metricsTrendModel.ts";
+import { getMetricsPreview, previewQueries, summarizePreview } from "../src/features/metrics/metricsPreview.ts";
 
 test("Dữ liệu xem trước nhất quán giữa thẻ, biểu đồ, đối chiếu và chi tiết", () => {
   const preview = getMetricsPreview("all");

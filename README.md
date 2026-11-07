@@ -68,6 +68,7 @@ Frontend: http://127.0.0.1:3000; bản xem trước mới: http://127.0.0.1:3000
 
 - [Tổng quan/yêu cầu/câu hỏi mở](docs/general/overview.md): ràng buộc giảng viên, định nghĩa nghiệp vụ và threshold cần xác nhận.
 - [Kiến trúc](docs/system/architecture.md), [cache](docs/system/cache.md), [bảo mật và approval gate](docs/system/authorization.md).
+- [Tổ chức source và đặt tên](docs/system/code-organization.md): frontend theo component/feature, backend theo domain/adapter và UI template source theo tên component.
 - [Frontend hiện tại và phương án tái sử dụng](docs/frontend/design.md), [thiết kế đánh giá](docs/evaluation/design.md).
 - [Kế hoạch PoC](docs/general/implementation-plan.md): đã bắt đầu code nền kết nối DB/readiness; schema, app và workflow triển khai theo điều kiện của từng gói.
 - [Trạng thái kiểm chứng](docs/general/project-status.md), [mục lục docs](docs/README.md), [quy tắc cho agent](AGENTS.md).

@@ -8,6 +8,7 @@ import { createServer } from "node:http";
 import { resolve, join, extname } from "node:path";
 import { fileURLToPath } from "node:url";
 import { checkDeveloperPreview } from "./developer-browser-check.mjs";
+import { checkUiTemplates } from "./ui-template-browser-check.mjs";
 
 const frontend = fileURLToPath(new URL("..", import.meta.url));
 const output = join(frontend, "test-results", "browser");
@@ -1077,9 +1078,7 @@ try {
         return;
       }
       try {
-        let content = await readFile(path, "utf8");
-        // The export has a syntax typo. Repair only the preview response; keep the original file intact.
-        if (pathname === "/app.js") content = content.replace("$$let", "let");
+        const content = await readFile(path, "utf8");
         response.setHeader(
           "Content-Type",
           {
@@ -1113,6 +1112,7 @@ try {
         await waitFor(
           `document.readyState === 'complete' && !!document.querySelector('${view === "library" ? ".catalog-item" : ".welcome"}')`,
         );
+        if (view === "library") await checkUiTemplates({ evaluate });
         await screenshot(`reference-${view}-${width}x${height}.png`);
       }
     }

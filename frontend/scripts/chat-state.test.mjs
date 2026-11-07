@@ -4,9 +4,9 @@ import {
   chatReducer,
   chatModes,
   initialChatState,
-} from "../src/features/chat/chat-state.ts";
-import { createDemoReply } from "../src/features/chat/demo-reply.ts";
-import { getDemoMetricValues, chatMetricDefinitions } from "../src/features/chat/chat-metrics-model.ts";
+} from "../src/features/chat/chatState.ts";
+import { createDemoReply } from "../src/features/chat/demoReply.ts";
+import { getDemoMetricValues, chatMetricDefinitions } from "../src/features/chat/chatMetricsModel.ts";
 
 const baselineChatState = () => chatReducer(initialChatState(), { type: "mode", mode: "no-cache" });
 

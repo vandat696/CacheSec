@@ -1,8 +1,8 @@
 import type { Metadata } from "next";
-import { AppShell } from "@/components/layout/app-shell";
-import { ChatProvider } from "@/features/chat/chat-provider";
-import { DocumentsProvider } from "@/features/documents/documents-provider";
-import { WorkspaceProvider } from "@/features/workspace/workspace-provider";
+import { AppShell } from "@/components/layout/AppShell";
+import { ChatProvider } from "@/features/chat/ChatProvider";
+import { DocumentsProvider } from "@/features/documents/DocumentsProvider";
+import { ExperimentConfigProvider } from "@/features/experiment-config/ExperimentConfigProvider";
 import "./globals.css";
 
 export const metadata: Metadata = {
@@ -18,7 +18,7 @@ export default function RootLayout({
       <body>
         <ChatProvider>
           <DocumentsProvider>
-            <WorkspaceProvider><AppShell>{children}</AppShell></WorkspaceProvider>
+            <ExperimentConfigProvider><AppShell>{children}</AppShell></ExperimentConfigProvider>
           </DocumentsProvider>
         </ChatProvider>
       </body>
