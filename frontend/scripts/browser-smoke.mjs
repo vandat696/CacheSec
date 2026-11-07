@@ -1121,7 +1121,7 @@ try {
   assert.deepEqual(errors, [], "Lỗi runtime/React trên trình duyệt");
   console.log(
     process.argv.includes("--developer-only")
-      ? "Đạt: Developer Workspace, diff, cache scenarios, test/approval mẫu, invalidation theo revision, nhập an toàn, keyboard và 16 bố cục."
+      ? "Đạt: Workspace IDE code/Agent, diff, hộp thoại test/approval mẫu, invalidation theo revision, hội thoại trống/reset, nhập an toàn, focus/keyboard và 16 bố cục."
       : "Đạt: Developer Workspace (16 bố cục), Thiết lập chín nhóm/validation/xuất cấu hình, ba chế độ Chat, Thông số theo lượt gửi, Số liệu ba tab/dữ liệu mẫu tách phiên/lọc/biểu đồ/chi tiết, giữ phiên/reset, Tài liệu, UI kit, keyboard, 72 bố cục và 27 bố cục dữ liệu mẫu.",
   );
   console.log(`Ảnh kiểm chứng: ${output}`);

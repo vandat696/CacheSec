@@ -31,8 +31,8 @@ export function previewDiff(revision: number): DiffLine[] {
 
 export function previewAnswer(question: string): string {
   const normalized = question.toLocaleLowerCase("vi");
-  if (normalized.includes("cache")) return "Trong kịch bản mẫu, hai câu hỏi cùng tìm vị trí validation. Candidate chỉ được reuse sau khi kiểm tra quyền, nguồn và phiên bản. Bạn có thể chuyển Hit / Miss / Rejected ở thẻ Local Semantic Cache để xem các nhánh minh họa.";
-  if (normalized.includes("duyệt")) return "Reviewer có thẩm quyền phải xem và duyệt đúng thay đổi. Trong bản mẫu, hãy xem kết quả test, mở tab Phê duyệt và xác nhận đúng revision. Đổi bản sửa sẽ đặt lại quyết định. Triển khai thật chưa được kết nối.";
-  if (normalized.includes("validation") || normalized.includes("ở đâu")) return "Trong repository minh họa, validation nằm tại quotation_demo/service.py, hàm validate_quotation(). Diff bên phải bổ sung cờ expiration_review và giữ phần kiểm tra hiện có. File này là nội dung mẫu, chưa được đọc từ repository thật.";
-  return "Mình đã nhận yêu cầu trong bản xem trước. Đề xuất mẫu bên phải minh họa một thay đổi về ngày hết hạn báo giá. Bạn có thể xem diff, kết quả test và thử phê duyệt; chưa có Agent xử lý hoặc sửa repository thật.";
+  if (normalized.includes("cache")) return "Cache chưa được kết nối. Kết quả chỉ được tái sử dụng sau khi xác minh quyền, nguồn và phiên bản.";
+  if (normalized.includes("duyệt")) return "Mở Kiểm thử để xem kết quả mẫu, sau đó mở Phê duyệt và xác nhận đúng revision. Đổi bản sửa sẽ đặt lại quyết định. Triển khai thật chưa được kết nối.";
+  if (normalized.includes("validation") || normalized.includes("ở đâu")) return "Validation minh họa nằm tại quotation_demo/service.py, hàm validate_quotation(). Diff bổ sung cờ expiration_review. Đây là mã mẫu, chưa đọc từ repository thật.";
+  return "Diff đang hiển thị minh họa quy tắc kiểm tra ngày hết hạn báo giá. Chưa có Agent xử lý yêu cầu hoặc sửa repository thật.";
 }

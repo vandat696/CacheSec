@@ -2,16 +2,18 @@
 
 ## Developer Workspace — bản xem trước ngày 2026-11-02
 
+Theo quy tắc tối giản chữ: không có lời giới thiệu, mô tả nhiệm vụ lặp, phần tổng kết diff hoặc footer quảng bá. Ghi chú mã/test mở khi cần; điều kiện duyệt và trạng thái chưa kết nối triển khai vẫn rõ.
+
 Đã thêm route `/workspace` và mục Workspace đầu sidebar, dùng chung tokens Nói, Button/Select/Checkbox/Icon và app shell. Các route Chat, Thiết lập, Số liệu và Tài liệu giữ hành vi cũ. Metadata gốc mô tả định hướng Secure Local Semantic Cache cho phát triển phần mềm; trang mới có title Developer Workspace · CacheSec.
 
-Desktop đặt hội thoại và nguồn tham chiếu bên trái, diff/test/approval/trace bên phải; dưới 1200 px xếp dọc. Header nêu đúng một nhiệm vụ ngày hết hạn báo giá. Banner Bản xem trước và nhãn mẫu phân biệt nội dung UI với dữ liệu thực nghiệm.
+Từ yêu cầu bố cục IDE ngày 2026-11-07, màn chính chỉ có code bên trái và chat Agent bên phải, cao theo viewport và cuộn nội dung riêng. Dưới 1024 px hai vùng xếp dọc. Toolbar nhỏ giữ Workspace, nhãn Mô phỏng, Kiểm thử, Phê duyệt và nút Bắt đầu lại dạng icon. Không có card nhiệm vụ, progress, banner, breadcrumb, metadata repository/branch, nhãn vai trò/avatar, hội thoại có sẵn, thẻ cache hay gợi ý. Nhãn mô phỏng và trạng thái chỉ đọc phân biệt bản mẫu với Agent/code thực thi.
 
-- Hội thoại có request mẫu ban đầu, gợi ý và ô nhập; phản hồi từ fixture cục bộ, không gọi model hoặc đọc repo. Nội dung người nhập được React render dạng text. Enter gửi, Shift+Enter xuống dòng.
-- Thẻ Local Semantic Cache đổi giữa Hit/Miss/Rejected mẫu, giải thích reuse hoặc fallback theo nguồn. Không thực hiện lookup/verification, không sinh latency/calls/tokens hoặc tự cấp quyền.
-- Tab Thay đổi có diff/bản gốc của `quotation_demo/service.py` minh họa, chưa phải file thật; `policy.is_valid_expiration` là placeholder cho định nghĩa ngày chưa chốt. Thử bản sửa khác đổi revision/nội dung mẫu và đặt lại test/approval.
-- Tab Kiểm thử có bốn ca hiển thị và nút Xem kết quả mẫu. Các trạng thái Đạt là fixture UI có sẵn, không phải test nghiệp vụ đã chạy, fixture đóng băng hoặc acceptance threshold. Ngày hết hạn/múi giờ còn mở được ghi riêng.
-- Tab Phê duyệt mô phỏng reviewer/developer. Chỉ cho duyệt mẫu sau xem kết quả, xác nhận diff đúng revision và chọn reviewer; có Yêu cầu chỉnh sửa. Đổi revision/vai trò đặt lại duyệt. Đây là logic trình bày, **không phải RBAC/ABAC hoặc approval gate backend**. Artifact/hash chưa có và Triển khai luôn khóa.
-- Nhật ký ghi thứ tự thao tác demo trong phiên, không giả timestamp/digest hoặc audit evidence. Bắt đầu lại xóa trạng thái nhiệm vụ mẫu. State nằm trong component; rời route rồi quay lại hoặc reload bắt đầu phiên mẫu mới.
+- Chat Agent bắt đầu trống, ô nhập ghim dưới vùng chat; phản hồi từ fixture cục bộ, không gọi model hoặc đọc repo. Nội dung người nhập được React render dạng text, tên vai trò chỉ giữ cho trình đọc màn hình. Enter gửi, Shift+Enter xuống dòng; Bắt đầu lại xóa hội thoại.
+- Workspace không còn điều khiển kịch bản cache. Thiết kế cache và các màn Chat/Số liệu cũ được giữ; chưa có lookup/verification hoặc số đo thật.
+- Vùng code có tab tên file `service.py`, nhãn Python, revision, Diff/Bản gốc và số dòng. Nội dung `quotation_demo/service.py` là minh họa, chưa phải file thật; `policy.is_valid_expiration` là placeholder cho định nghĩa ngày chưa chốt. Mục Mã mẫu · Chỉ đọc chứa ghi chú và nút Thử bản sửa khác, đổi revision/nội dung mẫu và đặt lại test/approval.
+- Nút Kiểm thử mở hộp thoại có bốn ca và nút Xem kết quả mẫu. Các trạng thái Đạt là fixture UI có sẵn, không phải test nghiệp vụ đã chạy, fixture đóng băng hoặc acceptance threshold. Ngày hết hạn/múi giờ còn mở được ghi riêng.
+- Nút Phê duyệt mở hộp thoại mô phỏng reviewer/developer. Chỉ cho duyệt mẫu sau xem kết quả, xác nhận diff đúng revision và chọn reviewer; có Yêu cầu chỉnh sửa. Đổi revision/vai trò đặt lại duyệt. Đây là logic trình bày, **không phải RBAC/ABAC hoặc approval gate backend**. Artifact/hash chưa có và Triển khai luôn khóa. Hộp thoại dùng native dialog, giữ focus trong modal, Escape/nút đóng trả focus về nút mở.
+- Nhật ký thu gọn trong hộp thoại Phê duyệt, ghi thứ tự thao tác demo trong phiên, không giả timestamp/digest hoặc audit evidence. Bắt đầu lại xóa trạng thái nhiệm vụ mẫu. State nằm trong component; rời route rồi quay lại hoặc reload bắt đầu phiên mẫu mới.
 
 Model/reducer và fixture tách khỏi UI tại `src/features/developer/`; CSS scope ở `styles/developer.css`. Test logic kiểm tra điều kiện duyệt và revision stale của mô phỏng; browser check kiểm tra thao tác, keyboard, không tràn ngang và không giả deployment. Những test này không chứng minh safety property backend. So sánh workflow và cache dashboard thật vẫn chưa triển khai.
 
@@ -26,8 +28,8 @@ Từ 2026-11-02, CacheSec nghiên cứu Secure Local Semantic Cache for AI-Assis
 | Số liệu `/metrics` | Workflow Evaluation và Cache Evaluation tách biệt | Năm chiều chính Developer-guided/AI-assisted; phần phụ AI Cache/No Cache/cold-warm; telemetry và mẫu số thật |
 | Thiết lập `/setup` | Experiment Configuration | Frozen source/fixture/gate/acceptance versions, model/Agent/tool policy, reset/preload protocol; không tự dùng manifest nội bộ cũ |
 | Tài liệu `/documents` | Nguồn repository/provenance được phép | Snapshot/file/symbol và quyền đọc hiện tại; không biến chọn tệp trong phiên thành authorized RAG |
-| Tab Thay đổi ở Workspace (mẫu) | Change Review thật | Diff chính xác, base/patch/artifact/fixture/test hashes, test results và trạng thái lỗi |
-| Tab Phê duyệt ở Workspace (mẫu) | Approval Center thật | Reviewer/authority, quyết định tường minh đúng change, trạng thái backend/control và deployment audit |
+| Vùng code ở Workspace (mẫu) | Change Review thật | Diff chính xác, base/patch/artifact/fixture/test hashes, test results và trạng thái lỗi |
+| Hộp thoại Phê duyệt ở Workspace (mẫu) | Approval Center thật | Reviewer/authority, quyết định tường minh đúng change, trạng thái backend/control và deployment audit |
 
 Đây là phương án kiến trúc tích hợp thật, chưa chốt thêm route ngoài `/workspace` xem trước. Tái sử dụng components/layout/tokens và state patterns; không xóa màn cũ hoặc đổi package/path. UI comparison Cache/No Cache được giữ làm nền phép thử phụ, không đổi tên nó thành so sánh Developer-guided/AI-assisted khi chưa có hai workflow thật.
 

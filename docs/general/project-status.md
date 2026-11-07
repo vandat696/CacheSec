@@ -1,5 +1,17 @@
 # Trạng thái dự án
 
+## 2026-11-07 — Workspace theo bố cục IDE
+
+- Theo yêu cầu tiếp theo, đổi bố cục một cột thành hai vùng code bên trái/chat Agent bên phải, cuộn riêng theo viewport; màn nhỏ xếp dọc. Bỏ card nhiệm vụ, progress và banner; giữ nhãn Mô phỏng nhỏ, file/revision, Diff/Bản gốc và ô nhập phía dưới chat.
+- Kiểm thử/Phê duyệt mở bằng hai nút toolbar; nhật ký thu gọn trong hộp thoại Phê duyệt. Escape/nút đóng trả focus về nút mở. Ghi chú và thử revision mẫu khác nằm trong Mã mẫu · Chỉ đọc. Cập nhật phản hồi mẫu để không hướng dẫn tới thẻ/tab đã bỏ, README, thiết kế frontend và setup. Chưa kết nối Agent, đọc/sửa code thật hoặc triển khai backend; nút triển khai vẫn khóa.
+- Kiểm chứng: lint, typecheck, 57 test logic và production build đạt; Edge production smoke riêng Workspace đạt 16 bố cục, hai vùng desktop/xếp dọc mobile, hộp thoại, focus/keyboard, gửi rỗng/Enter, nhập an toàn, reset và vô hiệu phê duyệt theo revision. Không lỗi runtime/React; đã xem ảnh desktop/mobile và phê duyệt, rà diff/whitespace. Browser chạy ngoài sandbox bằng profile riêng; chưa chạy lại full smoke các màn cũ hoặc kiểm chứng browser khác. Contract nghiệp vụ/fixture/gate cho tích hợp thật vẫn cần chốt.
+
+## 2026-11-07 — Tinh gọn Developer Workspace
+
+- Bỏ metadata repo/branch, breadcrumb, tiêu đề trợ lý, avatar/nhãn vai trò, hội thoại có sẵn, liên kết diff lặp, thẻ kịch bản cache, câu hỏi gợi ý và hướng dẫn phím gửi. Bố cục một cột; giữ ô nhập, hội thoại sau khi gửi và bốn tab review. Hội thoại trống không chiếm chiều cao; Bắt đầu lại xóa hội thoại.
+- Cập nhật README, thiết kế frontend, hướng dẫn chạy và browser check theo giao diện mới. Giữ các chỉnh sửa tinh gọn có sẵn ở panel; nhãn mô phỏng, điều kiện duyệt theo revision và nút triển khai khóa vẫn rõ. Chưa có Agent/cache/gate backend thật; contract nghiệp vụ/fixture/gate còn mở.
+- Kiểm chứng: lint, typecheck, 57 test logic, production build và Edge smoke riêng Workspace đạt (16 bố cục, nhập an toàn, Enter gửi, reset, keyboard, test/approval mẫu và invalidation theo revision); không lỗi runtime/React. Đã xem ảnh desktop/mobile, rà diff/whitespace. Edge không khởi động trong sandbox; lượt kiểm tra ngoài sandbox bằng profile riêng đạt. Chưa chạy lại full smoke các màn cũ hoặc kiểm chứng browser khác.
+
 ## 2026-11-02 — Quy tắc giao diện ít chữ
 
 - Theo yêu cầu người dùng, bổ sung quy tắc tối giản chữ vào AGENTS.md: chỉ giữ nội dung cần cho thao tác, bỏ giải thích thừa/lặp, mở chi tiết khi cần. Chỉ cập nhật quy tắc, chưa rút gọn giao diện hiện tại; kiểm tra nội dung và diff, không chạy test ứng dụng.

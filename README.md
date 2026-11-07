@@ -22,7 +22,7 @@ Bối cảnh đã cập nhật ngày **2026-11-02**. Frontend có thêm **Develo
 
 | Thành phần | Hiện có | Giới hạn |
 | --- | --- | --- |
-| Workspace `/workspace` | Hội thoại mẫu, diff/bản gốc, Hit/Miss/Rejected minh họa, kết quả test mẫu, duyệt theo revision và nhật ký thao tác | Chỉ mô phỏng UI trong phiên; không đọc/sửa repo, gọi Agent, chạy test nghiệp vụ hoặc deploy |
+| Workspace `/workspace` | Bố cục IDE code/chat, diff/bản gốc, hộp thoại test/phê duyệt theo revision và nhật ký thu gọn | Chỉ mô phỏng UI trong phiên; không đọc/sửa repo, gọi Agent, chạy test nghiệp vụ hoặc deploy |
 | Thiết lập `/setup` | Chín nhóm mode/dataset/embedding/threshold/eviction/quyền/training/logging/export; snapshot trong phiên, validation và xuất JSON cấu hình | Bản nháp; results null, chưa áp dụng vào Chat hoặc chạy benchmark/training/logging thật |
 | Chat `/` | Lịch sử, bản nháp, Không cache/Cache/Cả hai với prompt chung; modal thông số từng lượt | Phản hồi mô phỏng, chưa AI/RAG hoặc cache thật |
 | Số liệu `/metrics` | Ba tab, biểu đồ/bảng/chi tiết; mặc định 24 truy vấn giả, nguồn phiên riêng tại `/metrics?source=session` | Fixture xem UI, không phải kết quả thực nghiệm |
