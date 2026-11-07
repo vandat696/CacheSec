@@ -10,7 +10,7 @@ Hồ sơ thiết kế và trạng thái hệ thống. Nội dung dự kiến kh�
 | General | [Trạng thái](general/project-status.md) | Đã làm, quyết định, còn mở, bước tiếp theo |
 | General | [Kế hoạch PoC](general/implementation-plan.md) | Giữ/chỉnh/bổ sung, mười bước ưu tiên, mốc kiểm chứng và bước code nhỏ nhất chưa thực hiện |
 | General | [Cài đặt](general/setup.md) | Môi trường, lệnh chạy và kiểm tra |
-| System | [Kiến trúc](system/architecture.md) | As-Is có bằng chứng, Target hai thành phần, tám bước cache/Agent/test/approval/deploy |
+| System | [Kiến trúc](system/architecture.md) | As-Is có bằng chứng, ba ranh giới ứng dụng/Agent-IDE/cache, tám bước cache/Agent/test/approval/deploy |
 | System | [Cache](system/cache.md) | Answer/Context Cache, Hit/Miss/Rejected, verification, metadata và lifecycle |
 | System | [Phân quyền](system/authorization.md) | RBAC/ABAC, verifier, exact-change approval gate, deployment binding và threat model |
 | Frontend | [Thiết kế](frontend/design.md) | Workspace/review/approval UI mô phỏng, bốn màn cũ và phương án tích hợp thật |

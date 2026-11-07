@@ -25,6 +25,7 @@
 - Thiết kế giao diện phải tối giản chữ: bỏ mọi nội dung không cần thiết, mô tả lặp, lời giới thiệu và giải thích hiển nhiên. Chỉ giữ nhãn, dữ liệu, trạng thái và hướng dẫn ngắn cần để hiểu hoặc thao tác; chi tiết phụ chỉ mở khi cần. Không biến trang web thành tài liệu; thông báo lỗi, trạng thái mô phỏng và thông tin cần cho quyết định vẫn phải rõ, ngắn và không lặp.
 - Theo convention và cấu trúc hiện có; tên rõ nghĩa, kiểu dữ liệu rõ ràng, hàm có trách nhiệm cụ thể.
 - Tách nghiệp vụ khỏi UI, HTTP và storage. Tái sử dụng code phù hợp; không tạo tầng rỗng, generic base class hoặc abstraction chưa cần.
+- Tách source và trách nhiệm của ứng dụng báo giá, Agent/IDE và lõi cache thành các module độc lập trong cùng repository. App báo giá chạy độc lập; Agent coi source app là mục tiêu đọc/sửa qua công cụ có scope. Lõi cache không phụ thuộc nghiệp vụ báo giá hoặc một Agent/IDE cụ thể; tích hợp qua contract/adapter, giữ xác minh quyền/nguồn ở thành phần tin cậy. Chi tiết ranh giới thuộc docs/system/architecture.md.
 - Không thêm dependency/dịch vụ ngoài nhu cầu. Xử lý lỗi rõ ràng, không che lỗi thật bằng fallback giả thành công.
 - Stack dự kiến: Next.js/TypeScript, FastAPI/Python, PostgreSQL/pgvector; IndexedDB/Dexie cho browser cache. Server cache storage chưa chốt.
 - LLM và embedding có adapter riêng, API trước/local sau; cache tách storage, matching, validation.

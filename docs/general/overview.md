@@ -58,6 +58,7 @@ Repository Context Cache là mở rộng đề xuất, không bắt buộc cho P
 | NFR-03 | Đo end-to-end và thành phần thực tế, không dùng độ trễ demo hoặc usage 0 để kết luận tiết kiệm |
 | NFR-04 | Dữ liệu giả lập, log tối thiểu đủ audit, không ghi secrets hoặc code ngoài scope được cấp quyền |
 | NFR-05 | Theo cấu trúc Next.js/TypeScript, FastAPI/Python hiện có; tách nghiệp vụ khỏi UI/storage và adapter khỏi provider; không dựng ERP/microservice/plugin framework |
+| NFR-06 | Theo yêu cầu người dùng ngày 2026-11-07, tách source ứng dụng báo giá, Agent/IDE và lõi cache trong cùng repo; app chạy độc lập, cache tích hợp qua contract/adapter để tái sử dụng với host/repo khác. Ranh giới phụ thuộc và runtime do [kiến trúc](../system/architecture.md#quy-tắc-độc-lập-giữa-ứng-dụng-agentide-và-cache) sở hữu; chưa có implementation hoặc bằng chứng tích hợp ngoài |
 
 Safety property bắt buộc là **một** thuộc tính về deployment approval. Các điều kiện cache, quyền nguồn và chất lượng là yêu cầu bảo đảm reuse/đánh giá kiến trúc, không đổi thành nhiều bài toán nghiệp vụ hoặc nhiều software changes.
 

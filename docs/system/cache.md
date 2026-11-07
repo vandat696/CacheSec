@@ -6,6 +6,8 @@
 
 Giữ kiến trúc storage/matching/validation; embedding và semantic similarity/threshold; authorization; authorized RAG; admission, TTL, capacity, eviction và invalidation; metadata, source provenance, version tracking; logging và evaluation. None/local/server và exact/semantic là các lựa chọn thiết kế, không phải mọi biến thể đều cần có trong PoC. Backend giữ quyết định quyền đáng tin cậy.
 
+Lõi cache phải tuân thủ [quy tắc độc lập ứng dụng/Agent/IDE/cache](architecture.md#quy-tắc-độc-lập-giữa-ứng-dụng-agentide-và-cache): không phụ thuộc nghiệp vụ báo giá hoặc host cụ thể; tích hợp qua contract/adapter với xác minh nguồn/quyền tin cậy. Quy tắc này áp dụng cho cả Answer Cache và Context Cache, không tự chốt loại cache, vị trí local hoặc storage.
+
 ## Answer Cache và Repository Context Cache
 
 | Loại | Nội dung | Hiệu quả có thể đo | Đề xuất |

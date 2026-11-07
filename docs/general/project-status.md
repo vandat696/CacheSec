@@ -1,5 +1,11 @@
 # Trạng thái dự án
 
+## 2026-11-07 — Quy tắc tách ứng dụng, Agent/IDE và lõi cache
+
+- Đã thống nhất theo yêu cầu người dùng: tách cả source ứng dụng báo giá, host Agent/IDE và lõi cache trong cùng repository; ứng dụng chạy độc lập, cache có contract/adapter để tích hợp với host/repo khác. [Kiến trúc](../system/architecture.md#quy-tắc-độc-lập-giữa-ứng-dụng-agentide-và-cache) sở hữu hướng phụ thuộc, ranh giới runtime/dữ liệu và phạm vi sửa source; không bắt buộc database/repository riêng.
+- Bổ sung quy tắc vào [AGENTS.md](../../AGENTS.md), NFR-06, thiết kế cache, lộ trình và mục lục docs. Đây là quyết định thiết kế của người dùng, chưa phải implementation hoặc yêu cầu mới được giảng viên xác nhận; chưa tạo module, adapter, entrypoint hay API. Vị trí local, loại cache, storage, packaging/API và sandbox/deployment cụ thể vẫn mở; gate tiếp tục độc lập và gắn đúng artifact.
+- Chỉ sửa tài liệu/hướng dẫn. Đã rà nội dung/diff, liên kết và anchor nội bộ, whitespace; không chạy test ứng dụng. Bước tiếp theo khi lập trình: chốt contract cần thiết và kiểm tra hướng import/khả năng chạy độc lập theo kế hoạch PoC.
+
 ## 2026-11-07 — Workspace theo bố cục IDE
 
 - Theo yêu cầu tiếp theo, đổi bố cục một cột thành hai vùng code bên trái/chat Agent bên phải, cuộn riêng theo viewport; màn nhỏ xếp dọc. Bỏ card nhiệm vụ, progress và banner; giữ nhãn Mô phỏng nhỏ, file/revision, Diff/Bản gốc và ô nhập phía dưới chat.

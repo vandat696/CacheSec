@@ -8,6 +8,8 @@ Cập nhật cùng ngày sau yêu cầu xem web: đã dựng UI preview `/worksp
 
 Giữ một repo, một fixture được đóng băng trước run, một gate implementation chung và một acceptance rule định trước. Đúng một feature change là flag báo giá thiếu ngày hết hạn hợp lệ. Gate, cache và trace là hạ tầng nghiên cứu dùng chung, được chuẩn bị trước và không tính như các feature changes khác mà Agent được giao trong thí nghiệm. Không tự commit, push hoặc deploy.
 
+Từ yêu cầu ngày 2026-11-07, mọi bước lập trình phải tuân thủ [ba ranh giới ứng dụng/Agent/IDE/cache](../system/architecture.md#quy-tắc-độc-lập-giữa-ứng-dụng-agentide-và-cache). App báo giá có source/entrypoint chạy độc lập; host Agent/IDE thao tác qua repository/tools có scope; lõi cache không phụ thuộc nghiệp vụ hoặc host. Kiểm tra hướng import và contract khi thực hiện bước 1, 3–5; runtime bản sửa/test tách khỏi control. Đây là quy tắc đã thống nhất, chưa phải module/service/database đã được tạo hoặc quyết định chốt API/storage/sandbox.
+
 ## Giữ, điều chỉnh và bổ sung
 
 | Nhóm | Thành phần | Cách xử lý |
@@ -49,7 +51,7 @@ Thứ tự trên là đường triển khai PoC, không cho phép deployment tr�
 
 Chưa nối API vào `backend/app/main.py` cho đến khi cần một contract đã chốt. Backend không import script `research`; chỉ đọc fixture theo schema dùng chung. Nếu ngôn ngữ/source app mẫu khác Python được lựa chọn, cần ghi lý do và cập nhật kế hoạch trước tạo đường dẫn khác.
 
-Nghiệm thu lát cắt này: source nền chạy được; fixture có nhãn và hash; test nền pass; test rule mới chứng minh đúng thiếu sót cần Agent bổ sung; không có patch rule mới, approval UI hay deploy được tuyên bố đã hoàn thành. Sau đó mới tiếp tục cache/retrieval theo bảng.
+Nghiệm thu lát cắt này: source nền chạy độc lập mà không import code Agent/IDE/cache; fixture có nhãn và hash; test nền pass; test rule mới chứng minh đúng thiếu sót cần Agent bổ sung; không có patch rule mới, approval UI hay deploy được tuyên bố đã hoàn thành. Sau đó mới tiếp tục cache/retrieval theo bảng.
 
 ## Điều kiện cần xác nhận
 
