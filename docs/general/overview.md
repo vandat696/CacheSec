@@ -85,7 +85,7 @@ Báo giá thiếu ngày, ngày không hợp lệ hoặc d < R phải có cờ c�
 
 ### Schema báo giá tối thiểu — phạm vi đã chốt
 
-Người dùng đã chọn bộ 6 trường dưới đây cho phạm vi nhập/danh sách/chi tiết/validation; **chưa có Pydantic model, API hoặc schema database**. Không bao gồm quản lý mua hàng/thanh toán hoặc nhiều dòng hàng. Tên kỹ thuật, kiểu dữ liệu và validation nền sẽ đặc tả ở T02–T03 trong đúng phạm vi này.
+Người dùng đã chọn bộ 6 trường dưới đây cho phạm vi nhập/danh sách/chi tiết/validation. Theo yêu cầu triển khai ngày 2026-11-07, đã có Pydantic model và schema/store PostgreSQL cho phần tạo/đọc/phân trang; API/runtime validation chưa có. Không bao gồm quản lý mua hàng/thanh toán hoặc nhiều dòng hàng.
 
 | Trường dự kiến | Mục đích |
 | --- | --- |
@@ -96,7 +96,7 @@ Người dùng đã chọn bộ 6 trường dưới đây cho phạm vi nhập/d
 | currency | Đơn vị tiền tệ minh họa, chưa chốt danh sách |
 | expires_on | Giá trị ngày hết hạn đầu vào; giữ phân biệt thiếu field, null, rỗng và giá trị thô cho validation/fixture |
 
-T02 đã có [wire contract v0.2](../system/api.md#dữ-liệu-ứng-dụng-báo-giá): tiền biểu diễn bằng DecimalString, expires_on giữ JsonValue/absent thay vì parse date tại HTTP boundary. Đây là đặc tả kỹ thuật, chưa có schema chạy; giới hạn nội dung/tiền tệ/precision và validation nền tiếp tục review ở T03 trước T07.
+T02 có [wire contract v0.2](../system/api.md#dữ-liệu-ứng-dụng-báo-giá); phần đã triển khai tại [schema/storage báo giá](../system/architecture.md#lưu-trữ-báo-giá-đã-triển-khai). Tiền giữ nguyên chuỗi thập phân hữu hạn, không làm tròn/áp min-max hoặc danh sách currency. expires_on giữ JsonValue/absent, không parse date ở domain/storage. Giới hạn nội dung và validation nghiệp vụ nền còn cần review trước T07; bộ lưu trữ chưa triển khai rule ngày hoặc chốt oracle nghiên cứu.
 
 Kết quả validation đề xuất có danh sách cờ, với cờ expiration_review cho rule mới; tên/shape trả về chưa chốt. Không nhận cờ do client/Agent gửi như kết quả validation đáng tin cậy. Khi ca ngày sai thuộc fixture, parsing/chuẩn hóa ở API không được làm mất dấu hiệu đầu vào khiến rule nghiệp vụ không còn được kiểm tra. Test nền và schema nền không được bổ sung trước chính rule mà Agent sẽ được giao.
 

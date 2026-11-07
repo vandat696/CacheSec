@@ -95,7 +95,32 @@ Browser và nội dung repository/LLM không có thẩm quyền cấp quyền ho
 
 ## Dữ liệu/API và tổ chức dự kiến
 
-API ứng dụng hiện có là **GET /health → {"status":"ok"}**; FastAPI cung cấp OpenAPI UI. Chưa có hợp đồng API mới được chốt. Cần thiết kế request/run, repository snapshot/source provenance, cache entry/verification, change proposal, test execution, approval, artifact và deployment decision với ID/phiên bản/lỗi nhất quán. Không mô tả URL dự kiến như endpoint đang chạy.
+Backend hiện có **GET /health** cho process liveness và **GET /ready** cho PostgreSQL probe; response và giới hạn tại [API nền](api.md#endpoint-nền-đã-triển-khai). [Database adapter](../../backend/app/database.py) không phụ thuộc HTTP, workflow hoặc app báo giá; mở connection theo thao tác, commit/rollback/close qua context manager của Psycopg. Không retry transaction hoặc tạo schema/extension tự động. Phần lưu trữ báo giá đã triển khai được mô tả ngay dưới; LLM, cache, authority và API workflow vẫn chưa được triển khai.
+
+### Lưu trữ báo giá đã triển khai
+
+Lát cắt ngày 2026-11-07 có [domain models](../../backend/app/quotation_demo/models.py), [PostgreSQL store](../../backend/app/quotation_demo/storage.py) và [migration CLI](../../backend/app/quotation_demo/migrate.py), chưa có API/runtime validation hoặc UI báo giá thật. Package app không import app.main/app.config, HTTP, Agent hoặc cache; chỉ dùng adapter kết nối trung lập. QUOTATION_DATABASE_URL là cấu hình riêng, không tự fallback sang DATABASE_URL của control. Local hiện dùng chung PostgreSQL nhưng tách schema; đây là ranh giới sở hữu, chưa phải phân quyền database đã thực thi.
+
+Schema quotation_demo có bảng quotations với **đúng sáu cột**:
+
+| Cột | PostgreSQL | Ràng buộc/lưu giữ |
+| --- | --- | --- |
+| id | uuid PRIMARY KEY | App sinh UUID4 khi tạo; input tạo không được mang id |
+| supplier_name | text NOT NULL | Giữ nguyên chuỗi, chưa áp danh mục hoặc giới hạn nghiệp vụ |
+| description | text NOT NULL | Giữ nguyên chuỗi; SQL dùng parameters |
+| total_amount | text NOT NULL + decimal syntax CHECK | Giữ lexeme thập phân, dấu/zero đầu/cuối và precision, không dùng float hoặc tự làm tròn |
+| currency | text NOT NULL | Chưa áp danh sách currency, quy đổi hoặc precision theo currency |
+| expires_on | json, nullable | SQL NULL = thiếu field; JSON null = null tường minh; không date parsing hoặc CHECK ngày |
+
+DecimalString nhận dạng `[+-]?[0-9]+(\.[0-9]+)?` trên toàn chuỗi; không nhận exponent/whitespace/NaN/Infinity hoặc ép JSON number thành string. Đây là kiểm tra biểu diễn, chưa thêm quy tắc tiền dương/min/max hoặc currency. expires_on nhận giá trị JSON hữu hạn, kể cả chuỗi ngày sai/rỗng, boolean, số, array/object. Dùng JSON thay vì JSONB vì không cần truy vấn/index ngày và cần giữ đầu vào; không chuyển ngày sai thành null. Model dùng model_fields_set để nhớ missing; khi xuất wire phải dùng exclude_unset=True để không biến missing thành null. Các giới hạn JSON/encoding của storage vẫn áp dụng; không coi lỗi lưu trữ là ngày đã được validate.
+
+PostgresQuotationStore nhận connection do caller quản lý transaction; create/get/list không tự commit hoặc cấp quyền. get không tìm thấy trả None; list dùng keyset UUID tăng dần, mặc định 50 mục, đọc limit+1 để tạo next_cursor. Thứ tự là UUID, không phải ngày tạo; từng trang đọc snapshot tại statement hiện tại, chưa bảo đảm snapshot nhất quán qua nhiều request. Cursor không phải quyền; policy/giới hạn HTTP và scope vẫn phải thiết kế tại T04 trước công khai API. Không tạo service wrapper rỗng khi chưa có logic nghiệp vụ cần tách thêm.
+
+Metadata migration nằm riêng ở quotation_demo.schema_migrations (name PK, checksum, applied_at timestamptz). Runner lấy transaction advisory lock cho app, xác minh version/checksum đã áp dụng rồi chạy batch trong transaction. Checksum SHA-256 của SQL UTF-8 chuẩn hóa CRLF thành LF để không lệch giữa Windows/Linux; đây là phát hiện sửa migration, không phải cơ chế chứng thực artifact/approval. Chạy lại là no-op và giữ dữ liệu; migration lạ/checksum đổi bị từ chối, SQL lỗi rollback cả schema/history mới trong batch. Nếu gọi trong transaction có sẵn, caller vẫn quyết định commit cuối; CLI chỉ báo ok sau khi commit thành công. Migration table có version nhưng không tự chứng minh mọi DDL trong DB chưa bị sửa ngoài runner.
+
+Đã áp dụng 001_create_quotations.sql vào DB local, chưa seed/reset dữ liệu nghiên cứu. Sửa schema tiếp theo bằng migration forward mới; không chỉnh SQL đã ghi checksum. Khi lỗi batch có thể sửa bản chưa áp dụng và chạy lại sau rollback; khôi phục dữ liệu đã commit cần quy trình backup/restore được thiết kế riêng. Test tạo DB ngẫu nhiên riêng và chỉ dọn chính DB đã tạo, không reset app database. Lệnh chạy và yêu cầu CREATEDB của test ở [setup](../general/setup.md#2a-migration-và-storage-báo-giá).
+
+Phần dữ liệu app này là đầu ra T03/T05 được triển khai theo yêu cầu; ERD/control/artifact lifecycle, identity/scope và gate của toàn hệ thống vẫn chờ T03–T04. Không có rule expiration_review, artifact mới được kích hoạt hoặc fixture nghiên cứu được đóng băng trong lát cắt này.
 
 ### Bản nháp T02: module và contract
 
@@ -119,8 +144,8 @@ Phân bổ source cho giai đoạn triển khai theo thiết kế T02, chưa t�
 
 | Vị trí | Vai trò và ranh giới |
 | --- | --- |
-| backend/app/main.py và backend/app/config.py hiện có | Giữ entrypoint/config control, không đổi package/path; health/CORS hiện tại vẫn là code duy nhất chạy |
-| backend/app/quotation_demo/ | Package app mục tiêu với main.py riêng; domain/service/config của app không import app.main, app.config, workflow hoặc cache. app/__init__.py không được khởi tạo control gây side effect khi app báo giá chạy độc lập |
+| backend/app/main.py, config.py và database.py hiện có | Entrypoint/config control, health/readiness và adapter PostgreSQL; chưa có endpoint workflow. database.py không import config/control để adapter có thể tái sử dụng độc lập |
+| backend/app/quotation_demo/ | Đã có models/storage/config và migration CLI chạy độc lập; main.py/API app chưa tạo. App không import app.main, app.config, workflow hoặc cache; app/__init__.py không khởi tạo control khi import app báo giá |
 | backend/app/identity/, repositories/, workflows/, cache_verification/, integrations/, execution/ | Nhóm trách nhiệm control/adapter; chỉ tạo module khi thực hiện năng lực tương ứng, không scaffold thư mục/tầng rỗng. execution gọi worker/launcher theo contract, cơ chế sandbox/worker entrypoint chờ T04 |
 | frontend/src/lib/cache/ | Logic local cache/contract TypeScript tách UI; không import React/Next hoặc object báo giá. Storage và HTTP verifier là adapter riêng; engine chưa chọn |
 | backend/tests/ và research/datasets/ | Test theo namespace app/control/cache và fixture đọc theo schema chung; backend/app không import script nghiên cứu. Không tạo fixture thực nghiệm thứ hai |

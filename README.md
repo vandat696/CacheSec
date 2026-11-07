@@ -27,10 +27,11 @@ Bối cảnh đã cập nhật ngày **2026-11-02**. Frontend có thêm **Develo
 | Chat `/` | Lịch sử, bản nháp, Không cache/Cache/Cả hai với prompt chung; modal thông số từng lượt | Phản hồi mô phỏng, chưa AI/RAG hoặc cache thật |
 | Số liệu `/metrics` | Ba tab, biểu đồ/bảng/chi tiết; mặc định 24 truy vấn giả, nguồn phiên riêng tại `/metrics?source=session` | Fixture xem UI, không phải kết quả thực nghiệm |
 | Tài liệu `/documents` | Chọn/thả, phân loại, tìm/lọc tệp trong phiên | Chờ tải lên; chưa đọc/ingest/upload hoặc authorized retrieval |
-| Backend | FastAPI `GET /health`, CORS local, test health/CORS | Chưa auth, API nghiệp vụ, Agent, gate hoặc deployment control |
-| Hạ tầng | Compose PostgreSQL/pgvector và init extension | Chưa DB adapter/schema; lần này không chạy kiểm chứng database |
+| Backend | FastAPI `GET /health`, `GET /ready`, adapter kết nối PostgreSQL/Psycopg, CORS local | Readiness chỉ kiểm tra PostgreSQL; chưa auth, API nghiệp vụ, Agent hoặc gate |
+| Báo giá | Domain models, migration và PostgreSQL store tạo/đọc/phân trang, config riêng | Chưa API/UI/runtime validation hoặc rule mới |
+| Hạ tầng | PostgreSQL 17.11/pgvector 0.8.7 qua Compose; đã áp dụng migration báo giá và kiểm chứng DB thật | Chưa schema/control/artifact của workflow |
 
-Chưa có Supplier Quotation Management, fixture báo giá đóng băng, Local Semantic Cache, embedding/matching/verification, RBAC/ABAC thực thi, model adapter, backend approval/deployment control, audit log hoặc runner thực nghiệm. Change Review/Phê duyệt/Nhật ký trong Workspace mới là bản mẫu; nút Triển khai luôn khóa. Dữ liệu demo không phải số đo hoặc bằng chứng quyền. Chat/tệp/cấu hình nháp mất khi tải lại; chọn RBAC/ABAC trong UI không cấp quyền.
+App báo giá hiện có phần domain/storage, chưa chạy thành ứng dụng HTTP/UI độc lập. Chưa có fixture báo giá đóng băng, Local Semantic Cache, embedding/matching/verification, RBAC/ABAC thực thi, model adapter, backend approval/deployment control, audit log hoặc runner thực nghiệm. Change Review/Phê duyệt/Nhật ký trong Workspace mới là bản mẫu; nút Triển khai luôn khóa. Dữ liệu demo không phải số đo hoặc bằng chứng quyền. Chat/tệp/cấu hình nháp mất khi tải lại; chọn RBAC/ABAC trong UI không cấp quyền.
 
 ## Công nghệ và tổ chức
 
@@ -68,5 +69,5 @@ Frontend: http://127.0.0.1:3000; bản xem trước mới: http://127.0.0.1:3000
 - [Tổng quan/yêu cầu/câu hỏi mở](docs/general/overview.md): ràng buộc giảng viên, định nghĩa nghiệp vụ và threshold cần xác nhận.
 - [Kiến trúc](docs/system/architecture.md), [cache](docs/system/cache.md), [bảo mật và approval gate](docs/system/authorization.md).
 - [Frontend hiện tại và phương án tái sử dụng](docs/frontend/design.md), [thiết kế đánh giá](docs/evaluation/design.md).
-- [Kế hoạch PoC](docs/general/implementation-plan.md): ưu tiên app báo giá tối giản và fixture đã chốt; chưa lập trình trong đợt này.
+- [Kế hoạch PoC](docs/general/implementation-plan.md): đã bắt đầu code nền kết nối DB/readiness; schema, app và workflow triển khai theo điều kiện của từng gói.
 - [Trạng thái kiểm chứng](docs/general/project-status.md), [mục lục docs](docs/README.md), [quy tắc cho agent](AGENTS.md).

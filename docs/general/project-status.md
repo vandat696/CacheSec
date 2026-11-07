@@ -1,5 +1,25 @@
 # Trạng thái dự án
 
+## 2026-11-07 — Hoàn thành lát cắt schema/migration/storage báo giá
+
+- Thêm package app.quotation_demo độc lập HTTP/control/cache: domain models, PostgreSQL store create/get/list và config QUOTATION_ riêng, không fallback sang DSN control. Schema quotation_demo.quotations có đúng sáu cột; tiền giữ nguyên chuỗi thập phân, expires_on kiểu JSON giữ SQL NULL (missing) khác JSON null và giá trị ngày sai. Chưa có rule expiration_review, API/UI hoặc runtime validation.
+- Migration CLI có history/checksum chuẩn hóa newline, transaction/advisory lock, từ chối history lạ/đã sửa; batch lỗi rollback. Đã áp dụng 001_create_quotations.sql vào PostgreSQL local, chạy lại no-op. Bảng app local còn trống; không seed/reset dữ liệu nghiên cứu hoặc tạo schema control/cache/artifact.
+- Kiểm chứng: **58 test backend đạt, không skip**, Ruff lint/format đạt; kiểm tra commit/rollback qua connection mới, SQL parameters, precision, missing/null/raw date, pagination, migration replay/checksum/failed-batch/concurrency và import độc lập. Test DB báo giá cấp DB ngẫu nhiên riêng, dọn đúng DB đã tạo; không thay dữ liệu app. Cảnh báo deprecation TestClient/httpx từ dependency còn tồn tại. Chưa chạy frontend hoặc thực nghiệm.
+- Cập nhật schema/transaction/lifecycle tại architecture, types tại API, overview, setup, README và lộ trình. Lát cắt đã hoàn thành; T03/T05/T07 toàn hệ thống vẫn còn control/artifact/identity/API/fixture. Bước tiếp theo là quyền/scope tối thiểu và API báo giá độc lập trước khi nối UI; acceptance nghiên cứu vẫn chờ cô.
+
+## 2026-11-07 — Kiểm chứng PostgreSQL thật sau khi bật Docker
+
+- Khởi động Compose local: PostgreSQL **17.11**, extension pgvector **0.8.7**, container healthy. Tạo infra/.env và backend/.env khi chưa có, dùng mật khẩu local ngẫu nhiên; hai file được Git bỏ qua, không ghi credentials vào tài liệu hoặc output. Giữ container/volume chạy để tiếp tục phát triển.
+- Chạy toàn bộ backend với CACHESEC_TEST_DATABASE_URL: **25 test đạt, không skip**, gồm probe và đọc/ghi parameterized SQL trên bảng TEMP chỉ tồn tại trong session. Kiểm tra qua TestClient với DB thật: /health và /ready trả 200. Smoke riêng xác nhận statement timeout hủy pg_sleep và connection được đóng sau lỗi. Đây là kiểm chứng kỹ thuật, không phải chạy thực nghiệm hoặc benchmark.
+- Cập nhật README/lộ trình; không đổi source ứng dụng hoặc schema nghiệp vụ. T05 vẫn còn migration/persistence và điều kiện thiết kế T03–T04; acceptance nghiên cứu vẫn chờ xác nhận. Cảnh báo deprecation TestClient/httpx từ dependency còn tồn tại.
+
+## 2026-11-07 — Bắt đầu code nền PostgreSQL/readiness (một phần T05)
+
+- Theo yêu cầu chuyển sang code, thêm [adapter PostgreSQL](../../backend/app/database.py) dùng Psycopg, kết nối theo thao tác với commit/rollback/close, secret DSN và connect/statement timeout. Không có schema/migration, retry ngầm hoặc tự tạo extension. Adapter độc lập HTTP, workflow và nghiệp vụ báo giá; không chốt thay quyền/integrity/executor/gate còn mở.
+- Thêm GET /ready: query DB thành công mới trả 200; chưa cấu hình hoặc DB lỗi trả 503 với mã trạng thái ngắn, không lộ DSN/exception. GET /health vẫn không gọi DB. Readiness hiện chỉ kiểm tra PostgreSQL, chưa chứng minh schema/model/quyền/workflow sẵn sàng; vector chưa là dependency bắt buộc.
+- Kiểm chứng: Ruff lint/format, pip check và 23 test backend đạt; hai test PostgreSQL thật skip do chưa đặt CACHESEC_TEST_DATABASE_URL và Docker Linux Engine chưa chạy. Có test lỗi qua driver thật với DSN sai, nhưng không tính là DB integration đã đạt. Còn cảnh báo deprecation TestClient/httpx từ dependency, không đổi thêm dependency ngoài nhu cầu driver. Chưa chạy frontend hoặc thực nghiệm.
+- Cập nhật README, setup, API/architecture và lộ trình. T05 vẫn chưa hoàn thành; tiếp theo chuẩn bị schema/migration từ T03 và control T04, kiểm chứng kết nối/transaction trên DB thật khi có môi trường. Acceptance nghiên cứu vẫn chờ cô; app báo giá, Agent, cache và gate chưa được triển khai.
+
 ## 2026-11-07 — Hoàn thiện đặc tả kỹ thuật T02 v0.2
 
 - Tách [contract backend và cache](../system/api.md) thành nơi sở hữu types, request/response và ví dụ, ContextRequest trước local lookup, nhóm route app/control, capability matrix, state transitions, retry/idempotency và lỗi. Architecture giữ module/runtime và phân bổ source, liên kết thay vì chép bảng API cũ. Các GET/status/events/context và replay đều phải kiểm tra quyền; quyết định cũ không làm sống lại approval đã mất hiệu lực.
@@ -338,7 +358,7 @@ Danh sách quyết định đầy đủ ở [tổng quan](overview.md#giả-đ�
 
 [Lộ trình PoC](implementation-plan.md) hiện chia T01–T17: khóa đầu vào và thiết kế trước, sau đó backend/database/quyền/trace, app nền/fixture, retrieval/model/cache, executor/gate, Agent, UI và runner; cuối cùng mới so sánh chính. Gate phải có trước mọi activation rule mới; không chạy thí nghiệm trước khi hạ tầng, fixture, acceptance và protocol được khóa. Phép thử cache và tích hợp IDE bên ngoài nằm ở nhóm mở rộng riêng.
 
-T02 đã hoàn thành đầu ra đặc tả thiết kế v0.2, chưa triển khai; bước tiếp theo là T03 cho ERD/storage/lifecycle rồi T04 control, song song giữ phần nghiên cứu T01 đang chờ xác nhận. Lập trình bắt đầu từ T05 khi các điều kiện liên quan đã chốt. Chưa tạo module, fixture hoặc API mới trong đợt thiết kế này. Upload/ingestion tài liệu nội bộ không còn là đầu việc bắt buộc trước PoC này.
+T02 có đặc tả thiết kế v0.2; nền PostgreSQL/readiness và lát cắt schema/migration/storage báo giá đã có code và kiểm chứng DB thật. Tiếp theo quyền/scope tối thiểu và API báo giá độc lập; T03–T04 tiếp tục dữ liệu/control/artifact còn lại, phần nghiên cứu T01 vẫn chờ xác nhận. Upload/ingestion tài liệu nội bộ không còn là đầu việc bắt buộc trước PoC này.
 
 ## Lịch sử tổ chức tài liệu
 

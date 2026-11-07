@@ -2,7 +2,7 @@
 
 ## Phạm vi hướng dẫn
 
-Các lệnh dưới đây chạy **ứng dụng hiện có**, chưa chạy Supplier Quotation Management, AI Coding Agent, Local Semantic Cache hoặc approval/deployment control. Bối cảnh nghiên cứu đã đổi sang AI-assisted software development ngày 2026-11-02; UI chatbot nội bộ vẫn được giữ để tái sử dụng. Xem [hiện trạng](project-status.md) và [lộ trình PoC](implementation-plan.md); chưa có endpoint/lệnh chạy cho các thành phần mục tiêu mới.
+Các lệnh dưới đây chạy **ứng dụng hiện có** và migration/storage báo giá; chưa chạy workflow báo giá HTTP/UI, AI Coding Agent, Local Semantic Cache hoặc approval/deployment control. Bối cảnh nghiên cứu đã đổi sang AI-assisted software development ngày 2026-11-02; UI chatbot nội bộ vẫn được giữ để tái sử dụng. Xem [hiện trạng](project-status.md) và [lộ trình PoC](implementation-plan.md).
 
 Chỉ xem UI mô phỏng cần frontend; không cần backend, Docker/database hoặc API key. Backend health có thể chạy độc lập database. Chỉ cần khởi động Docker khi muốn kiểm tra hạ tầng PostgreSQL/pgvector; hướng dẫn này không yêu cầu cài thêm dịch vụ/model SDK.
 
@@ -11,7 +11,7 @@ Yêu cầu theo thành phần: frontend cần Node.js 20.9+ (mốc kiểm chứn
 ## 1. Database
 
 ```powershell
-Copy-Item infra/.env.example infra/.env
+if (-not (Test-Path -LiteralPath infra/.env)) { Copy-Item infra/.env.example infra/.env }
 # Sửa POSTGRES_PASSWORD trong infra/.env, không commit file này.
 docker compose --env-file infra/.env -f infra/compose.yaml up -d
 docker compose --env-file infra/.env -f infra/compose.yaml exec db psql -U cachesec -d cachesec -c "SELECT extversion FROM pg_extension WHERE extname = 'vector';"
@@ -25,13 +25,27 @@ Lệnh kiểm tra giả định tên user/database mặc định. Database chỉ
 cd backend
 python -m venv .venv
 .\.venv\Scripts\python.exe -m pip install -r requirements-dev.lock.txt
-Copy-Item .env.example .env
+if (-not (Test-Path -LiteralPath .env)) { Copy-Item .env.example .env }
 .\.venv\Scripts\python.exe -m uvicorn app.main:app --reload --host 127.0.0.1 --port 8000
 ```
 
-Health: http://127.0.0.1:8000/health. OpenAPI UI: http://127.0.0.1:8000/docs.
+Health: http://127.0.0.1:8000/health. PostgreSQL readiness: http://127.0.0.1:8000/ready. OpenAPI UI: http://127.0.0.1:8000/docs.
 
-Health chỉ xác nhận API process hoạt động, không kiểm tra database hoặc model. Chưa có database adapter, xác thực hoặc API nghiệp vụ. CORS chỉ cho phép frontend local, không thay thế phân quyền.
+Đặt DATABASE_URL trong backend/.env bằng PostgreSQL URI tương ứng user/password/port/database đã cấu hình ở infra/.env. Percent-encode ký tự đặc biệt trong user/password của URI; không đưa credentials vào source, URL trình duyệt hoặc log. DATABASE_URL để trống vẫn chạy backend/health được; /ready trả 503 với database = not_configured. Khi DB kết nối và truy vấn được, /ready trả 200; lỗi DB trả 503 với database = unavailable, không trả nội dung exception.
+
+DATABASE_CONNECT_TIMEOUT_SECONDS mặc định 3 (tối thiểu 2), DATABASE_STATEMENT_TIMEOUT_MS mặc định 1000 (tối thiểu 1). Đây là timeout kết nối libpq và statement PostgreSQL, không phải deadline end-to-end cho mọi sự cố mạng; connect timeout áp dụng theo host trong URI. Adapter giữ các options khác của DSN, không tự retry transaction hoặc tạo bảng/extension. /ready chỉ kiểm tra kết nối PostgreSQL, chưa kiểm tra schema/model/quyền/workflow; không yêu cầu vector khi chưa có năng lực dùng nó. /health chỉ kiểm tra process. CORS local không thay thế phân quyền.
+
+## 2a. Migration và storage báo giá
+
+App dùng QUOTATION_DATABASE_URL trong backend/.env, không tự dùng DATABASE_URL của control. Local có thể cấu hình cùng URI PostgreSQL; schema quotation_demo và cấu hình vẫn thuộc app riêng. QUOTATION_DATABASE_CONNECT_TIMEOUT_SECONDS / QUOTATION_DATABASE_STATEMENT_TIMEOUT_MS có mặc định 3 / 1000, cùng ý nghĩa timeout của adapter ở trên. Chạy từ backend:
+
+```powershell
+.\.venv\Scripts\python.exe -m app.quotation_demo.migrate
+```
+
+Lần đầu trả status = ok, scope = quotation_demo và applied = [001_create_quotations.sql]; chạy lại applied = [] và giữ dữ liệu. CLI chỉ báo ok sau commit. Lỗi cấu hình/kết nối/history trả exit code 1 và mã lỗi ngắn, không DSN/exception. Migration có transaction/advisory lock/checksum, không chạy tự động trong /health hoặc /ready. Schema, quy ước missing/null và phục hồi batch lỗi ở [kiến trúc dữ liệu](../system/architecture.md#lưu-trữ-báo-giá-đã-triển-khai).
+
+Sử dụng [QuotationCreate/QuotationRecord](../../backend/app/quotation_demo/models.py) và [PostgresQuotationStore](../../backend/app/quotation_demo/storage.py) qua connection do caller quản lý; create/get/list chưa có HTTP endpoint. get không thấy trả None; list trả items/next_cursor theo UUID, mặc định 50 mục. Xuất model với exclude_unset=True để giữ thiếu expires_on khác null. Chưa có validation ngày hoặc cờ expiration_review, không ghi dữ liệu nghiên cứu/seed khi migrate.
 
 ## 3. Frontend (terminal khác)
 
@@ -99,14 +113,19 @@ Trong backend:
 .\.venv\Scripts\python.exe -m pytest
 ```
 
+Test PostgreSQL thật là opt-in: đặt CACHESEC_TEST_DATABASE_URL trong môi trường terminal tới DB phát triển/test rồi chạy `.\.venv\Scripts\python.exe -m pytest tests/test_database_integration.py`. Biến này không đọc từ .env, không mặc định dùng DATABASE_URL của ứng dụng. Test đọc server/extension metadata và round-trip với bảng TEMP chỉ tồn tại trong session; không xóa dữ liệu/bảng app. Không đặt biến thì hai test này skip, không có nghĩa kết nối DB thật đã đạt. Đây là test hạ tầng, không phải fixture thực nghiệm báo giá.
+
+Với cùng biến môi trường, chạy `.\.venv\Scripts\python.exe -m pytest tests/quotation_demo` để kiểm tra domain/store/migrations. Các test PostgreSQL báo giá tạo database mới tên `cachesec_test_quotations_<UUID>` trên server đã chỉ định; user test cần CREATEDB. Fixture chỉ dọn database do chính nó tạo thành công, không reset/drop database được cấu hình trong URL. Test kiểm tra commit/rollback, migration replay/checksum/concurrency, SQL parameters, phân trang và missing/null/ngày sai; dữ liệu này không phải fixture benchmark. Thiếu biến thì phần PostgreSQL skip, phần domain vẫn chạy.
+
 Frontend dùng package-lock.json để cố định dependencies đã resolve. Python dùng requirements-dev.lock.txt chụp phiên bản môi trường Windows/Python 3.12 hiện tại; requirements-dev.txt mô tả dependencies trực tiếp để cập nhật có chủ đích. Chưa khóa môi trường nghiên cứu hoặc kiểm chứng đa nền tảng, chưa phải môi trường benchmark hoàn chỉnh.
 
-Tài liệu tham khảo: [Next.js installation](https://nextjs.org/docs/app/getting-started/installation), [FastAPI](https://fastapi.tiangolo.com/), [pgvector](https://github.com/pgvector/pgvector).
+Tài liệu tham khảo: [Next.js installation](https://nextjs.org/docs/app/getting-started/installation), [FastAPI](https://fastapi.tiangolo.com/), [pgvector](https://github.com/pgvector/pgvector), [Psycopg connection/transaction context](https://www.psycopg.org/psycopg3/docs/basic/usage.html), [PostgreSQL URI và connect timeout](https://www.postgresql.org/docs/17/libpq-connect.html).
 
 ## Thành phần đã khởi tạo
 
 - Frontend: Next.js App Router, TypeScript strict, CSS thuần, ESLint và npm lockfile; Chat nội bộ và tiếp nhận/phân loại tài liệu trong phiên trên hệ thiết kế Nói. Chưa có upload hoặc phản hồi AI thật.
-- Backend: FastAPI, cấu hình CORS local qua Pydantic Settings, health endpoint; requirements runtime/dev và bản freeze dependencies cho môi trường đã cài.
+- Backend: FastAPI, CORS local/Pydantic Settings, health và PostgreSQL readiness; adapter Psycopg với transaction context, cấu hình secret và timeout; requirements runtime/dev và bản freeze dependencies cho môi trường đã cài.
 - Database: Docker Compose với PostgreSQL 17 + pgvector 0.8.7, cổng chỉ bind localhost, persistent volume, init extension vector.
-- Chưa có schema nghiệp vụ, database adapter/migration, authentication, LLM/embedding provider, cache hoặc tích hợp UI/API.
+- Báo giá: schema quotation_demo, migration CLI, domain models và PostgreSQL store với config riêng; chưa HTTP/UI/runtime validation.
+- Chưa có authentication, LLM/embedding provider, cache, schema control/artifact hoặc tích hợp UI/API.
 - Chưa thêm Dexie/model SDK vì chưa dùng tới; chưa chốt storage server cache.

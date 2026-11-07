@@ -2,13 +2,24 @@
 
 ## Trạng thái và phạm vi
 
-**Đã soạn đặc tả kỹ thuật T02 v0.2 ngày 2026-11-07 để đối chiếu T03–T04; chưa có endpoint/model/schema được triển khai.** Code backend hiện chỉ có GET /health và CORS local. Contract này cụ thể hóa [kiến trúc](architecture.md#bản-nháp-t02-module-và-contract), không phải SDK đã phát hành, API đang chạy hoặc policy bảo mật đã được duyệt. Các ví dụ JSON đều là dữ liệu giả minh họa, không phải fixture hoặc kết quả đo.
+**Đã soạn đặc tả kỹ thuật T02 v0.2 ngày 2026-11-07 để đối chiếu T03–T04; các route HTTP nghiệp vụ/control bên dưới chưa được triển khai.** Backend hiện có GET /health, GET /ready và CORS local; [domain/storage báo giá](architecture.md#lưu-trữ-báo-giá-đã-triển-khai) đã có model/migration riêng. Contract này cụ thể hóa [kiến trúc](architecture.md#bản-nháp-t02-module-và-contract), không phải SDK đã phát hành, API workflow đang chạy hoặc policy bảo mật đã được duyệt. Các ví dụ JSON đều là dữ liệu giả minh họa, không phải fixture hoặc kết quả đo.
 
 Đầu vào đã được người dùng chọn nằm tại [hồ sơ T01](../general/overview.md#hồ-sơ-đầu-vào-t01--đang-thực-hiện): sáu trường báo giá; ngày YYYY-MM-DD có thật và d >= 2026-11-07 trong fixture; Context Cache/browser trước; identity fixture backend quản lý; Developer được duyệt nếu có quyền Reviewer hiện tại. Acceptance vẫn chờ cô quy định, không mặc định 100%.
 
 App báo giá và control có entrypoint/base URL riêng. Các route mới dưới đây dùng prefix đề xuất /api/v1; GET /health hiện tại giữ nguyên. Lõi cache chỉ phụ thuộc contract logic; HTTP, browser storage và model provider là adapter. Không tạo service riêng cho mỗi nhóm route.
 
 Danh mục HTTP mô tả host web PoC; tích hợp lõi cache vào Agent/IDE khác không bắt buộc dựng ứng dụng báo giá hoặc toàn bộ WorkflowRun API. Host khác có thể dùng contract context/lookup/verify/admit/invalidate với adapter nguồn/quyền tin cậy tương ứng. Không đưa Quotation hoặc ReviewDecision vào kiểu dữ liệu lõi cache.
+
+## Endpoint nền đã triển khai
+
+Hai endpoint vận hành dùng path trực tiếp, không thuộc /api/v1 và chưa dùng envelope của workflow:
+
+| Method/path | Response | Giới hạn |
+| --- | --- | --- |
+| GET /health | 200 với {"status":"ok"} | Chỉ process liveness, không mở kết nối DB |
+| GET /ready | 200 với {"status":"ready","database":"ready"}; 503 với status = not_ready và database = not_configured/unavailable | Thực hiện PostgreSQL probe mỗi request; không trả DSN, exception hoặc credentials |
+
+/ready hiện chỉ kiểm tra kết nối/truy vấn PostgreSQL, không chứng minh schema, quyền, model, cache hoặc workflow sẵn sàng. Thiếu extension vector không tự làm probe thất bại vì chưa có năng lực runtime cần extension đó. Adapter probe đọc version/extension để kiểm chứng qua test; endpoint không lộ metadata này. Cấu hình timeout và cách chạy ở [setup](../general/setup.md#2-backend).
 
 ## Kiểu và quy ước chung
 
@@ -17,7 +28,7 @@ Danh mục HTTP mô tả host web PoC; tích hợp lõi cache vào Agent/IDE kh�
 | Id | Chuỗi opaque do backend cấp; client không phân tích ID thành path/role/quyền |
 | Revision | Số nguyên dương tăng khi tạo bản source/patch mới; không cho client ghi đè bản cũ |
 | Digest | Chuỗi có tên thuật toán và giá trị digest; thuật toán, canonicalization và trust mechanism khóa tại T04. Ví dụ sha256 không phải lựa chọn thuật toán đã chốt |
-| DecimalString | Chuỗi số thập phân hữu hạn, không dùng JSON float, NaN/Infinity hoặc tự làm tròn; scale/precision và ràng buộc nghiệp vụ tiền tệ chờ T03 |
+| DecimalString | Chuỗi khớp toàn bộ `[+-]?[0-9]+(\.[0-9]+)?`, không exponent/whitespace/JSON number/NaN/Infinity; giữ nguyên precision và không làm tròn. Ràng buộc nghiệp vụ min/max/currency còn mở |
 | JsonValue | Giá trị JSON bất kỳ: null, boolean, number, string, array hoặc object; JSON lỗi cú pháp vẫn là request lỗi |
 | Timestamp | Thời điểm có offset, đề xuất biểu diễn UTC; tách khỏi ngày nghiệp vụ YYYY-MM-DD. Duration đo bằng đồng hồ đơn điệu, không suy từ hiệu hai máy |
 | ConfigRef | ID/version của cấu hình đã đăng ký ở backend, không chứa API key, lệnh shell, raw policy hoặc endpoint provider do client tùy ý nhập |

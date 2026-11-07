@@ -2,7 +2,7 @@
 
 ## Trạng thái và nguyên tắc
 
-Lập ngày 2026-11-02; cập nhật tiến độ ngày **2026-11-07**. Trạng thái từng gói T01–T17 nằm ở checklist; dấu chọn chỉ xác nhận đầu ra và kiểm chứng thuộc gói đó. **T02 đã hoàn thành đặc tả thiết kế v0.2, chưa triển khai**; T01 còn chờ điều kiện nghiên cứu. Hiện có UI IDE xem trước theo [thiết kế frontend](../frontend/design.md), FastAPI health/CORS và cấu hình Compose; chưa có workflow backend/cache/gate thật. Đợt này không tạo schema, fixture hoặc chạy thực nghiệm.
+Lập ngày 2026-11-02; cập nhật tiến độ ngày **2026-11-07**. Trạng thái từng gói T01–T17 nằm ở checklist; dấu chọn chỉ xác nhận đầu ra và kiểm chứng thuộc gói đó. **T02 đã hoàn thành đặc tả thiết kế v0.2**; T01 còn chờ điều kiện nghiên cứu. Đã có nền PostgreSQL/readiness và, theo yêu cầu, schema/migration/domain/store báo giá tạo/đọc/phân trang. Đây là lát cắt app của T03/T05/T07; chưa hoàn thành toàn bộ các gói hoặc chọn thay policy/control còn mở. UI IDE vẫn mô phỏng; chưa có workflow backend/cache/gate hoặc chạy thực nghiệm.
 
 Phạm vi và câu hỏi mở do [tổng quan](overview.md) sở hữu; module/runtime do [kiến trúc](../system/architecture.md) sở hữu, request/response/thao tác do [contract API](../system/api.md) sở hữu; quyền/gate do [phân quyền](../system/authorization.md) sở hữu; protocol/fixture/acceptance do [đánh giá](../evaluation/design.md) sở hữu. Kế hoạch này quản lý việc cần làm và điều kiện nghiệm thu, không thay đặc tả của các tài liệu đó.
 
@@ -41,6 +41,7 @@ Không tự chọn thay người dùng/giảng viên các giá trị ảnh hư�
 ### T03 — Thiết kế database, artifact storage và vòng đời dữ liệu
 
 - [ ] Hoàn thành T03. **Phụ thuộc:** T01–T02.
+- **Trạng thái:** phần schema báo giá đã thiết kế và triển khai tại [kiến trúc dữ liệu](../system/architecture.md#lưu-trữ-báo-giá-đã-triển-khai): sáu cột, migration metadata/checksum, transaction và pagination. ERD/control/artifact lifecycle của toàn hệ thống và retention/reset nghiên cứu chưa hoàn thành.
 - **Làm:** lập ERD/data dictionary cho dữ liệu báo giá; identity/scope/repo/snapshot; run/proposal/test/artifact/approval/deployment/events. Xác định chủ sở hữu, khóa/quan hệ, ràng buộc revision/digest, transaction, index, retention và reset. Thiết kế nơi lưu bytes source/artifact tách khỏi metadata; dữ liệu app và control không truy cập chéo bảng nội bộ.
 - **Đầu ra:** thiết kế dữ liệu và migration/seed/reset dự kiến trong architecture, phân biệt phương án đã chọn/còn mở. Nếu cache ở browser thì thiết kế storage local và metadata verification tương ứng; chỉ đặc tả bảng/vector phía server theo lựa chọn thực sự cần.
 - **Nghiệm thu:** truy vết được proposal → test → artifact → approval → deployment; không cần DB riêng cho mỗi revision. PostgreSQL/pgvector có cấu hình không có nghĩa mọi cache payload phải lưu ở PostgreSQL. T04 phải rà lại schema/contract nếu trust boundary yêu cầu thay đổi; chỉ khóa thiết kế trước T05.
@@ -55,6 +56,7 @@ Không tự chọn thay người dùng/giảng viên các giá trị ảnh hư�
 ### T05 — Nối database và nền lưu trữ backend
 
 - [ ] Hoàn thành T05. **Phụ thuộc:** T02–T04 đã đủ điều kiện triển khai.
+- **Trạng thái:** nền kết nối/readiness đã kiểm chứng PostgreSQL thật. Đã có migration báo giá 001, history/checksum/transaction lock, config QUOTATION_ riêng và PostgreSQL store. Đã áp dụng local, chạy lại no-op; test DB tạm kiểm tra persistence/rollback/concurrency. Chưa hoàn thành persistence control/artifact hoặc T04; T05 vẫn chưa hoàn thành toàn bộ.
 - **Làm:** cấu hình kết nối, migration/constraints và adapter lưu trữ cần dùng ngay; kiểm chứng PostgreSQL/extension thực tế nếu được chọn. Tách liveness/readiness, transaction/error handling và cấu hình phiên bản. Chưa xây sẵn bảng, service hoặc dependency cho mọi biến thể mở rộng.
 - **Đầu ra:** migration tối thiểu, persistence adapters, hướng dẫn khởi động và reset dữ liệu phát triển trong phạm vi rõ ràng.
 - **Nghiệm thu:** migrate/read/write và lỗi kết nối được kiểm tra trên DB thật; migration rollback/forward hoặc khôi phục theo cách đã thiết kế. Không giả readiness thành công khi DB lỗi; không tự xóa volume/dữ liệu ngoài test được cho phép.
@@ -69,6 +71,7 @@ Không tự chọn thay người dùng/giảng viên các giá trị ảnh hư�
 ### T07 — Dựng ứng dụng báo giá nền và fixture duy nhất
 
 - [ ] Hoàn thành T07. **Phụ thuộc:** T01, T05–T06 và contract app ở T02.
+- **Trạng thái:** đã có domain/storage tạo/đọc/phân trang độc lập control/HTTP/cache. Chưa có entrypoint API, runtime validation, UI báo giá hoặc fixture nghiên cứu; chưa cài rule expiration_review vào app nền.
 - **Làm:** app tiếp nhận/danh sách/chi tiết/validation tối thiểu chạy độc lập, **chưa có rule mới**. Tạo một fixture manifest có nhãn, mốc thời gian, phần ca gate/reuse liên kết và oracle theo contract đã xác nhận; backend đọc schema dùng chung, không import script nghiên cứu.
 - **Đầu ra:** source app nền, entrypoint/API riêng với control, test nền và manifest có version/digest; ghi revision gốc và cách tái tạo trạng thái ban đầu.
 - **Nghiệm thu:** app chạy không import code Agent/IDE/cache; test hành vi cũ pass. Ca kiểm tra rule mới chứng minh thiếu sót có chủ đích, phân biệt expected failure của app gốc với lỗi của workflow đã hoàn thành. Fixture UI cũ không trở thành fixture thực nghiệm; các test double đơn vị không phải tập benchmark thứ hai.
@@ -153,7 +156,7 @@ Không tự chọn thay người dùng/giảng viên các giá trị ảnh hư�
 
 ## Bước tiếp theo ngay lúc này
 
-Tiếp tục **T03 — ERD, artifact storage và vòng đời dữ liệu** từ contract T02 v0.2; T01 giữ riêng phần fixture/oracle/baseline/acceptance đang chờ xác nhận. T04 sẽ chốt control và rà lại contract/ERD; không triển khai phần phụ thuộc các quyết định còn mở. Chưa tạo database schema hoặc code mới chỉ dựa trên tên bảng/module dự kiến. Bảng dưới là thứ tự review đầu vào; chi tiết câu hỏi nằm tại [overview](overview.md#giả-định-và-câu-hỏi-mở).
+Lát cắt schema/migration/storage báo giá đã có code và kiểm chứng DB thật. Gói tiếp theo là identity/scope tối thiểu và API báo giá độc lập để nối giao diện; cần đối chiếu quyền T04/T06 trước công khai thao tác, không coi store nội bộ là authorization. T03 tiếp tục phần dữ liệu control/artifact; T01 giữ riêng fixture/oracle/baseline/acceptance đang chờ xác nhận. Bảng dưới là thứ tự review đầu vào; chi tiết câu hỏi nằm tại [overview](overview.md#giả-định-và-câu-hỏi-mở).
 
 | Trước bước phụ thuộc | Cần khóa |
 | --- | --- |
