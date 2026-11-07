@@ -39,7 +39,7 @@ CacheSec dự kiến cung cấp workspace, authorized repository retrieval, đ�
 | --- | --- | --- |
 | FR-01 | App báo giá tối giản và trạng thái gốc không có rule mới | Code và test hiện trạng chạy được, revision gốc được ghi |
 | FR-02 | Một fixture có nhãn, định nghĩa ngày hợp lệ và thời điểm tham chiếu cố định | Manifest/hash bất biến, ca biên và oracle được duyệt trước thực nghiệm |
-| FR-03 | Answer Cache cục bộ, embedding, exact/semantic matching và threshold | Hit/Miss/Rejected thật; kiểm tra tương đương, không gán hit từ mô phỏng |
+| FR-03 | Repository Context Cache trong trình duyệt cho web Workspace, embedding, exact/semantic matching và threshold | Hit/Miss/Rejected thật, context/provenance được backend xác minh trước khi Agent dùng; LLM vẫn xử lý, không gán hit hoặc tiết kiệm từ mô phỏng |
 | FR-04 | Authorization và cache verification trước reuse | Identity/tenant/repo, scope/intent, nguồn/version/hash, TTL, policy và toàn vẹn; lỗi thì không reuse |
 | FR-05 | Authorized Repository Retrieval/RAG khi miss/reject | Chỉ đọc nguồn được phép, có provenance; lỗi quyền không biến thành truy xuất không hạn chế |
 | FR-06 | Agent tạo patch đúng một rule và chạy kiểm thử thật | Diff, revision, kết quả validation/gate và lỗi có liên kết |
@@ -47,7 +47,7 @@ CacheSec dự kiến cung cấp workspace, authorized repository retrieval, đ�
 | FR-08 | Trace và evaluation | Truy ngược request → context/cache → patch → test → approval → deployment; ghi năm chiều đo và chỉ số cache riêng |
 | FR-09 | Admission, TTL, eviction, invalidation và cấu hình có phiên bản | Namespace riêng cho cấu hình/vector; nguồn/policy đổi phải kiểm tra lại; không cache quyết định deployment approval |
 
-Repository Context Cache là mở rộng đề xuất, không bắt buộc cho PoC đầu tiên. [Thiết kế cache](../system/cache.md) giải thích lựa chọn ít thay đổi nhất. Server cache, so sánh nhiều embedding/eviction, hai tầng cache và fine-tune/FL được giữ làm khả năng mở rộng, chưa là deliverable của kịch bản duy nhất.
+Ngày 2026-11-07, người dùng chọn **Repository Context Cache trong trình duyệt cho web Workspace trước**, adapter IDE làm sau. Quyết định này thay đề xuất Answer Cache đầu tiên; không phải yêu cầu mới đã được giảng viên xác nhận hoặc tính năng đã triển khai. [Thiết kế cache](../system/cache.md) sở hữu payload và verification. Answer Cache, server cache, nhiều embedding/eviction, hai tầng và fine-tune/FL vẫn là khả năng mở rộng ngoài lát cắt đã chọn.
 
 ## Yêu cầu phi chức năng
 
@@ -58,26 +58,67 @@ Repository Context Cache là mở rộng đề xuất, không bắt buộc cho P
 | NFR-03 | Đo end-to-end và thành phần thực tế, không dùng độ trễ demo hoặc usage 0 để kết luận tiết kiệm |
 | NFR-04 | Dữ liệu giả lập, log tối thiểu đủ audit, không ghi secrets hoặc code ngoài scope được cấp quyền |
 | NFR-05 | Theo cấu trúc Next.js/TypeScript, FastAPI/Python hiện có; tách nghiệp vụ khỏi UI/storage và adapter khỏi provider; không dựng ERP/microservice/plugin framework |
-| NFR-06 | Theo yêu cầu người dùng ngày 2026-11-07, tách source ứng dụng báo giá, Agent/IDE và lõi cache trong cùng repo; app chạy độc lập, cache tích hợp qua contract/adapter để tái sử dụng với host/repo khác. Ranh giới phụ thuộc và runtime do [kiến trúc](../system/architecture.md#quy-tắc-độc-lập-giữa-ứng-dụng-agentide-và-cache) sở hữu; chưa có implementation hoặc bằng chứng tích hợp ngoài |
+| NFR-06 | Theo yêu cầu người dùng ngày 2026-11-07, tách source ứng dụng báo giá, Agent/IDE và lõi cache trong cùng repo; app chạy độc lập. Cache có contract chung có phiên bản, được tài liệu hóa, có thể cung cấp bằng SDK/API và adapter để dùng trực tiếp trong IDE/Agent được hỗ trợ, không buộc dùng web Workspace. [Kiến trúc](../system/architecture.md#quy-tắc-độc-lập-giữa-ứng-dụng-agentide-và-cache) sở hữu ranh giới; hỗ trợ nhiều IDE là hướng mở rộng, chưa có implementation hoặc bằng chứng tích hợp ngoài |
 
 Safety property bắt buộc là **một** thuộc tính về deployment approval. Các điều kiện cache, quyền nguồn và chất lượng là yêu cầu bảo đảm reuse/đánh giá kiến trúc, không đổi thành nhiều bài toán nghiệp vụ hoặc nhiều software changes.
 
+## Hồ sơ đầu vào T01 — đang thực hiện
+
+Đã bắt đầu T01 ngày 2026-11-07. T01 chưa hoàn thành; phân biệt quyết định người dùng, yêu cầu giảng viên và bản nháp cần review. Các chi tiết chưa chốt tiếp tục nằm trong [câu hỏi mở](#giả-định-và-câu-hỏi-mở), không được dùng làm oracle/schema đã khóa.
+
+| Đầu vào | Trạng thái được xác nhận |
+| --- | --- |
+| Loại cache đầu tiên | Người dùng chọn Context Cache: tái sử dụng ngữ cảnh repo; LLM vẫn xử lý yêu cầu |
+| Vị trí/host đầu tiên | Người dùng chọn cache trong trình duyệt cho web Workspace trước; adapter IDE làm sau. Storage engine/API cụ thể chưa chốt |
+| Ngày hết hạn | Người dùng chọn ngày có thật theo lịch, định dạng YYYY-MM-DD và không trước mốc tham chiếu. Fixture dùng mốc cố định 2026-11-07; ngày bằng mốc được chấp nhận |
+| Nguồn danh tính PoC | Người dùng chọn danh tính giả lập do backend quản lý, công bố rõ giới hạn; approval gate vẫn phải thực thi thật. Mapping principal/quyền và freshness cần chốt ở phần control |
+| Người duyệt thay đổi | Developer được tự duyệt nếu có quyền Reviewer hiện tại; vẫn cần quyết định tường minh gắn đúng artifact. Agent không nhận quyền phê duyệt |
+| Phạm vi dữ liệu báo giá | Người dùng chốt 6 trường: mã, nhà cung cấp, mô tả, tổng tiền, tiền tệ và ngày hết hạn; kiểu dữ liệu/validation nền và contract API chi tiết thuộc T02–T03 |
+| Acceptance threshold | Người dùng chưa chọn, chờ cô quy định; không sử dụng đề xuất 100% trước đây như ngưỡng hiện hành |
+| Ranh giới nghiệp vụ | Một quy tắc flag để con người xem xét; ứng dụng gốc chưa có rule đó. Reviewer duyệt code/artifact, không duyệt báo giá |
+
+### Quy tắc ngày đã thống nhất với người dùng
+
+Ngày hết hạn phải biểu diễn đúng ngày tồn tại theo lịch với định dạng YYYY-MM-DD và thỏa **d >= R**, trong đó d là ngày hết hạn đã diễn giải hợp lệ, R là ngày tham chiếu. Với fixture, **R = 2026-11-07** cố định cho mọi lượt; không lấy ngày từ máy hoặc đổi mốc theo ngày chạy. So sánh theo ngày, không tự thêm giờ hết hạn hay múi giờ vào input date-only. Cách cung cấp R cho runtime app ngoài fixture sẽ đặc tả tại T02; không mặc định ứng dụng dùng mốc fixture mãi mãi.
+
+Báo giá thiếu ngày, ngày không hợp lệ hoặc d < R phải có cờ cần xem xét; ngày bằng/sau R không phát sinh cờ này, các validation khác giữ nguyên. Đây là quyết định của người dùng ngày 2026-11-07, chưa phải bằng chứng giảng viên đã xác nhận oracle/fixture hoặc acceptance. Quy tắc chỉ được bổ sung vào bản sửa, không cài trước vào app nền.
+
+### Schema báo giá tối thiểu — phạm vi đã chốt
+
+Người dùng đã chọn bộ 6 trường dưới đây cho phạm vi nhập/danh sách/chi tiết/validation; **chưa có Pydantic model, API hoặc schema database**. Không bao gồm quản lý mua hàng/thanh toán hoặc nhiều dòng hàng. Tên kỹ thuật, kiểu dữ liệu và validation nền sẽ đặc tả ở T02–T03 trong đúng phạm vi này.
+
+| Trường dự kiến | Mục đích |
+| --- | --- |
+| id | Định danh báo giá do ứng dụng quản lý |
+| supplier_name | Tên nhà cung cấp giả lập để hiển thị |
+| description | Nội dung báo giá ngắn |
+| total_amount | Tổng giá trị minh họa; kiểu số, đơn vị và validation nền cần đặc tả |
+| currency | Đơn vị tiền tệ minh họa, chưa chốt danh sách |
+| expires_on | Giá trị ngày hết hạn đầu vào; giữ phân biệt thiếu field, null, rỗng và giá trị thô cho validation/fixture |
+
+Kết quả validation đề xuất có danh sách cờ, với cờ expiration_review cho rule mới; tên/shape trả về chưa chốt. Không nhận cờ do client/Agent gửi như kết quả validation đáng tin cậy. Khi ca ngày sai thuộc fixture, parsing/chuẩn hóa ở API không được làm mất dấu hiệu đầu vào khiến rule nghiệp vụ không còn được kiểm tra. Test nền và schema nền không được bổ sung trước chính rule mà Agent sẽ được giao.
+
+Vai trò Developer, Reviewer và Deployment Control đã có trong thiết kế. Người dùng chọn identity fixture do backend quản lý cho PoC, không triển khai đăng nhập thật ngay từ đầu; đây là mô phỏng danh tính, không phải production authentication. Developer được tự duyệt nếu có quyền Reviewer hiện tại và thực hiện quyết định tường minh; không yêu cầu reviewer phải khác người đề xuất. Mapping danh tính/quyền và freshness vẫn cần chốt trước thực thi; không tự biến ba capability thành yêu cầu ba tài khoản riêng. Fixture/oracle, acceptance và baseline/số lặp vẫn chờ xác nhận theo [thiết kế đánh giá](../evaluation/design.md).
+
 ## Acceptance threshold cần thống nhất
 
-Đề xuất **một điều kiện tổng hợp**: mỗi run đạt khi 100% ca validation bắt buộc và 100% ca gate bắt buộc trong cùng fixture đều pass; thiếu test, lỗi, timeout hoặc kết quả không xác minh được không được tính pass. Đây chưa phải threshold đã được giảng viên phê duyệt. Trace, reproducibility, thời gian và failures vẫn phải đo, kể cả khi không tham gia điều kiện tổng hợp. Không điều chỉnh threshold sau khi nhìn kết quả để nâng tỷ lệ đạt.
+**Chưa chọn ngưỡng; người dùng chờ cô quy định.** Phương án 100% ca validation và 100% ca gate từng được đề xuất chưa được chọn, không phải cấu hình mặc định hoặc điều kiện nghiệm thu hiện hành. Phải ghi giá trị/đơn vị, danh sách ca bắt buộc, cách tính mẫu số/lỗi và version trước thực nghiệm; không điều chỉnh theo kết quả đã quan sát.
+
+Test thiếu/lỗi/timeout hoặc bằng chứng không xác minh được không được giả thành pass. Cả năm chiều vẫn cần báo cáo theo protocol sau khi được chốt; chưa có threshold thì không kết luận run đạt acceptance. Ngưỡng này khác similarity threshold của cache; không chặn việc soạn nháp kiến trúc/API độc lập với giá trị ngưỡng, nhưng chặn đóng băng acceptance và thực nghiệm phụ thuộc.
 
 ## Giả định và câu hỏi mở
 
 | Chủ đề | Cần xác nhận trước bước phụ thuộc |
 | --- | --- |
-| Ngày hết hạn hợp lệ | Field nào; thiếu/null/rỗng/sai định dạng/ngày không tồn tại/đã hết hạn xử lý ra sao; timezone, ngày bằng mốc, ngày so với ngày phát hành; dùng mốc cố định thay đồng hồ thực? |
+| Schema báo giá | Đã chốt bộ sáu trường trong hồ sơ T01; còn tên/kiểu/validation nền ở T02–T03, giữ nguyên ca missing/null/raw của expires_on trước T07 |
+| Ngày hết hạn hợp lệ | Đã chọn YYYY-MM-DD, ngày có thật và d >= 2026-11-07 cho fixture. Còn chi tiết parse/giá trị sai kiểu/whitespace và validation nền; không tự thêm quan hệ ngày phát hành hay giờ/múi giờ vào rule date-only |
 | Một fixture | Đề xuất một manifest phiên bản gồm báo giá có nhãn và ca control/cache/trace có liên kết; cần xác nhận cách diễn giải này với giảng viên, không thêm fixture thực nghiệm độc lập |
-| Threshold | Điều kiện tổng hợp trên có được chấp thuận không; danh sách test bắt buộc và cách tính run lỗi/timeout? |
+| Threshold | Người dùng chờ cô quy định ngưỡng; chưa chọn giá trị. Cần xác nhận danh sách test bắt buộc, đơn vị/mẫu số và cách tính run lỗi/timeout trước thực nghiệm |
 | Baseline và lặp | Baseline được dùng công cụ nào, có cấm AI không; ai thực hiện; số lần lặp, thứ tự và biện pháp giảm học thuộc tác vụ? |
 | Agent và repository | Adapter/provider/model/revision, tool scope, executor, ngôn ngữ app mẫu, giới hạn đọc/ghi/chạy test; loại bỏ secrets/symlink vượt scope thế nào? |
-| Identity và gate | Nguồn identity/tenant, role/ABAC, ai có quyền duyệt; self-approval có cho phép không; freshness khi thu hồi; deploy PoC là gì và đường bypass nào ngoài threat model? |
+| Identity và gate | Đã chọn danh tính giả lập backend quản lý và cho phép Developer tự duyệt nếu có quyền Reviewer hiện tại. Còn mapping principal/tenant/role/ABAC, freshness khi thu hồi, deploy target và đường bypass ngoài threat model |
 | Exact change | Chuẩn hóa diff, base/source revision, artifact digest, test/fixture/config binding, expiry/revoke approval; cơ chế toàn vẹn và kiểm tra nguyên tử tại deployment? |
-| Cache | Vị trí local trình duyệt còn phù hợp với Agent không; trusted metadata/integrity; metric/threshold, TTL, scope chia sẻ, invalidation; offline mặc định đề xuất không reuse |
+| Cache | Đã chọn Context Cache trong trình duyệt/web Workspace trước. Còn trusted metadata/integrity, storage engine, model/metric/threshold, TTL, scope chia sẻ, invalidation và logout/account switch; offline mặc định đề xuất không reuse |
 | Bằng chứng riêng cache | Các câu hỏi tìm hiểu repo thực sự lặp lại trong một nhiệm vụ; preload hợp lệ, số query đủ báo cáo, oracle reuse và cách tính tiền xử lý/chi phí? |
 | Phương pháp và tài liệu nền | Cỡ mẫu, seed, biến động model, giới hạn thống kê; chưa tìm thấy research notes hoặc bản tóm tắt bài báo trong repo, cần bổ sung nguồn thật khi có |
 

@@ -26,6 +26,7 @@
 - Theo convention và cấu trúc hiện có; tên rõ nghĩa, kiểu dữ liệu rõ ràng, hàm có trách nhiệm cụ thể.
 - Tách nghiệp vụ khỏi UI, HTTP và storage. Tái sử dụng code phù hợp; không tạo tầng rỗng, generic base class hoặc abstraction chưa cần.
 - Tách source và trách nhiệm của ứng dụng báo giá, Agent/IDE và lõi cache thành các module độc lập trong cùng repository. App báo giá chạy độc lập; Agent coi source app là mục tiêu đọc/sửa qua công cụ có scope. Lõi cache không phụ thuộc nghiệp vụ báo giá hoặc một Agent/IDE cụ thể; tích hợp qua contract/adapter, giữ xác minh quyền/nguồn ở thành phần tin cậy. Chi tiết ranh giới thuộc docs/system/architecture.md.
+- Thiết kế CacheSec để Developer tích hợp vào IDE/Agent qua contract chung có phiên bản, được tài liệu hóa và có thể cung cấp bằng SDK/API cùng adapter theo host. Web Workspace là một host tích hợp, không phải điều kiện sử dụng lõi cache. Chỉ công bố tương thích khi đã kiểm chứng adapter cụ thể; hỗ trợ nhiều IDE/Agent là hướng mở rộng, không tự thêm extension/SDK hoặc đổi phạm vi PoC.
 - Không thêm dependency/dịch vụ ngoài nhu cầu. Xử lý lỗi rõ ràng, không che lỗi thật bằng fallback giả thành công.
 - Stack dự kiến: Next.js/TypeScript, FastAPI/Python, PostgreSQL/pgvector; IndexedDB/Dexie cho browser cache. Server cache storage chưa chốt.
 - LLM và embedding có adapter riêng, API trước/local sau; cache tách storage, matching, validation.

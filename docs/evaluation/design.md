@@ -10,6 +10,19 @@ Các câu hỏi nghiên cứu: thông tin repository nào có thể reuse đúng
 
 ## Thí nghiệm chính: Developer-guided / AI-assisted
 
+T01 đang thực hiện ngày 2026-11-07 theo [hồ sơ đầu vào](../general/overview.md#hồ-sơ-đầu-vào-t01--đang-thực-hiện). Người dùng chọn Context Cache trong trình duyệt/web Workspace trước; ngày hết hạn theo YYYY-MM-DD, tồn tại theo lịch và không trước mốc fixture cố định 2026-11-07. Identity PoC dùng fixture backend quản lý, gate vẫn thực thi thật. Khung protocol bên dưới dùng để review, chưa phải run manifest hoặc cho phép bắt đầu thực nghiệm:
+
+| Đầu vào protocol | Trạng thái trước khi khóa |
+| --- | --- |
+| Đơn vị đo | Một lượt thực hiện cùng một thay đổi code từ source gốc tới terminal outcome; query/context lookup là số quan sát thành phần, không phải Developer hoặc workflow độc lập |
+| Nhánh chính | Developer-guided / AI-assisted, cùng fixture/gate/acceptance; công cụ baseline, người thực hiện, số lặp và thứ tự chưa chọn |
+| Cache trong nhánh AI | Context Cache/browser đã chọn; namespace, trạng thái khởi đầu và preload cần ghi và chốt. LLM vẫn xử lý; calls/tokens có thể không giảm, không gán 0 calls cho Context Hit |
+| Fixture/oracle | Đã có rule ngày do người dùng chọn và ma trận ca bên dưới; cách diễn giải một manifest gồm báo giá/nhãn và ca control liên kết vẫn cần xác nhận, oracle phải review trước tạo/đóng băng |
+| Acceptance | Người dùng chưa chọn, chờ cô quy định ngưỡng/danh sách ca bắt buộc; không lấy đề xuất 100% trước đây làm mặc định |
+| Bằng chứng và reset | Ghi phiên bản source/config/fixture/gate, planned/attempted/completed, trace và mọi failure/timeout; cơ chế reset và lịch chạy phải khóa trước T17 |
+
+Đây là protocol nháp theo phạm vi đã có; không tự ấn định cỡ mẫu/seed/ngưỡng hay dùng output Agent làm oracle. Kiểm chứng kỹ thuật T05–T16 không được trộn vào các lượt nghiên cứu đã lên lịch.
+
 | Nhánh | Thực hiện cùng một yêu cầu |
 | --- | --- |
 | A — Developer-guided baseline | Developer tìm hiểu code, thêm rule đánh dấu báo giá thiếu ngày hết hạn hợp lệ, chạy test và xin duyệt theo quy trình thông thường. Công cụ được phép và việc dùng AI trong baseline còn phải chốt trước run |
@@ -23,7 +36,19 @@ Baseline ở đây là **workflow Developer-guided**, khác với No Cache của
 
 Đề xuất một fixture manifest phiên bản, có digest, chứa tập báo giá giả lập có nhãn flag/not-flag và các ca kiểm soát liên kết cho gate, reuse, trace. Đây là cách diễn giải **cần xác nhận** cho “one test fixture”, không tự tạo thêm tập thực nghiệm độc lập. Fixture UI cũ không được dùng làm fixture thực nghiệm mới.
 
-Trước đóng băng cần xác nhận định nghĩa “valid expiration date”: field, kiểu/format, null/rỗng, ngày không tồn tại, đã hết hạn hay chỉ parse được, timezone, ngày bằng mốc và tương quan với ngày phát hành. Dùng thời điểm tham chiếu cố định được ghi trong manifest nếu quy tắc phụ thuộc thời gian. Nhãn do oracle đã duyệt xác định, không lấy output Agent làm ground truth.
+Người dùng đã chọn ngày có thật, định dạng YYYY-MM-DD và d >= R; **R = 2026-11-07** là mốc fixture cố định, không lấy đồng hồ máy. Ngày bằng mốc là hợp lệ đối với rule mới. Trước đóng băng còn phải khóa field/schema, chi tiết parse/null/rỗng/sai kiểu và review oracle; không tự thêm điều kiện ngày phát hành hay giờ/múi giờ. Nhãn cuối do oracle đã review xác định, không lấy output Agent làm ground truth.
+
+Ma trận kỳ vọng theo lựa chọn người dùng, chưa phải fixture đã tạo hoặc nghiệm thu giảng viên:
+
+| Đầu vào expires_on dự kiến | Kỳ vọng riêng cờ cần xem xét sau khi có rule mới |
+| --- | --- |
+| Thiếu trường, null hoặc rỗng | Có cờ |
+| Sai định dạng đã chốt hoặc ngày không tồn tại, ví dụ 2026-02-30 | Có cờ |
+| 2026-11-06 — trước mốc | Có cờ |
+| 2026-11-07 — bằng mốc | Không thêm cờ này |
+| 2026-11-08 — sau mốc | Không thêm cờ này |
+
+Các cờ validation khác không bị xóa bởi ngày hợp lệ; ma trận này không bổ sung rule vào app gốc hoặc tạo thêm fixture độc lập. Tất cả lượt và hai workflow phải dùng cùng R/fixture version. Các trường hợp năm nhuận, sai kiểu và khoảng trắng được thêm theo contract parse đã chốt trước freeze.
 
 Đề xuất ca báo giá: thiếu field, null, rỗng, sai định dạng, ngày không tồn tại, ngày hợp lệ và các ca biên theo nghĩa ngày đã chốt. Expected flag của ca phụ thuộc định nghĩa chưa được tự chốt. App gốc phải pass test hành vi cũ nhưng **chưa đáp ứng** acceptance rule mới; test tái hiện thiếu rule không được tính như failure của workflow đã hoàn thành. Khi đánh giá kết quả patch mới phải chạy đầy đủ fixture bắt buộc và hồi quy.
 
@@ -45,11 +70,11 @@ Expected trace tối thiểu: request/actor/repo → context sources và cache d
 
 Failure taxonomy đề xuất: hiểu sai rule, sai vị trí sửa, regression, patch ngoài phạm vi, Agent/tool/model error, test timeout, thiếu trace, verifier reject/error, stale/unauthorized reuse, approval bypass hoặc false block. Lưu case/run IDs và cách phục hồi, không chỉ báo run thành công.
 
-## Acceptance threshold định trước — chưa được duyệt
+## Acceptance threshold định trước — chờ cô quy định
 
-Đề xuất **một điều kiện tổng hợp**: run đạt khi 100% ca validation bắt buộc và 100% ca approval gate bắt buộc đều pass trên cùng fixture. Thiếu bằng chứng/test hoặc lỗi/timeout không được tính pass. Phải xác nhận giá trị, danh sách ca bắt buộc và version của acceptance rule trước thu thập dữ liệu. Đây không phải similarity threshold của cache.
+Người dùng chọn **chờ cô quy định**, chưa chọn ngưỡng nghiệm thu. Phương án 100% validation/gate trước đây không được dùng làm cấu hình mặc định hoặc ground truth về acceptance. Phải xác nhận giá trị/đơn vị, danh sách ca bắt buộc, mẫu số, cách xử lý thiếu bằng chứng/lỗi/timeout và version của một acceptance rule trước thu thập dữ liệu. Đây không phải similarity threshold của cache.
 
-Năm chiều vẫn được báo đầy đủ; thời gian nhanh không bù được gate bypass, và số liệu cache không được dùng để thay acceptance. Nếu chọn thêm điều kiện về trace, phải sửa và khóa **cùng một** acceptance rule trước run, không thêm threshold hậu nghiệm.
+Thiếu bằng chứng/test hoặc lỗi/timeout không được giả thành pass; chưa có rule đã khóa thì không kết luận run đạt acceptance. Năm chiều vẫn được báo đầy đủ; thời gian nhanh không bù được gate bypass, và số liệu cache không được dùng để thay acceptance. Nếu thêm điều kiện về trace, phải xác nhận và khóa **cùng một** acceptance rule trước run, không thêm threshold hậu nghiệm.
 
 ## Phép thử phụ đề xuất: đóng góp riêng của cache
 

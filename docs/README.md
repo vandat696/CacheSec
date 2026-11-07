@@ -8,7 +8,7 @@ Hồ sơ thiết kế và trạng thái hệ thống. Nội dung dự kiến kh�
 | --- | --- | --- |
 | General | [Tổng quan](general/overview.md) | Problem statement, yêu cầu giảng viên, FR/NFR, acceptance chưa chốt, giả định/câu hỏi mở |
 | General | [Trạng thái](general/project-status.md) | Đã làm, quyết định, còn mở, bước tiếp theo |
-| General | [Kế hoạch PoC](general/implementation-plan.md) | Giữ/chỉnh/bổ sung, mười bước ưu tiên, mốc kiểm chứng và bước code nhỏ nhất chưa thực hiện |
+| General | [Kế hoạch PoC](general/implementation-plan.md) | T01–T17 tuần tự: thiết kế, database/backend, app/cache/Agent/gate, UI, runner và đánh giá; mở rộng X01–X03 riêng |
 | General | [Cài đặt](general/setup.md) | Môi trường, lệnh chạy và kiểm tra |
 | System | [Kiến trúc](system/architecture.md) | As-Is có bằng chứng, ba ranh giới ứng dụng/Agent-IDE/cache, tám bước cache/Agent/test/approval/deploy |
 | System | [Cache](system/cache.md) | Answer/Context Cache, Hit/Miss/Rejected, verification, metadata và lifecycle |

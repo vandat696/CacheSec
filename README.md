@@ -14,7 +14,7 @@ Thí nghiệm chính so sánh **Developer-guided baseline / AI-assisted workflow
 
 Developer request → local lookup → authorization & cache verification → reuse hợp lệ hoặc authorized repository retrieval/RAG → AI Agent tạo patch → test → human approval gắn đúng thay đổi → deployment & audit.
 
-Đề xuất bắt đầu bằng **Answer Cache** cho câu hỏi tìm hiểu repository: một safe hit có thể tránh sinh lại câu trả lời. **Repository Context Cache** có thể giảm truy xuất/phân tích lặp, nhưng không nhất thiết tránh toàn bộ LLM calls. Cả hai phải kiểm tra identity/tenant/repo, intent/scope, nguồn/version/hash, TTL, policy và toàn vẹn. Similarity không phải quyền; cached context không chứng minh code hiện tại đúng. Chưa có lợi ích cache được đo cho kịch bản này.
+Theo lựa chọn người dùng ngày **2026-11-07**, PoC bắt đầu bằng **Repository Context Cache trong trình duyệt cho web Workspace**; adapter IDE làm sau. Hit hợp lệ tái sử dụng ngữ cảnh repo đã chuẩn bị, LLM vẫn xử lý yêu cầu/tạo patch; chưa có bảo đảm giảm calls/tokens hoặc lợi ích đã đo. Backend phải xác minh identity/tenant/repo, intent/scope, mọi nguồn/version/hash, TTL, policy và toàn vẹn trước khi Agent dùng payload local. Answer Cache giữ làm hướng mở rộng. Similarity không phải quyền; cached context không chứng minh code hiện tại đúng.
 
 ## Trạng thái thực tế
 

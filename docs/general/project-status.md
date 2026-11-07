@@ -1,5 +1,29 @@
 # Trạng thái dự án
 
+## 2026-11-07 — Bản nháp T02: module backend và API
+
+- Từ các đầu vào kỹ thuật T01 đã được người dùng chọn, soạn [bản nháp T02](../system/architecture.md#bản-nháp-t02-module-và-contract): ranh giới module/runtime, nhóm API app/control, contract cache độc lập host, trạng thái, retry/idempotency, lỗi và trace. Bám code hiện tại chỉ có health/CORS; các route trong thiết kế chưa tồn tại.
+- T02 mới ở mức nháp, chưa hoàn thành hoặc khóa request/response types, permissions/transitions, schema DB hay cơ chế sandbox/integrity. T01 vẫn chờ phần fixture/oracle/protocol và ngưỡng cô quy định; không đưa 100% vào cấu hình mặc định. Có thể tiếp tục thiết kế phần không phụ thuộc các giá trị này, chưa triển khai phần bị chặn.
+- Chỉ sửa tài liệu; rà nội dung/link/anchor/diff/whitespace và phạm vi thay đổi, giữ các chỉnh sửa có sẵn. Không scaffold, thêm dependency, tạo bảng/API, chạy test ứng dụng hoặc thực nghiệm.
+
+## 2026-11-07 — T01 đang thực hiện: Context Cache trong trình duyệt
+
+- Bắt đầu T01, chuẩn bị [hồ sơ đầu vào](overview.md#hồ-sơ-đầu-vào-t01--đang-thực-hiện) và khung protocol review trong evaluation. Người dùng chốt Context Cache/browser trước, adapter IDE sau; ngày YYYY-MM-DD có thật và không trước mốc fixture 2026-11-07 (bằng mốc hợp lệ); bộ sáu trường báo giá; identity fixture backend quản lý và cho phép Developer tự duyệt nếu có quyền Reviewer hiện tại, quyết định tường minh đúng artifact. Đây là lựa chọn của người dùng, không phải xác nhận phương pháp từ giảng viên.
+- Đồng bộ README, overview, architecture, cache và kế hoạch theo lựa chọn mới, thay đề xuất Answer Cache đầu tiên. Browser tìm/lưu candidate; backend phải xác minh payload/quyền/nguồn trước khi Agent dùng. Context Hit vẫn cần LLM xử lý; chưa có bằng chứng giảm calls/tokens hoặc thời gian.
+- T01 chưa hoàn thành: tên/kiểu/parse/validation nền và mapping quyền chi tiết sẽ đặc tả ở T02–T04; fixture/oracle, baseline/số lặp chưa khóa. Người dùng chưa chọn acceptance, chờ cô quy định, không dùng đề xuất 100% trước đây như mặc định. Đã có ma trận ngày trước/bằng/sau mốc để review. Không tạo code, bảng hoặc fixture; chỉ kiểm tra tài liệu/link/anchor/diff và phạm vi thay đổi, chưa chạy test ứng dụng hay thực nghiệm.
+
+## 2026-11-07 — Danh sách công việc backend, dữ liệu và PoC tuần tự
+
+- Cập nhật [kế hoạch PoC](implementation-plan.md) thành T01–T17, mỗi gói có phụ thuộc, đầu ra và điều kiện nghiệm thu: thiết kế T01–T04; backend/database/quyền/trace/app nền T05–T07; retrieval/model/cache T08–T11; executor/gate/Agent T12–T14; UI/runner T15–T16; so sánh chính T17. Các gói đều chưa hoàn thành; thiết kế chi tiết vẫn cần thực hiện, không coi danh sách là schema/API đã chốt.
+- Gate/trace contract được chuẩn bị trước code, gate phải thực thi trước activation rule mới; bản app gốc vẫn chưa có rule mới. Phép thử riêng cache, adapter IDE/MCP và các biến thể nằm ở X01–X03, tách khỏi phạm vi chính. Giữ một repo/fixture/gate/acceptance và ba ranh giới đã thống nhất; bước tiếp theo là T01 rồi thiết kế T02–T04.
+- Chỉ sửa kế hoạch, mục lục và trạng thái; giữ các thay đổi có sẵn. Kiểm tra nội dung, liên kết/anchor, thứ tự phụ thuộc, diff/whitespace và phạm vi file; không chạy test ứng dụng, database hoặc thực nghiệm vì chưa đổi code/cấu hình.
+
+## 2026-11-07 — Quy tắc tích hợp cache vào IDE/Agent
+
+- Bổ sung theo yêu cầu người dùng: contract cache chung có phiên bản, được tài liệu hóa, có thể cung cấp bằng SDK/API và adapter theo host; web Workspace là một nơi tích hợp, không phải điều kiện sử dụng. Chỉ công bố tương thích với tổ hợp IDE/Agent/adapter đã kiểm chứng. [Kiến trúc](../system/architecture.md#tích-hợp-cachesec-vào-ide-và-agent) sở hữu chi tiết; quyền/nguồn vẫn xác minh tại thành phần tin cậy, gate độc lập.
+- Cập nhật AGENTS, NFR-06 và lộ trình. Hỗ trợ nhiều IDE là hướng mở rộng, không tự thêm extension/SDK, fixture hoặc thay phạm vi PoC. Chưa có SDK/API/extension; chưa chọn adapter, packaging/transport hoặc vị trí local cụ thể.
+- Chỉ sửa tài liệu; kiểm tra nội dung, liên kết/anchor và diff/whitespace, không chạy test ứng dụng. Bước tiếp theo vẫn là khóa contract cần thiết trước lập trình.
+
 ## 2026-11-07 — Quy tắc tách ứng dụng, Agent/IDE và lõi cache
 
 - Đã thống nhất theo yêu cầu người dùng: tách cả source ứng dụng báo giá, host Agent/IDE và lõi cache trong cùng repository; ứng dụng chạy độc lập, cache có contract/adapter để tích hợp với host/repo khác. [Kiến trúc](../system/architecture.md#quy-tắc-độc-lập-giữa-ứng-dụng-agentide-và-cache) sở hữu hướng phụ thuộc, ranh giới runtime/dữ liệu và phạm vi sửa source; không bắt buộc database/repository riêng.
@@ -286,7 +310,7 @@ Các mốc ngày tháng bên dưới là lịch sử tại thời điểm thực
 - Chưa tích hợp frontend/backend, DB adapter/migration, authentication, RAG, model, cache hoặc benchmark; chưa có kết quả nghiên cứu.
 - Tài liệu mới mô tả định hướng, chưa đặc tả đầy đủ. Bước tiếp theo là chốt hợp đồng dữ liệu/API và phân quyền trước khi làm chatbot baseline.
 
-## Định hướng và việc còn mở — hiện hành 2026-11-02
+## Định hướng và việc còn mở — hiện hành 2026-11-07
 
 ### Đã thống nhất theo yêu cầu người dùng
 
@@ -295,18 +319,20 @@ Các mốc ngày tháng bên dưới là lịch sử tại thời điểm thực
 - Thí nghiệm chính Developer-guided/AI-assisted theo năm chiều giảng viên; một repo, một fixture, một approval-control implementation và một acceptance threshold định trước. Giá trị threshold, nghĩa ngày hợp lệ và protocol cụ thể chưa chốt.
 - Giữ thiết kế embedding/matching/threshold, verification, RBAC/ABAC, authorized RAG/LLM, admission/TTL/eviction/invalidation, provenance/version và logging/evaluation; giữ stack và UI cũ để tái sử dụng.
 - Cache verification và approval gate độc lập; enforcement ở backend/control và exact artifact binding là yêu cầu an toàn, chưa có code. Không tự commit, push, deploy hoặc xây lại ứng dụng.
+- Tách ứng dụng báo giá, Agent/IDE và lõi cache; contract tích hợp dùng chung cho web và host bên ngoài. Quy tắc và các giới hạn tương thích được ghi tại [kiến trúc](../system/architecture.md#tích-hợp-cachesec-vào-ide-và-agent); chưa có SDK/extension hoặc workflow backend thật.
+- Người dùng đã chọn Context Cache trong trình duyệt cho web Workspace trước, adapter IDE sau; ngày YYYY-MM-DD có thật và không trước mốc fixture 2026-11-07; sáu trường báo giá; identity fixture backend quản lý. Developer có quyền Reviewer hiện tại được tự duyệt tường minh đúng artifact; kiểu/parse/quyền chi tiết và protocol còn mở trong hồ sơ T01.
 
 ### Đề xuất chưa được xác nhận là quyết định triển khai
 
-Answer Cache cho câu hỏi tìm hiểu repository là lát cắt đầu tiên ít thay đổi; Context Cache mở rộng sau. AI Cache/No Cache là phép thử phụ; server-cache benchmark, nhiều model/policy/eviction và fine-tune/FL chưa ưu tiên PoC. Deploy PoC có thể là kích hoạt artifact trong môi trường giả lập có gate thật; acceptance có thể là một điều kiện tổng hợp 100% ca validation/gate bắt buộc pass. Các lựa chọn này cần xác nhận trước bước phụ thuộc, không phải giảng viên đã duyệt.
+Answer Cache giữ làm hướng mở rộng sau lát cắt Context Cache/browser đã được người dùng chọn. AI Cache/No Cache là phép thử phụ; server-cache benchmark, nhiều model/policy/eviction và fine-tune/FL chưa ưu tiên PoC. Deploy PoC có thể là kích hoạt artifact trong môi trường giả lập có gate thật; chi tiết cần xác nhận trước bước phụ thuộc. Acceptance chưa chọn, chờ cô quy định; đề xuất 100% trước đây không phải cấu hình mặc định hoặc ngưỡng đã được duyệt.
 
 ### Còn mở và thứ tự tiếp theo
 
 Danh sách quyết định đầy đủ ở [tổng quan](overview.md#giả-định-và-câu-hỏi-mở), tránh ghi lặp: nghĩa ngày/fixture/threshold; baseline tools và số lặp; identity/reviewer authority; vị trí local/model/Agent/tool scope; artifact/approval binding, freshness và deploy threat boundary.
 
-[Lộ trình PoC](implementation-plan.md) thay ưu tiên upload/chatbot nội bộ cũ: (1) app báo giá nền chưa có rule; (2) fixture/oracle/threshold; (3) cache tối thiểu; (4) authorized repo retrieval; (5) Agent; (6) patch/test duy nhất; (7) approval gate gắn phiên bản trước mọi deploy; (8) trace; (9) so sánh chính; (10) phép thử cache phụ nếu được thống nhất. Gate/trace contract chuẩn bị sớm; không chạy thí nghiệm trước khi cùng hạ tầng, fixture và protocol được khóa.
+[Lộ trình PoC](implementation-plan.md) hiện chia T01–T17: khóa đầu vào và thiết kế trước, sau đó backend/database/quyền/trace, app nền/fixture, retrieval/model/cache, executor/gate, Agent, UI và runner; cuối cùng mới so sánh chính. Gate phải có trước mọi activation rule mới; không chạy thí nghiệm trước khi hạ tầng, fixture, acceptance và protocol được khóa. Phép thử cache và tích hợp IDE bên ngoài nằm ở nhóm mở rộng riêng.
 
-Bước code nhỏ nhất đề xuất là app báo giá nền và fixture có nhãn theo contract đã xác nhận; đường dẫn dự kiến trong kế hoạch. Chưa tạo module, fixture hoặc API mới trong đợt cập nhật tài liệu. Việc upload/ingestion tài liệu nội bộ không còn là đầu việc bắt buộc trước PoC này.
+Bước tiếp theo là T01 để chốt đầu vào cần thiết và T02–T04 để thiết kế contract, dữ liệu và control; lập trình bắt đầu từ T05 sau khi điều kiện liên quan được xác nhận. Chưa tạo module, fixture hoặc API mới trong đợt lập kế hoạch này. Việc upload/ingestion tài liệu nội bộ không còn là đầu việc bắt buộc trước PoC này.
 
 ## Lịch sử tổ chức tài liệu
 

@@ -6,16 +6,20 @@
 
 Giữ kiến trúc storage/matching/validation; embedding và semantic similarity/threshold; authorization; authorized RAG; admission, TTL, capacity, eviction và invalidation; metadata, source provenance, version tracking; logging và evaluation. None/local/server và exact/semantic là các lựa chọn thiết kế, không phải mọi biến thể đều cần có trong PoC. Backend giữ quyết định quyền đáng tin cậy.
 
-Lõi cache phải tuân thủ [quy tắc độc lập ứng dụng/Agent/IDE/cache](architecture.md#quy-tắc-độc-lập-giữa-ứng-dụng-agentide-và-cache): không phụ thuộc nghiệp vụ báo giá hoặc host cụ thể; tích hợp qua contract/adapter với xác minh nguồn/quyền tin cậy. Quy tắc này áp dụng cho cả Answer Cache và Context Cache, không tự chốt loại cache, vị trí local hoặc storage.
+Lõi cache phải tuân thủ [quy tắc độc lập ứng dụng/Agent/IDE/cache](architecture.md#quy-tắc-độc-lập-giữa-ứng-dụng-agentide-và-cache): không phụ thuộc nghiệp vụ báo giá hoặc host cụ thể; tích hợp qua contract/adapter với xác minh nguồn/quyền tin cậy. Quy tắc áp dụng cho cả Answer Cache và Context Cache; lựa chọn lát cắt cụ thể được ghi bên dưới, không ràng buộc lõi với một storage/host.
 
 ## Answer Cache và Repository Context Cache
 
-| Loại | Nội dung | Hiệu quả có thể đo | Đề xuất |
+| Loại | Nội dung | Hiệu quả có thể đo | Trạng thái thiết kế |
 | --- | --- | --- | --- |
-| Answer Cache | Câu hỏi, answer hoàn chỉnh, nguồn hỗ trợ và context/intent đủ xác minh | Safe Hit có thể tránh LLM sinh lại answer; vẫn tốn lookup/embedding/verification/mạng | PoC đầu tiên: câu hỏi tìm hiểu repository, gần nhất với thiết kế hỏi đáp hiện tại |
-| Repository Context Cache | Kết quả phân tích, source excerpts/symbol map/context gắn snapshot | Giảm retrieval/phân tích lặp; Agent vẫn có thể gọi LLM tạo patch | Mở rộng sau nếu trace cho thấy reuse có ích và dependency tracking đủ tin cậy |
+| Answer Cache | Câu hỏi, answer hoàn chỉnh, nguồn hỗ trợ và context/intent đủ xác minh | Safe Hit có thể tránh LLM sinh lại answer; vẫn tốn lookup/embedding/verification/mạng | Giữ để mở rộng; không phải lát cắt PoC đầu tiên đã chọn |
+| Repository Context Cache | Kết quả truy xuất/phân tích, source excerpts/symbol map/context gắn snapshot và dependency manifest | Giảm retrieval/chuẩn bị ngữ cảnh lặp; LLM vẫn xử lý yêu cầu/tạo patch | Người dùng chọn cho PoC đầu tiên ngày 2026-11-07; lưu trong trình duyệt cho web Workspace trước |
 
-Lựa chọn Answer Cache là **đề xuất ít thay đổi nhất**, không phải implementation đã có hoặc giải pháp đã được giảng viên phê duyệt. Cache cho câu hỏi “Where is supplier quotation validation implemented?” có thể phục vụ “Which function handles quotation validation?” nếu đáp án, repo snapshot, scope và quyền tương đương. “Which rule checks expiration?” có thể gần nghĩa nhưng khác intent/đáp án; phải reject nếu không đủ bằng chứng.
+Lựa chọn Context Cache thay đề xuất Answer Cache đầu tiên; đây là quyết định thiết kế của người dùng, **chưa triển khai và chưa phải giảng viên xác nhận phương pháp**. Hai yêu cầu tìm vị trí validation tương đương có thể dùng chung context nếu intent/scope/dependencies/quyền phù hợp. Yêu cầu tìm riêng quy tắc hết hạn có thể cần context khác dù câu chữ gần nghĩa; score không đủ quyết định reuse.
+
+Payload đầu tiên là ngữ cảnh repo có provenance, không phải câu trả lời cuối, patch, approval hoặc model KV/prompt cache. Trình duyệt lưu/tìm candidate; backend xác minh payload và mọi nguồn/quyền hiện tại trước khi cung cấp ngữ cảnh cho Agent/LLM. Không tin hash/metadata/quyết định Hit do browser tự khai; registry/chứng thực và transport cụ thể chốt ở T02–T04. Không tự dùng payload local rồi xác minh sau. Miss/Rejected truy xuất lại nguồn được phép; verifier/auth lỗi vẫn theo quy tắc fail closed bên dưới.
+
+Một Context Cache Hit không bảo đảm giảm số LLM calls hoặc tokens: nếu vẫn gửi cùng ngữ cảnh, input tokens có thể tương đương. Đo thời gian context sẵn sàng, phần retrieval tránh được và chi phí lookup/embedding/verification/mạng; có thể không có lợi ích ròng. Adapter IDE làm sau, dùng cùng contract với storage phù hợp được chọn riêng.
 
 Không cache approval để cấp phép deployment; không coi cached patch, test pass hoặc context là chứng nhận code hiện tại đúng. Safe Hit của một câu hỏi không tự hoàn thành tác vụ sửa code hoặc bảo đảm không còn LLM calls cho cả workflow.
 
@@ -53,6 +57,6 @@ Admission chỉ cho thông tin được phép lưu và đủ nguồn kiểm ch�
 
 Source/dependency, quyền/role/ABAC hoặc policy/config đổi phải chặn reuse entry không còn hợp lệ, bằng invalidation/version namespace và kiểm tra lúc dùng. Invalidation chủ động là tối ưu, verifier vẫn phải xử lý sự kiện invalidation bị bỏ lỡ. Phương án bảo thủ đầu tiên có thể invalidate theo toàn repo snapshot; giảm hit rate nhưng dễ kiểm chứng hơn dependency tracking thiếu nguồn. Freshness khi thu hồi quyền cần công bố trước run.
 
-Local là vị trí lưu, user/tenant sharing là phạm vi chia sẻ; tách hai trục khi so sánh server. Browser IndexedDB/Dexie là dự kiến từ kiến trúc cũ; chọn agent-side storage nếu cần là quyết định phải xác nhận, chưa tự thay. Offline chưa có policy; đề xuất không reuse khi không thể xác minh trực tuyến.
+Local là vị trí lưu, user/tenant sharing là phạm vi chia sẻ; tách hai trục khi so sánh server. Lát cắt đầu đã chọn browser local; IndexedDB/Dexie là hướng storage dự kiến, chưa chốt engine/schema hoặc thêm dependency. Chọn agent-side storage cho adapter khác vẫn cần quyết định riêng; lifecycle khi logout/account switch và offline policy chưa chốt. Đề xuất không reuse khi không thể xác minh trực tuyến.
 
 Backend verification có chi phí mạng/auth; local không miễn phí. Chặn reuse không xóa được plaintext đã đọc/sao chép hoặc bảo vệ trước XSS/người kiểm soát thiết bị. [Bảo mật](authorization.md) sở hữu threat model; [đánh giá](../evaluation/design.md) sở hữu mẫu số, oracle reuse, latency và failure accounting.

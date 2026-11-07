@@ -14,9 +14,11 @@ Duyệt code không phải duyệt báo giá. Các kiểm soát quyền/cache ph
 
 ## Identity, RBAC/ABAC và authorized retrieval
 
-Identity/tenant lấy từ nguồn backend xác thực; client không được tự chọn tenant/role hoặc sửa metadata để cấp quyền. Với PoC có thể dùng identity fixture do backend kiểm soát, **phải ghi là mô phỏng identity**, không gọi là production authentication. Cơ chế cụ thể chưa chốt.
+Identity/tenant lấy từ nguồn backend xác thực; client không được tự chọn tenant/role hoặc sửa metadata để cấp quyền. Ngày 2026-11-07 người dùng chọn **identity fixture do backend quản lý cho PoC**, phải ghi là mô phỏng identity, không gọi là production authentication. Mapping principal/tenant/capability và cơ chế chọn/kiểm tra identity trên request chưa chốt ở T04; lựa chọn fixture không cho phép tin role tự khai ở UI. Approval gate vẫn phải thực thi thật ở backend/control với đúng artifact, không trở thành mô phỏng chỉ vì identity là fixture.
 
-Đề xuất capability tối thiểu: Developer đọc repo/đề xuất/chạy test trong scope; Reviewer duyệt đúng change trong repo được cấp; Deployment Control thực thi deployment có approval. Agent chỉ nhận capability được ủy quyền của workflow, không có quyền phê duyệt. Tách capability không bắt buộc ba tài khoản; self-approval/tách nhiệm vụ còn phải xác nhận, không tự thêm yêu cầu giảng viên.
+Capability tối thiểu trong thiết kế: Developer đọc repo/đề xuất/chạy test trong scope; Reviewer duyệt đúng change trong repo được cấp; Deployment Control thực thi deployment có approval. Ngày 2026-11-07 người dùng cho phép Developer tự duyệt nếu có quyền Reviewer hiện tại; không bắt buộc danh tính reviewer khác proposer hoặc ba tài khoản riêng. Backend phải kiểm tra quyền duyệt hiện tại trên đúng repo/change, nhận quyết định tường minh và ghi actor/artifact/evidence; vai trò Developer đơn thuần không đủ quyền duyệt. Đây là lựa chọn policy PoC của người dùng, không phải yêu cầu mới đã được giảng viên xác nhận.
+
+Agent chỉ nhận capability được ủy quyền cho đọc/đề xuất/test, không có quyền approve/deploy, kể cả khi người dùng có cả quyền Developer và Reviewer. Không tự duyệt do prompt, test pass, cache hit hoặc chuyển vai trò ở UI; người có quyền vẫn phải thực hiện hành động duyệt cụ thể. Audit cho phép proposed_by và approved_by cùng danh tính khi policy này hợp lệ, không coi đó là thiếu trace.
 
 RBAC dựa role, ABAC dựa tenant/repo/path, hành động, trạng thái change và policy hiện tại. Chi tiết tổ hợp và freshness còn mở. Quyền đọc source không đồng nghĩa quyền sửa, duyệt hay deploy. Backend kiểm tra mọi nguồn phụ thuộc khi retrieval, generation và reuse. Role/quyền cũ trong token/entry không chứng minh quyền hiện tại; không xác minh được thì không trả cache.
 
@@ -42,7 +44,7 @@ Mã/artifact/evidence thay đổi → proposal revision mới → test + approva
 
 Trạng thái proposal thuộc server, client không được tự ghi Approved. Trước deployment, control đọc lại artifact bất biến từ kho tin cậy, xác minh toàn bộ binding, test bắt buộc đạt, reviewer đúng quyền và approval chưa bị revoke/expire. Kiểm tra và kích hoạt phải cùng ràng buộc một digest để tránh TOCTOU; không check file rồi chạy bytes khác. Không rebuild artifact khác sau approval. Thay đổi reviewer/policy/nguồn/target làm mất điều kiện hợp lệ phải block hoặc đánh giá lại theo policy đã chốt.
 
-Approval là bản ghi quyết định có audit, **không phải answer/context cache entry** để reuse cho thay đổi khác. Deploy lại cùng artifact, expiry, thu hồi approval và self-approval cần thống nhất; không giả định quyết định có hiệu lực vĩnh viễn. Không có artifact/build/test hoặc không xác minh được binding thì block.
+Approval là bản ghi quyết định có audit, **không phải answer/context cache entry** để reuse cho thay đổi khác. Self-approval đã được người dùng cho phép với quyền Reviewer hiện tại; deploy lại cùng artifact, expiry và thu hồi approval vẫn cần thống nhất, không giả định quyết định có hiệu lực vĩnh viễn. Không có artifact/build/test hoặc không xác minh được binding thì block.
 
 Deployment PoC được đề xuất là kích hoạt version trong môi trường giả lập có control thật, không deploy ra hệ thống ngoài. Control từ chối đường gọi trực tiếp không có approval, không chỉ đường UI. Cần xác nhận phạm vi adversary và bypass: admin/host bị kiểm soát có thể nằm ngoài PoC, phải công bố, không tuyên bố bảo vệ toàn bộ hệ điều hành.
 
@@ -52,6 +54,7 @@ Deployment PoC được đề xuất là kích hoạt version trong môi trườ
 | --- | --- |
 | Không có approval, pending hoặc reviewer từ chối | Block; có reason và change/artifact ID |
 | Principal không có quyền duyệt hoặc giả identity/tenant/repo | Không tạo approval hợp lệ; deploy block |
+| Người đề xuất đồng thời có quyền Reviewer hiện tại, duyệt tường minh đúng artifact | Có thể tạo approval theo policy đã chọn; vẫn kiểm tra binding/evidence và điều kiện activation như reviewer khác |
 | Duyệt patch A rồi đổi patch/source/artifact thành B | Block B; cần test và approval mới |
 | Đúng patch nhưng artifact khác, evidence sai fixture/config hoặc test lỗi | Block; không suy từ tên/version hiển thị |
 | Approval hết hiệu lực hoặc quyền reviewer bị thu hồi theo policy | Block sau freshness đã công bố |
