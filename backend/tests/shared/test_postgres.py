@@ -59,6 +59,16 @@ def test_connection_passes_failures_to_transaction_rollback(monkeypatch) -> None
     assert args[1] is failure
 
 
+def test_commit_failure_still_closes_the_connection(monkeypatch) -> None:
+    connect = MagicMock()
+    monkeypatch.setattr(psycopg, "connect", connect)
+    connect.return_value.__exit__.side_effect = psycopg.IntegrityError("commit failed")
+    with pytest.raises(psycopg.IntegrityError):
+        with make_database().connection():
+            pass
+    connect.return_value.close.assert_called_once()
+
+
 @pytest.mark.parametrize("vector_version", [None, "test-version"])
 def test_probe_reports_installed_metadata_without_requiring_vector(
     monkeypatch, vector_version

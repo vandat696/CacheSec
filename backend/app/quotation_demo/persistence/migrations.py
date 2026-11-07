@@ -7,7 +7,7 @@ from importlib.resources import files
 import psycopg
 
 _LOCK_ID = 87520261107
-_MIGRATION_NAMES = ("001_create_quotations.sql",)
+_MIGRATION_NAMES = ("001_create_quotations.sql", "002_creation_requests.sql")
 
 
 class MigrationError(RuntimeError):

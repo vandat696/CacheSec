@@ -72,6 +72,9 @@ Safety property bắt buộc là **một** thuộc tính về deployment approva
 | Vị trí/host đầu tiên | Người dùng chọn cache trong trình duyệt cho web Workspace trước; adapter IDE làm sau. Storage engine/API cụ thể chưa chốt |
 | Ngày hết hạn | Người dùng chọn ngày có thật theo lịch, định dạng YYYY-MM-DD và không trước mốc tham chiếu. Fixture dùng mốc cố định 2026-11-07; ngày bằng mốc được chấp nhận |
 | Nguồn danh tính PoC | Người dùng chọn danh tính giả lập do backend quản lý, công bố rõ giới hạn; approval gate vẫn phải thực thi thật. Mapping principal/quyền và freshness cần chốt ở phần control |
+| Quyền API báo giá | Hai principal fixture: chỉ đọc; tạo và đọc. Bearer token ngẫu nhiên cấu hình riêng, thiếu/sai token bị chặn, không tài khoản mặc định. Tách quyền Reviewer/deployment; [chi tiết](../system/authorization.md#quyền-api-báo-giá-đã-triển-khai) |
+| Freshness API báo giá | Kiểm token/quyền ở đầu mỗi thao tác; thu hồi chặn thao tác tiếp theo, không hủy thao tác đang thực hiện hoặc thu lại nội dung đã đọc. Không chốt thay cache/control/gate |
+| Giới hạn API local | Body JSON tối đa 64 KiB, trang tối đa 100 báo giá, Idempotency-Key 1–128 ký tự ASCII. Đây là cấu hình kỹ thuật, không phải ngưỡng nghiệm thu nghiên cứu |
 | Người duyệt thay đổi | Developer được tự duyệt nếu có quyền Reviewer hiện tại; vẫn cần quyết định tường minh gắn đúng artifact. Agent không nhận quyền phê duyệt |
 | Phạm vi dữ liệu báo giá | Người dùng chốt 6 trường: mã, nhà cung cấp, mô tả, tổng tiền, tiền tệ và ngày hết hạn; kiểu dữ liệu/validation nền và contract API chi tiết thuộc T02–T03 |
 | Acceptance threshold | Người dùng chưa chọn, chờ cô quy định; không sử dụng đề xuất 100% trước đây như ngưỡng hiện hành |
@@ -100,7 +103,7 @@ T02 có [wire contract v0.2](../system/api.md#dữ-liệu-ứng-dụng-báo-giá
 
 Kết quả validation đề xuất có danh sách cờ, với cờ expiration_review cho rule mới; tên/shape trả về chưa chốt. Không nhận cờ do client/Agent gửi như kết quả validation đáng tin cậy. Khi ca ngày sai thuộc fixture, parsing/chuẩn hóa ở API không được làm mất dấu hiệu đầu vào khiến rule nghiệp vụ không còn được kiểm tra. Test nền và schema nền không được bổ sung trước chính rule mà Agent sẽ được giao.
 
-Vai trò Developer, Reviewer và Deployment Control đã có trong thiết kế. Người dùng chọn identity fixture do backend quản lý cho PoC, không triển khai đăng nhập thật ngay từ đầu; đây là mô phỏng danh tính, không phải production authentication. Developer được tự duyệt nếu có quyền Reviewer hiện tại và thực hiện quyết định tường minh; không yêu cầu reviewer phải khác người đề xuất. Mapping danh tính/quyền và freshness vẫn cần chốt trước thực thi; không tự biến ba capability thành yêu cầu ba tài khoản riêng. Fixture/oracle, acceptance và baseline/số lặp vẫn chờ xác nhận theo [thiết kế đánh giá](../evaluation/design.md).
+Vai trò Developer, Reviewer và Deployment Control đã có trong thiết kế. Người dùng chọn identity fixture do backend quản lý cho PoC, không triển khai đăng nhập thật ngay từ đầu; đây là mô phỏng danh tính, không phải production authentication. Developer được tự duyệt nếu có quyền Reviewer hiện tại và thực hiện quyết định tường minh; không yêu cầu reviewer phải khác người đề xuất. Mapping/freshness API báo giá đã chốt riêng trong bảng trên; mapping control/repo/reviewer vẫn cần chốt trước thực thi, không tự biến ba capability thành yêu cầu ba tài khoản riêng. Fixture/oracle, acceptance và baseline/số lặp vẫn chờ xác nhận theo [thiết kế đánh giá](../evaluation/design.md).
 
 ## Acceptance threshold cần thống nhất
 
@@ -118,7 +121,7 @@ Test thiếu/lỗi/timeout hoặc bằng chứng không xác minh được khôn
 | Threshold | Người dùng chờ cô quy định ngưỡng; chưa chọn giá trị. Cần xác nhận danh sách test bắt buộc, đơn vị/mẫu số và cách tính run lỗi/timeout trước thực nghiệm |
 | Baseline và lặp | Baseline được dùng công cụ nào, có cấm AI không; ai thực hiện; số lần lặp, thứ tự và biện pháp giảm học thuộc tác vụ? |
 | Agent và repository | Adapter/provider/model/revision, tool scope, executor, ngôn ngữ app mẫu, giới hạn đọc/ghi/chạy test; loại bỏ secrets/symlink vượt scope thế nào? |
-| Identity và gate | Đã chọn danh tính giả lập backend quản lý và cho phép Developer tự duyệt nếu có quyền Reviewer hiện tại. Còn mapping principal/tenant/role/ABAC, freshness khi thu hồi, deploy target và đường bypass ngoài threat model |
+| Identity và gate | Đã chốt mapping/freshness reader/operator riêng API báo giá và self-approval khi Developer có quyền Reviewer. Còn mapping principal/tenant/repo/control, ABAC, freshness cache/gate, deploy target và đường bypass ngoài threat model |
 | Exact change | Chuẩn hóa diff, base/source revision, artifact digest, test/fixture/config binding, expiry/revoke approval; cơ chế toàn vẹn và kiểm tra nguyên tử tại deployment? |
 | Cache | Đã chọn Context Cache trong trình duyệt/web Workspace trước. Còn trusted metadata/integrity, storage engine, model/metric/threshold, TTL, scope chia sẻ, invalidation và logout/account switch; offline mặc định đề xuất không reuse |
 | Bằng chứng riêng cache | Các câu hỏi tìm hiểu repo thực sự lặp lại trong một nhiệm vụ; preload hợp lệ, số query đủ báo cáo, oracle reuse và cách tính tiền xử lý/chi phí? |

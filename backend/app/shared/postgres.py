@@ -41,15 +41,20 @@ class PostgresDatabase:
         """Commit on success, roll back on error, and close in both cases."""
         if self._url is None or not self._url.get_secret_value().strip():
             raise DatabaseNotConfigured("Database is not configured.")
-        with psycopg.connect(
+        handle = psycopg.connect(
             self._url.get_secret_value(),
             connect_timeout=self._connect_timeout_seconds,
-        ) as connection:
-            connection.execute(
-                "SELECT pg_catalog.set_config('statement_timeout', %s, false)",
-                (str(self._statement_timeout_ms),),
-            )
-            yield connection
+        )
+        try:
+            with handle as connection:
+                connection.execute(
+                    "SELECT pg_catalog.set_config('statement_timeout', %s, false)",
+                    (str(self._statement_timeout_ms),),
+                )
+                yield connection
+        finally:
+            # Psycopg's context can raise during commit before reaching its own close().
+            handle.close()
 
     def probe(self) -> DatabaseInfo:
         """Read server/extension metadata; do not create schema or install vector."""

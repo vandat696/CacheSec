@@ -15,7 +15,10 @@ def test_migration_replay_preserves_existing_records(quotation_database) -> None
     )
 
     with quotation_database.connection() as connection:
-        assert apply_migrations(connection) == ("001_create_quotations.sql",)
+        assert apply_migrations(connection) == (
+            "001_create_quotations.sql",
+            "002_creation_requests.sql",
+        )
         record = PostgresQuotationRepository(connection).create(
             QuotationCreate(
                 supplier_name="test", description="test", total_amount="1", currency="VND"
@@ -50,7 +53,7 @@ def test_unknown_or_modified_migration_is_refused(quotation_database) -> None:
 def test_failed_batch_rolls_back_schema_and_history_then_can_retry(quotation_database, monkeypatch):
     originals = migrate.load_migrations()
     broken = Migration(
-        "002_broken.sql", "CREATE TABLE quotation_demo.partial (id int); SELECT 1/0;", "x"
+        "003_broken.sql", "CREATE TABLE quotation_demo.partial (id int); SELECT 1/0;", "x"
     )
     with monkeypatch.context() as patch:
         patch.setattr(migrate, "load_migrations", lambda: (*originals, broken))
@@ -61,7 +64,10 @@ def test_failed_batch_rolls_back_schema_and_history_then_can_retry(quotation_dat
         assert connection.execute(
             "SELECT pg_catalog.to_regnamespace('quotation_demo')"
         ).fetchone() == (None,)
-        assert apply_migrations(connection) == ("001_create_quotations.sql",)
+        assert apply_migrations(connection) == (
+            "001_create_quotations.sql",
+            "002_creation_requests.sql",
+        )
 
 
 def test_parallel_migrators_apply_each_version_once(quotation_database) -> None:
@@ -75,4 +81,7 @@ def test_parallel_migrators_apply_each_version_once(quotation_database) -> None:
     with ThreadPoolExecutor(max_workers=2) as executor:
         futures = [executor.submit(run) for _ in range(2)]
         results = [future.result(timeout=15) for future in futures]
-    assert sorted(results, key=len) == [(), ("001_create_quotations.sql",)]
+    assert sorted(results, key=len) == [
+        (),
+        ("001_create_quotations.sql", "002_creation_requests.sql"),
+    ]

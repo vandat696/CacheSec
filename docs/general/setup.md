@@ -2,7 +2,7 @@
 
 ## Phạm vi hướng dẫn
 
-Các lệnh dưới đây chạy **ứng dụng hiện có** và migration/storage báo giá; chưa chạy workflow báo giá HTTP/UI, AI Coding Agent, Local Semantic Cache hoặc approval/deployment control. Bối cảnh nghiên cứu đã đổi sang AI-assisted software development ngày 2026-11-02; UI chatbot nội bộ vẫn được giữ để tái sử dụng. Xem [hiện trạng](project-status.md) và [lộ trình PoC](implementation-plan.md).
+Các lệnh dưới đây chạy frontend hiện có, control health/readiness và **API báo giá độc lập**; chưa chạy UI báo giá thật, AI Coding Agent, Local Semantic Cache hoặc approval/deployment control. Bối cảnh nghiên cứu đã đổi sang AI-assisted software development ngày 2026-11-02; UI chatbot nội bộ vẫn được giữ để tái sử dụng. Xem [hiện trạng](project-status.md) và [lộ trình PoC](implementation-plan.md).
 
 Chỉ xem UI mô phỏng cần frontend; không cần backend, Docker/database hoặc API key. Backend health có thể chạy độc lập database. Chỉ cần khởi động Docker khi muốn kiểm tra hạ tầng PostgreSQL/pgvector; hướng dẫn này không yêu cầu cài thêm dịch vụ/model SDK.
 
@@ -43,9 +43,34 @@ App dùng QUOTATION_DATABASE_URL trong backend/.env, không tự dùng DATABASE_
 .\.venv\Scripts\python.exe -m app.quotation_demo.migrate
 ```
 
-Lần đầu trả status = ok, scope = quotation_demo và applied = [001_create_quotations.sql]; chạy lại applied = [] và giữ dữ liệu. CLI chỉ báo ok sau commit. Lỗi cấu hình/kết nối/history trả exit code 1 và mã lỗi ngắn, không DSN/exception. Migration có transaction/advisory lock/checksum, không chạy tự động trong /health hoặc /ready. Schema, quy ước missing/null và phục hồi batch lỗi ở [kiến trúc dữ liệu](../system/architecture.md#lưu-trữ-báo-giá-đã-triển-khai).
+DB mới trả status = ok, scope = quotation_demo và applied = [001_create_quotations.sql, 002_creation_requests.sql]; DB đã có 001 chỉ áp dụng 002. Chạy lại applied = [] và giữ dữ liệu. CLI chỉ báo ok sau commit. Lỗi cấu hình/kết nối/history trả exit code 1 và mã lỗi ngắn, không DSN/exception. Migration có transaction/advisory lock/checksum, không chạy tự động khi khởi động API, /health hoặc /ready. Schema, quy ước missing/null và phục hồi batch lỗi ở [kiến trúc dữ liệu](../system/architecture.md#lưu-trữ-báo-giá-đã-triển-khai).
 
-Sử dụng [QuotationCreate/QuotationRecord](../../backend/app/quotation_demo/domain/quotation.py) và [PostgresQuotationRepository](../../backend/app/quotation_demo/persistence/postgres_quotation_repository.py) qua connection do caller quản lý; create/get/list chưa có HTTP endpoint. get không thấy trả None; list trả items/next_cursor theo UUID, mặc định 50 mục. Xuất model với exclude_unset=True để giữ thiếu expires_on khác null. Chưa có validation ngày hoặc cờ expiration_review, không ghi dữ liệu nghiên cứu/seed khi migrate.
+Store nội bộ [PostgresQuotationRepository](../../backend/app/quotation_demo/persistence/postgres_quotation_repository.py) nhận connection do caller quản lý; HTTP đi qua QuotationService để kiểm quyền và commit trước response. Xuất [model](../../backend/app/quotation_demo/domain/quotation.py) với exclude_unset=True để giữ thiếu expires_on khác null. Chưa có validation ngày hoặc cờ expiration_review, không ghi dữ liệu nghiên cứu/seed khi migrate.
+
+## 2b. API báo giá độc lập
+
+Trong backend/.env (được Git bỏ qua), cấu hình hai token **khác nhau** cho QUOTATION_FIXTURE_READER_TOKEN và QUOTATION_FIXTURE_OPERATOR_TOKEN. Không có giá trị mặc định; API từ chối khởi động khi thiếu/không hợp lệ. Sinh mỗi token bằng secrets.token_urlsafe(32), lưu trực tiếp vào file local hoặc secret manager của máy; không đưa token vào Git, URL, command argument hoặc log. Ví dụ sau chỉ bổ sung giá trị còn thiếu và không in secrets; chạy trong backend, sau khi có .env và QUOTATION_DATABASE_URL:
+
+```powershell
+@'
+from pathlib import Path
+from secrets import token_urlsafe
+from dotenv import dotenv_values, set_key
+path = Path('.env')
+values = dotenv_values(path)
+for name in ('QUOTATION_FIXTURE_READER_TOKEN', 'QUOTATION_FIXTURE_OPERATOR_TOKEN'):
+    if not values.get(name):
+        set_key(path, name, token_urlsafe(32))
+'@ | .\.venv\Scripts\python.exe -
+
+.\.venv\Scripts\python.exe -m uvicorn app.quotation_demo.main:create_app --factory --host 127.0.0.1 --port 8001
+```
+
+App dùng http://127.0.0.1:8001; /docs và /openapi.json mô tả API, chọn Authorize để dùng Bearer token local. Control vẫn ở cổng 8000 với app.main:app; app báo giá không yêu cầu chạy control. Dùng một worker cho registry fixture trong process. Đây là identity fixture local, chưa phải đăng nhập production; không công khai service này ra mạng.
+
+Ba thao tác là POST /api/v1/quotations (operator), GET danh sách và GET /api/v1/quotations/{UUID} (reader/operator). POST cần Idempotency-Key 1–128 ký tự ASCII; retry cùng key/body trả cùng record, đổi body với key cũ trả 409. Cả replay cũng kiểm quyền hiện tại. Cap QUOTATION_MAX_BODY_BYTES mặc định 65536, QUOTATION_MAX_PAGE_SIZE mặc định 100; chỉ cho phép hạ các cap này. Danh sách mặc định 50 mục, hoặc cap thấp hơn; cursor UUID không phải thứ tự thời gian.
+
+[Contract API](../system/api.md#http-báo-giá-đã-triển-khai) sở hữu schema/lỗi; [authorization](../system/authorization.md#quyền-api-báo-giá-đã-triển-khai) sở hữu quyền/freshness. Hai identity đọc cùng dataset app, chưa có phân vùng tenant hoặc quyền Reviewer/deploy. Chưa nối frontend/CORS cho app báo giá; không dán token vào frontend source hoặc cấu hình public. Migration không tự seed/reset; metadata retry giữ nguyên, chưa có TTL/GC tự động.
 
 ## 3. Frontend (terminal khác)
 
@@ -115,7 +140,7 @@ Trong backend:
 
 Test PostgreSQL thật là opt-in: đặt CACHESEC_TEST_DATABASE_URL trong môi trường terminal tới DB phát triển/test rồi chạy `.\.venv\Scripts\python.exe -m pytest tests/shared/test_postgres_integration.py`. Biến này không đọc từ .env, không mặc định dùng DATABASE_URL của ứng dụng. Test đọc server/extension metadata và round-trip với bảng TEMP chỉ tồn tại trong session; không xóa dữ liệu/bảng app. Không đặt biến thì hai test này skip, không có nghĩa kết nối DB thật đã đạt. Đây là test hạ tầng, không phải fixture thực nghiệm báo giá.
 
-Với cùng biến môi trường, chạy `.\.venv\Scripts\python.exe -m pytest tests/quotation_demo` để kiểm tra domain/store/migrations. Các test PostgreSQL báo giá tạo database mới tên `cachesec_test_quotations_<UUID>` trên server đã chỉ định; user test cần CREATEDB. Fixture chỉ dọn database do chính nó tạo thành công, không reset/drop database được cấu hình trong URL. Test kiểm tra commit/rollback, migration replay/checksum/concurrency, SQL parameters, phân trang và missing/null/ngày sai; dữ liệu này không phải fixture benchmark. Thiếu biến thì phần PostgreSQL skip, phần domain vẫn chạy.
+Với cùng biến môi trường, chạy `.\.venv\Scripts\python.exe -m pytest tests/quotation_demo` để kiểm tra domain/application/identity/HTTP/store/migrations. Các test PostgreSQL báo giá tạo database mới tên `cachesec_test_quotations_<UUID>` trên server đã chỉ định; user test cần CREATEDB. Fixture chỉ dọn database do chính nó tạo thành công, không reset/drop database được cấu hình trong URL. Test kiểm tra commit/rollback (kể cả lỗi lúc commit), quyền/thu hồi/replay, retry HTTP song song, cap body thực, migration checksum/concurrency, phân trang và missing/null/ngày sai; dữ liệu này không phải fixture benchmark. Thiếu biến thì phần PostgreSQL skip, phần không cần DB vẫn chạy. Token cố định trong tests chỉ là giá trị test, không phải credential local đang dùng.
 
 Frontend dùng package-lock.json để cố định dependencies đã resolve. Python dùng requirements-dev.lock.txt chụp phiên bản môi trường Windows/Python 3.12 hiện tại; requirements-dev.txt mô tả dependencies trực tiếp để cập nhật có chủ đích. Chưa khóa môi trường nghiên cứu hoặc kiểm chứng đa nền tảng, chưa phải môi trường benchmark hoàn chỉnh.
 
@@ -126,6 +151,6 @@ Tài liệu tham khảo: [Next.js installation](https://nextjs.org/docs/app/gett
 - Frontend: Next.js App Router, TypeScript strict, CSS thuần, ESLint và npm lockfile; Chat nội bộ và tiếp nhận/phân loại tài liệu trong phiên trên hệ thiết kế Nói. Chưa có upload hoặc phản hồi AI thật.
 - Backend: FastAPI, CORS local/Pydantic Settings, health và PostgreSQL readiness; adapter Psycopg với transaction context, cấu hình secret và timeout; requirements runtime/dev và bản freeze dependencies cho môi trường đã cài.
 - Database: Docker Compose với PostgreSQL 17 + pgvector 0.8.7, cổng chỉ bind localhost, persistent volume, init extension vector.
-- Báo giá: schema quotation_demo, migration CLI, domain models và PostgreSQL store với config riêng; chưa HTTP/UI/runtime validation.
-- Chưa có authentication, LLM/embedding provider, cache, schema control/artifact hoặc tích hợp UI/API.
+- Báo giá: schema quotation_demo, migration 001/002, domain/application, HTTP tạo/đọc/phân trang và PostgreSQL store/session với config riêng; Bearer fixture reader/operator. Chưa UI/runtime validation ngày.
+- Chưa có authentication production, authority control/reviewer, LLM/embedding provider, cache, schema control/artifact hoặc tích hợp UI/API.
 - Chưa thêm Dexie/model SDK vì chưa dùng tới; chưa chốt storage server cache.

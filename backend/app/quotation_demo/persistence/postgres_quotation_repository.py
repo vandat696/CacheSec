@@ -1,3 +1,4 @@
+import hashlib
 import json
 from typing import Any
 from uuid import UUID, uuid4
@@ -6,6 +7,11 @@ from psycopg import Connection
 from psycopg.rows import dict_row
 from psycopg.types.json import Json
 
+from app.quotation_demo.application.quotation_repository import (
+    QuotationCreationIdentity,
+    QuotationIdempotencyConflict,
+    QuotationPersistenceError,
+)
 from app.quotation_demo.domain.quotation import QuotationCreate, QuotationPage, QuotationRecord
 
 _COLUMNS = (
@@ -62,6 +68,41 @@ class PostgresQuotationRepository:
             )
             row = cursor.fetchone()
         return _record(row) if row is not None else None
+
+    def create_once(
+        self, data: QuotationCreate, identity: QuotationCreationIdentity
+    ) -> QuotationRecord:
+        key_hash = hashlib.sha256(identity.idempotency_key.encode("ascii")).hexdigest()
+        canonical_payload = json.dumps(
+            data.model_dump(mode="json", exclude_unset=True),
+            sort_keys=True,
+            separators=(",", ":"),
+            ensure_ascii=True,
+            allow_nan=False,
+        )
+        payload_hash = hashlib.sha256(canonical_payload.encode("utf-8")).hexdigest()
+        lock_material = json.dumps([identity.principal_id, identity.scope_id, key_hash])
+        lock_id = int.from_bytes(hashlib.sha256(lock_material.encode()).digest()[:8], signed=True)
+        self._connection.execute("SELECT pg_catalog.pg_advisory_xact_lock(%s)", (lock_id,))
+        existing = self._connection.execute(
+            "SELECT payload_hash, quotation_id FROM quotation_demo.creation_requests "
+            "WHERE principal_id=%s AND scope_id=%s AND key_hash=%s",
+            (identity.principal_id, identity.scope_id, key_hash),
+        ).fetchone()
+        if existing:
+            if existing[0] != payload_hash:
+                raise QuotationIdempotencyConflict("Idempotency key was used with another payload.")
+            record = self.get(existing[1])
+            if record is None:
+                raise QuotationPersistenceError("Creation request has no quotation record.")
+            return record
+        record = self.create(data)
+        self._connection.execute(
+            "INSERT INTO quotation_demo.creation_requests "
+            "(principal_id,scope_id,key_hash,payload_hash,quotation_id) VALUES (%s,%s,%s,%s,%s)",
+            (identity.principal_id, identity.scope_id, key_hash, payload_hash, record.id),
+        )
+        return record
 
     def list(self, *, limit: int = 50, after: UUID | None = None) -> QuotationPage:
         if type(limit) is not int or limit < 1:

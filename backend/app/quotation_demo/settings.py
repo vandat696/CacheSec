@@ -10,3 +10,7 @@ class QuotationSettings(BaseSettings):
     database_url: SecretStr | None = Field(default=None, repr=False)
     database_connect_timeout_seconds: int = Field(default=3, ge=2)
     database_statement_timeout_ms: int = Field(default=1000, ge=1)
+    fixture_reader_token: SecretStr | None = Field(default=None, repr=False)
+    fixture_operator_token: SecretStr | None = Field(default=None, repr=False)
+    max_page_size: int = Field(default=100, ge=1, le=100)
+    max_body_bytes: int = Field(default=65536, ge=1, le=65536)

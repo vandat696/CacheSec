@@ -2,7 +2,7 @@
 
 ## Trạng thái và nguyên tắc
 
-Lập ngày 2026-11-02; cập nhật tiến độ ngày **2026-11-07**. Trạng thái từng gói T01–T17 nằm ở checklist; dấu chọn chỉ xác nhận đầu ra và kiểm chứng thuộc gói đó. **T02 đã hoàn thành đặc tả thiết kế v0.2**; T01 còn chờ điều kiện nghiên cứu. Đã có nền PostgreSQL/readiness và, theo yêu cầu, schema/migration/domain/store báo giá tạo/đọc/phân trang. Đây là lát cắt app của T03/T05/T07; chưa hoàn thành toàn bộ các gói hoặc chọn thay policy/control còn mở. UI IDE vẫn mô phỏng; chưa có workflow backend/cache/gate hoặc chạy thực nghiệm.
+Lập ngày 2026-11-02; cập nhật tiến độ ngày **2026-11-07**. Trạng thái từng gói T01–T17 nằm ở checklist; dấu chọn chỉ xác nhận đầu ra và kiểm chứng thuộc gói đó. **T02 đã hoàn thành đặc tả thiết kế v0.2**; T01 còn chờ điều kiện nghiên cứu. Đã có nền PostgreSQL/readiness và API báo giá tạo/đọc/phân trang độc lập, quyền Bearer fixture, application/ports và retry idempotent. Đây là lát cắt app của T03–T07; chưa hoàn thành toàn bộ các gói hoặc chọn thay policy/control còn mở. UI IDE vẫn mô phỏng; chưa có workflow backend/cache/gate hoặc chạy thực nghiệm.
 
 Phạm vi và câu hỏi mở do [tổng quan](overview.md) sở hữu; module/runtime do [kiến trúc](../system/architecture.md) sở hữu, request/response/thao tác do [contract API](../system/api.md) sở hữu; quyền/gate do [phân quyền](../system/authorization.md) sở hữu; protocol/fixture/acceptance do [đánh giá](../evaluation/design.md) sở hữu. Kế hoạch này quản lý việc cần làm và điều kiện nghiệm thu, không thay đặc tả của các tài liệu đó.
 
@@ -33,7 +33,7 @@ Không tự chọn thay người dùng/giảng viên các giá trị ảnh hư�
 ### T02 — Thiết kế module backend và contract API/cache
 
 - [x] Hoàn thành **đặc tả thiết kế T02 v0.2**. **Phụ thuộc:** các đầu vào kỹ thuật T01 đã chọn; không chốt thay phần nghiên cứu còn chờ.
-- **Trạng thái:** module/runtime và vị trí source tại architecture; [contract v0.2](../system/api.md) có types, request/response, quyền theo thao tác, transitions, retry/lỗi và bảng ca đối chiếu. Đã rà tài liệu, liên kết và ví dụ JSON; không phải test implementation. Chuyển sang T03 để thiết kế ERD; đối chiếu T03/control T04 có thể yêu cầu version mới. Grants/freshness/integrity, sandbox/activation/deadlines và limits còn mở, không bị đóng ngầm bởi dấu chọn. Chưa có endpoint/schema được triển khai.
+- **Trạng thái:** [contract v0.2](../system/api.md) có types, quyền, transitions, retry/lỗi và bảng ca đối chiếu; phần API/schema báo giá đã triển khai sau bước thiết kế. Grants/freshness/limits báo giá đã chốt riêng; mapping/integrity, sandbox/activation/deadlines và giới hạn control/cache vẫn còn mở. Dấu chọn xác nhận đầu ra thiết kế, không xác nhận toàn bộ API mục tiêu đã chạy.
 - **Làm:** phân ranh source/entrypoint ứng dụng báo giá, control Agent/IDE và lõi cache; định nghĩa luồng request/context/proposal/test/approval/deployment. Đặc tả API theo thao tác, request/response, ID/revision, lỗi, trạng thái bất đồng bộ và cách retry không tạo thao tác trùng. Contract cache không chứa kiểu dữ liệu nghiệp vụ hoặc browser session.
 - **Đầu ra:** sơ đồ phụ thuộc/runtime và ranh giới adapter tại architecture; contract dữ liệu/API, ma trận quyền và state transitions tại api.md.
 - **Nghiệm thu:** đi được cả đường thành công, reject/error/timeout và nguồn đổi; frontend không tự ghi Approved/ALLOW, Agent không có tool approve/deploy. Contract chưa phải endpoint đang chạy hoặc SDK đã phát hành.
@@ -49,6 +49,7 @@ Không tự chọn thay người dùng/giảng viên các giá trị ảnh hư�
 ### T04 — Thiết kế quyền, executor, gate và trace
 
 - [ ] Hoàn thành T04. **Phụ thuộc:** T01–T03.
+- **Trạng thái:** đã chốt và triển khai quyền/freshness riêng API báo giá: reader/operator, Bearer fixture backend quản lý, kiểm quyền đầu mỗi thao tác; cap body/page/key. Mapping repo/control/reviewer, executor, integrity, gate và audit vẫn chưa chốt/triển khai; không dùng identity app làm quyền deploy.
 - **Làm:** chốt nguồn identity/authority (identity fixture do backend kiểm soát nếu được chọn phải ghi là mô phỏng), repo/path/tool scope, freshness/revoke, offline policy, trusted provenance/integrity; chọn cơ chế cô lập source/test và giới hạn lệnh/tài nguyên/timeout. Đặc tả exact-change approval, artifact bất biến, kiểm tra cùng digest tại activation và mọi đường bypass thuộc PoC. Định nghĩa event/ID/digest/error tối thiểu để instrument ngay từ đầu.
 - **Đầu ra:** control/threat boundary và test matrix trong authorization; event schema/nguồn đo trong evaluation; cập nhật contract/schema ở T02–T03 nếu cần.
 - **Nghiệm thu:** nêu được cách block chưa duyệt, sai quyền, mã/artifact/evidence đổi sau duyệt, verifier lỗi và source stale; gate không thuộc cache. Process riêng chưa được xem là đủ sandbox. Không chạy Agent hoặc kích hoạt artifact trước khi các điều kiện an toàn phụ thuộc đã được khóa.
@@ -56,7 +57,7 @@ Không tự chọn thay người dùng/giảng viên các giá trị ảnh hư�
 ### T05 — Nối database và nền lưu trữ backend
 
 - [ ] Hoàn thành T05. **Phụ thuộc:** T02–T04 đã đủ điều kiện triển khai.
-- **Trạng thái:** nền kết nối/readiness đã kiểm chứng PostgreSQL thật. Đã có migration báo giá 001, history/checksum/transaction lock, config QUOTATION_ riêng và PostgreSQL store. Đã áp dụng local, chạy lại no-op; test DB tạm kiểm tra persistence/rollback/concurrency. Chưa hoàn thành persistence control/artifact hoặc T04; T05 vẫn chưa hoàn thành toàn bộ.
+- **Trạng thái:** đã kiểm chứng PostgreSQL thật; migration báo giá 001/002 với history/checksum/transaction lock, config QUOTATION_ riêng, repository/session và metadata retry nguyên tử. Áp dụng local/replay no-op; test DB tạm kiểm tra HTTP, retry song song và rollback/đóng connection khi commit lỗi. Chưa hoàn thành persistence control/artifact hoặc toàn T04.
 - **Làm:** cấu hình kết nối, migration/constraints và adapter lưu trữ cần dùng ngay; kiểm chứng PostgreSQL/extension thực tế nếu được chọn. Tách liveness/readiness, transaction/error handling và cấu hình phiên bản. Chưa xây sẵn bảng, service hoặc dependency cho mọi biến thể mở rộng.
 - **Đầu ra:** migration tối thiểu, persistence adapters, hướng dẫn khởi động và reset dữ liệu phát triển trong phạm vi rõ ràng.
 - **Nghiệm thu:** migrate/read/write và lỗi kết nối được kiểm tra trên DB thật; migration rollback/forward hoặc khôi phục theo cách đã thiết kế. Không giả readiness thành công khi DB lỗi; không tự xóa volume/dữ liệu ngoài test được cho phép.
@@ -64,6 +65,7 @@ Không tự chọn thay người dùng/giảng viên các giá trị ảnh hư�
 ### T06 — Thực thi identity, scope và trace nền
 
 - [ ] Hoàn thành T06. **Phụ thuộc:** T04–T05.
+- **Trạng thái:** API báo giá có registry fixture, kiểm capability hiện tại trước thao tác/replay và request ID backend. Đã test deny/giả header/thu hồi/authority lỗi; hai identity đọc cùng dataset app, chưa có phân vùng tenant/repo, authority reviewer/control hoặc event persistence/audit nghiên cứu.
 - **Làm:** middleware/dependency lấy identity đáng tin cậy, kiểm tra tenant/repo/action; lưu policy/config versions và tạo request/run/event IDs. Bổ sung thời gian thực tế, outcome/reason, lỗi/timeout và redaction cho các thao tác đã có; mỗi năng lực sau phải mở rộng trace của chính nó.
 - **Đầu ra:** authorization service nhỏ, bộ kiểm tra scope và event persistence theo contract; không tạo policy engine tổng quát.
 - **Nghiệm thu:** giả tenant/role/scope, thiếu quyền và authority unavailable bị chặn; trace success/deny/error không lộ secrets. Chưa có nghiệp vụ không được sinh event cache/test/deploy giả.
@@ -71,7 +73,7 @@ Không tự chọn thay người dùng/giảng viên các giá trị ảnh hư�
 ### T07 — Dựng ứng dụng báo giá nền và fixture duy nhất
 
 - [ ] Hoàn thành T07. **Phụ thuộc:** T01, T05–T06 và contract app ở T02.
-- **Trạng thái:** đã có domain/storage tạo/đọc/phân trang độc lập control/HTTP/cache. Chưa có entrypoint API, runtime validation, UI báo giá hoặc fixture nghiên cứu; chưa cài rule expiration_review vào app nền.
+- **Trạng thái:** đã có domain/application/storage và entrypoint API tạo/đọc/phân trang độc lập control/Agent/cache; Bearer fixture và idempotency chạy thật. Chưa có runtime validation ngày, UI báo giá hoặc fixture/oracle nghiên cứu; chưa cài rule expiration_review vào app nền.
 - **Làm:** app tiếp nhận/danh sách/chi tiết/validation tối thiểu chạy độc lập, **chưa có rule mới**. Tạo một fixture manifest có nhãn, mốc thời gian, phần ca gate/reuse liên kết và oracle theo contract đã xác nhận; backend đọc schema dùng chung, không import script nghiên cứu.
 - **Đầu ra:** source app nền, entrypoint/API riêng với control, test nền và manifest có version/digest; ghi revision gốc và cách tái tạo trạng thái ban đầu.
 - **Nghiệm thu:** app chạy không import code Agent/IDE/cache; test hành vi cũ pass. Ca kiểm tra rule mới chứng minh thiếu sót có chủ đích, phân biệt expected failure của app gốc với lỗi của workflow đã hoàn thành. Fixture UI cũ không trở thành fixture thực nghiệm; các test double đơn vị không phải tập benchmark thứ hai.
@@ -156,7 +158,7 @@ Không tự chọn thay người dùng/giảng viên các giá trị ảnh hư�
 
 ## Bước tiếp theo ngay lúc này
 
-Lát cắt schema/migration/storage báo giá đã có code và kiểm chứng DB thật. Gói tiếp theo là identity/scope tối thiểu và API báo giá độc lập để nối giao diện; cần đối chiếu quyền T04/T06 trước công khai thao tác, không coi store nội bộ là authorization. T03 tiếp tục phần dữ liệu control/artifact; T01 giữ riêng fixture/oracle/baseline/acceptance đang chờ xác nhận. Bảng dưới là thứ tự review đầu vào; chi tiết câu hỏi nằm tại [overview](overview.md#giả-định-và-câu-hỏi-mở).
+Lát cắt API báo giá/quyền fixture/idempotency đã có code và kiểm chứng HTTP → PostgreSQL thật. Tiếp theo hoàn thiện validation nền và fixture/oracle T07 sau khi xác nhận các ràng buộc còn mở; không cài trước rule expiration_review. T03–T04 tiếp tục thiết kế dữ liệu control/artifact và executor/gate trước triển khai phụ thuộc. T01 giữ riêng baseline/acceptance đang chờ cô. Bảng dưới là thứ tự review đầu vào; chi tiết tại [overview](overview.md#giả-định-và-câu-hỏi-mở).
 
 | Trước bước phụ thuộc | Cần khóa |
 | --- | --- |
@@ -165,6 +167,6 @@ Lát cắt schema/migration/storage báo giá đã có code và kiểm chứng D
 | T09–T11 | Đã chọn Context Cache/browser cho web đầu tiên; còn model/embedding, storage engine, similarity threshold, TTL/invalidation và phạm vi chia sẻ |
 | T16–T17 | Acceptance rule, baseline tools, số lặp/thứ tự, reset/preload, nguồn đo và expected trace; không điều chỉnh theo kết quả |
 
-Đường dẫn từng module/entrypoint sẽ chốt ở T02. Giữ nguyên định danh/path hiện có trừ khi thay đổi có lý do thiết kế được ghi rõ; không đổi package/repository chỉ để đổi bối cảnh. Các đường dẫn cũ như `backend/app/quotation_demo/` và `research/datasets/quotation_fixture_v1.json` vẫn chỉ là ví dụ chưa tạo, không phải yêu cầu cấu trúc đã chốt.
+Đường dẫn implementation hiện tại ở [bản đồ source](../system/code-organization.md); backend/app/quotation_demo đã có thật. Giữ định danh/path hiện có trừ khi thay đổi có lý do thiết kế; không đổi package/repository chỉ để đổi bối cảnh. research/datasets/quotation_fixture_v1.json vẫn là ví dụ chưa tạo, không phải fixture nghiên cứu đã chốt.
 
 UI Thiết lập cũ còn manifest tài liệu nội bộ và TTL/threshold/training intent nháp; không dùng chúng làm thông số PoC mặc định. Backend không import script nghiên cứu. Không tự commit, push, xóa dữ liệu hoặc kích hoạt/deploy ra môi trường ngoài phạm vi đã được yêu cầu.

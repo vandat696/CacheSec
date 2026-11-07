@@ -45,18 +45,35 @@ backend/app/
     health.py                                  router operational + response contracts
   shared/postgres.py                           PostgresDatabase, connection lifecycle
   quotation_demo/
+    main.py                                    composition root API riêng (--factory)
     settings.py                                cấu hình QUOTATION_ riêng
     domain/quotation.py                        QuotationCreate/Record/Page
+    application/
+      quotation_service.py                     use cases, quyền, transaction boundary
+      quotation_access.py                      capability và port quyền
+      quotation_repository.py                  ports repository/session, lỗi và retry identity
+    identity/fixture_registry.py               authority fixture, grant/revoke trong process
+    http/
+      application.py                           lắp router/middleware và ánh xạ lỗi
+      router.py                                HTTP input/output và Bearer dependency
+      contracts.py                             envelope/list response
+      request_context.py                       request ID, cap body bytes
+      service_provider.py                      port cấp service theo credential
+      fixture_service_provider.py              ghép identity + session + service
     persistence/
       postgres_quotation_repository.py          PostgresQuotationRepository
+      postgres_quotation_sessions.py            commit/rollback và lỗi persistence
       migrations.py                            history/checksum/transaction/lock
       sql/001_create_quotations.sql              SQL đã version hóa
+      sql/002_creation_requests.sql              metadata idempotency riêng bảng báo giá
     migrate.py                                 CLI composition root
 ```
 
-Domain không nhập persistence/HTTP/control. Repository nhận connection qua constructor, caller quản lý transaction; shared adapter không nhập domain/control. tests/control, tests/shared và tests/quotation_demo đi theo module sở hữu. Không tạo service/base class/controller rỗng khi chưa có logic tương ứng.
+Domain không nhập persistence/HTTP/control. Application sở hữu các Protocol nhỏ cho quyền và repository/session, không nhập FastAPI/Psycopg. QuotationService nhận dependencies qua constructor, kiểm quyền trước mở session và chỉ trả thành công sau commit; adapter session chuyển lỗi driver sang lỗi port, không che lỗi lập trình. Repository nhận connection, không tự cấp quyền hoặc commit. HTTP chỉ xử lý giao thức/ánh xạ lỗi; factory app ghép implementations, không import control/Agent/cache. tests/control, tests/shared và tests/quotation_demo đi theo module sở hữu.
 
-OOP dùng cho adapter có trạng thái/phụ thuộc (PostgresDatabase, PostgresQuotationRepository); logic thuần giữ function. Đóng gói và hướng phụ thuộc quan trọng hơn số class hoặc tầng kế thừa. Giữ lệnh uvicorn app.main:app, python -m app.quotation_demo.migrate; không đổi API /health, /ready, env, schema hoặc version/checksum migration. Import Python nội bộ chuyển sang đường dẫn mới; không giữ alias app.database/app.config.
+Đây là cách áp dụng OOP/SOLID theo trách nhiệm thực tế: capability port nhỏ, thay authority/storage qua composition, không kế thừa base class chung. Test double và PostgreSQL cùng được kiểm tra commit/rollback/retry; fake không được giả thành công khi contract yêu cầu lỗi. Không tạo interface cho từng function hoặc tầng service/controller rỗng.
+
+OOP dùng cho đối tượng có trạng thái/phụ thuộc; logic thuần giữ function. Đóng gói và hướng phụ thuộc quan trọng hơn số class hoặc tầng kế thừa. Giữ lệnh uvicorn app.main:app, python -m app.quotation_demo.migrate; app có lệnh uvicorn app.quotation_demo.main:create_app --factory riêng. Không đổi /health, /ready hoặc checksum migration đã áp dụng; schema mới dùng migration forward. Không giữ alias app.database/app.config.
 
 ## UI template tham chiếu
 

@@ -2,7 +2,7 @@
 
 ## Trạng thái và ranh giới
 
-Đây là **thiết kế mục tiêu**, chưa có authorization/verification/approval/deployment control trong code hiện tại. FastAPI mới có health và CORS local; UI RBAC/ABAC không thực thi quyền. Safety property duy nhất từ giảng viên là: **không triển khai thay đổi quy tắc validation nếu chưa có người có thẩm quyền phê duyệt tường minh chính xác thay đổi đó**.
+Phần quyền API báo giá đã triển khai bằng identity fixture backend; cache verification, quyền control/reviewer và approval/deployment gate bên dưới vẫn là **thiết kế mục tiêu**. UI RBAC/ABAC không thực thi quyền. Safety property duy nhất từ giảng viên là: **không triển khai thay đổi quy tắc validation nếu chưa có người có thẩm quyền phê duyệt tường minh chính xác thay đổi đó**.
 
 | Cơ chế | Quyết định | Không được suy ra |
 | --- | --- | --- |
@@ -14,7 +14,22 @@ Duyệt code không phải duyệt báo giá. Các kiểm soát quyền/cache ph
 
 ## Identity, RBAC/ABAC và authorized retrieval
 
-Identity/tenant lấy từ nguồn backend xác thực; client không được tự chọn tenant/role hoặc sửa metadata để cấp quyền. Ngày 2026-11-07 người dùng chọn **identity fixture do backend quản lý cho PoC**, phải ghi là mô phỏng identity, không gọi là production authentication. Mapping principal/tenant/capability và cơ chế chọn/kiểm tra identity trên request chưa chốt ở T04; lựa chọn fixture không cho phép tin role tự khai ở UI. Approval gate vẫn phải thực thi thật ở backend/control với đúng artifact, không trở thành mô phỏng chỉ vì identity là fixture.
+Identity/tenant lấy từ nguồn backend xác thực; client không được tự chọn tenant/role hoặc sửa metadata để cấp quyền. Ngày 2026-11-07 người dùng chọn **identity fixture do backend quản lý cho PoC**, phải ghi là mô phỏng identity, không gọi là production authentication. Mapping control/repo/tenant vẫn chờ T04; phần API báo giá đã chốt riêng như dưới đây. Approval gate vẫn phải thực thi thật ở backend/control với đúng artifact, không trở thành mô phỏng chỉ vì identity là fixture.
+
+### Quyền API báo giá đã triển khai
+
+Theo lựa chọn người dùng, [FixtureIdentityRegistry](../../backend/app/quotation_demo/identity/fixture_registry.py) có hai principal trong scope cố định quotation_demo:
+
+| Principal | Capability |
+| --- | --- |
+| quotation-reader | quotation.read: danh sách và chi tiết |
+| quotation-operator | quotation.read và quotation.create |
+
+Client gửi Bearer token ngẫu nhiên cấu hình riêng qua QUOTATION_FIXTURE_READER_TOKEN / QUOTATION_FIXTURE_OPERATOR_TOKEN; không có token/tài khoản mặc định. Hai token phải khác nhau và ít nhất 32 ký tự; hướng dẫn local sinh bằng nguồn ngẫu nhiên mật mã. Backend giữ digest để đối chiếu constant-time; không nhận role/tenant/capability từ body hoặc header làm authority. Thiếu/sai/thu hồi token trả 401; đúng identity nhưng thiếu capability trả 403. Không có quyền Reviewer, approve hoặc deploy trong các grants này.
+
+Quyền được kiểm tra **ở đầu mỗi thao tác**, kể cả GET và idempotent replay, trước mở transaction. Handle đã authenticate cũng phải đọc lại registry khi require; không dùng quyết định quyền cũ. Thu hồi trong registry chặn thao tác tiếp theo, không hủy thao tác đã qua gate hoặc thu lại nội dung đã đọc. Registry và thu hồi hiện chỉ trong một process; khởi động lại nạp cấu hình token mới. Không có endpoint tự cấp/thu hồi quyền, đồng bộ nhiều worker, token expiry hoặc đăng nhập production; đổi/loại token cấu hình cần restart process. Chạy local một worker theo [setup](../general/setup.md#2b-api-báo-giá-độc-lập).
+
+Đây là **một dataset ứng dụng dùng chung**, không có cột tenant hoặc lọc theo tenant trên quotations. Cả hai principal đọc cùng tập dữ liệu. Scope trong idempotency metadata do backend gán, không chứng minh đã triển khai phân vùng dữ liệu nhiều tenant. Freshness này chỉ áp dụng API báo giá, chưa chốt thay policy cache/control/reviewer/offline. Request ID và metadata tạo báo giá chưa phải audit trail nghiên cứu bền vững.
 
 Capability tối thiểu trong thiết kế: Developer đọc repo/đề xuất/chạy test trong scope; Reviewer duyệt đúng change trong repo được cấp; Deployment Control thực thi deployment có approval. Ngày 2026-11-07 người dùng cho phép Developer tự duyệt nếu có quyền Reviewer hiện tại; không bắt buộc danh tính reviewer khác proposer hoặc ba tài khoản riêng. Backend phải kiểm tra quyền duyệt hiện tại trên đúng repo/change, nhận quyết định tường minh và ghi actor/artifact/evidence; vai trò Developer đơn thuần không đủ quyền duyệt. Đây là lựa chọn policy PoC của người dùng, không phải yêu cầu mới đã được giảng viên xác nhận.
 
@@ -80,4 +95,4 @@ Bốn hành vi tối thiểu trong yêu cầu đánh giá người dùng cung c�
 
 Chỉ dùng source/báo giá/identity giả lập. Log tối thiểu đủ trace, không chứa secrets hoặc nội dung ngoài quyền. Unsafe cache nếu có chỉ là đối chứng mô phỏng tùy chọn, không mặc định thêm vào PoC. Zero unauthorized/stale reuse hoặc không bypass trong bộ thử là quan sát hữu hạn, không phải bảo đảm tuyệt đối.
 
-Nguồn identity, policy RBAC/ABAC, reviewer authority, approval binding/integrity, freshness/revoke/offline, deploy target/control và audit durability còn cần xác nhận ở [câu hỏi mở](../general/overview.md#giả-định-và-câu-hỏi-mở).
+Ngoài lát cắt quyền báo giá ở trên, mapping identity/policy RBAC/ABAC cho repo/control, reviewer authority, approval binding/integrity, freshness/revoke/offline cho cache/gate, deploy target/control và audit durability còn cần xác nhận ở [câu hỏi mở](../general/overview.md#giả-định-và-câu-hỏi-mở).

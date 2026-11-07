@@ -27,11 +27,11 @@ Bối cảnh đã cập nhật ngày **2026-11-02**. Frontend có thêm **Develo
 | Chat `/` | Lịch sử, bản nháp, Không cache/Cache/Cả hai với prompt chung; modal thông số từng lượt | Phản hồi mô phỏng, chưa AI/RAG hoặc cache thật |
 | Số liệu `/metrics` | Ba tab, biểu đồ/bảng/chi tiết; mặc định 24 truy vấn giả, nguồn phiên riêng tại `/metrics?source=session` | Fixture xem UI, không phải kết quả thực nghiệm |
 | Tài liệu `/documents` | Chọn/thả, phân loại, tìm/lọc tệp trong phiên | Chờ tải lên; chưa đọc/ingest/upload hoặc authorized retrieval |
-| Backend | FastAPI `GET /health`, `GET /ready`, adapter kết nối PostgreSQL/Psycopg, CORS local | Readiness chỉ kiểm tra PostgreSQL; chưa auth, API nghiệp vụ, Agent hoặc gate |
-| Báo giá | Domain models, migration và PostgreSQL store tạo/đọc/phân trang, config riêng | Chưa API/UI/runtime validation hoặc rule mới |
+| Backend control | FastAPI `GET /health`, `GET /ready`, adapter kết nối PostgreSQL/Psycopg, CORS local | Readiness chỉ kiểm tra PostgreSQL; chưa authority control, Agent hoặc gate |
+| Báo giá | API tạo/đọc/phân trang độc lập, application/ports, Bearer fixture reader/operator, PostgreSQL và retry idempotent | Identity local PoC, một dataset dùng chung; chưa UI/runtime validation ngày hoặc rule mới |
 | Hạ tầng | PostgreSQL 17.11/pgvector 0.8.7 qua Compose; đã áp dụng migration báo giá và kiểm chứng DB thật | Chưa schema/control/artifact của workflow |
 
-App báo giá hiện có phần domain/storage, chưa chạy thành ứng dụng HTTP/UI độc lập. Chưa có fixture báo giá đóng băng, Local Semantic Cache, embedding/matching/verification, RBAC/ABAC thực thi, model adapter, backend approval/deployment control, audit log hoặc runner thực nghiệm. Change Review/Phê duyệt/Nhật ký trong Workspace mới là bản mẫu; nút Triển khai luôn khóa. Dữ liệu demo không phải số đo hoặc bằng chứng quyền. Chat/tệp/cấu hình nháp mất khi tải lại; chọn RBAC/ABAC trong UI không cấp quyền.
+App báo giá chạy HTTP độc lập với quyền fixture được backend kiểm tra; chưa nối giao diện. Chưa có fixture báo giá đóng băng, Local Semantic Cache, embedding/matching/verification, phân quyền repo/control, model adapter, backend approval/deployment control, audit log hoặc runner thực nghiệm. Change Review/Phê duyệt/Nhật ký trong Workspace mới là bản mẫu; nút Triển khai luôn khóa. Dữ liệu demo không phải số đo hoặc bằng chứng quyền. Chat/tệp/cấu hình nháp mất khi tải lại; chọn RBAC/ABAC trong UI không cấp quyền.
 
 ## Công nghệ và tổ chức
 
@@ -62,7 +62,7 @@ python -m venv .venv
 .\.venv\Scripts\python.exe -m uvicorn app.main:app --reload --host 127.0.0.1 --port 8000
 ```
 
-Frontend: http://127.0.0.1:3000; bản xem trước mới: http://127.0.0.1:3000/workspace. Health: http://127.0.0.1:8000/health. UI mô phỏng không cần API key/database. Các lệnh chưa chạy workflow báo giá/Agent thật. Xem [setup](docs/general/setup.md) cho yêu cầu môi trường, Compose và các lệnh lint/typecheck/test/build/browser smoke.
+Frontend: http://127.0.0.1:3000; bản xem trước mới: http://127.0.0.1:3000/workspace. Health: http://127.0.0.1:8000/health. UI mô phỏng không cần API key/database. API báo giá dùng factory app.quotation_demo.main:create_app --factory, cổng 8001 sau migration và cấu hình token; [setup](docs/general/setup.md#2b-api-báo-giá-độc-lập) có lệnh đầy đủ. Chưa chạy Agent/cache/gate; setup cũng chứa lệnh kiểm tra.
 
 ## Tài liệu và bước tiếp theo
 
@@ -70,5 +70,5 @@ Frontend: http://127.0.0.1:3000; bản xem trước mới: http://127.0.0.1:3000
 - [Kiến trúc](docs/system/architecture.md), [cache](docs/system/cache.md), [bảo mật và approval gate](docs/system/authorization.md).
 - [Tổ chức source và đặt tên](docs/system/code-organization.md): frontend theo component/feature, backend theo domain/adapter và UI template source theo tên component.
 - [Frontend hiện tại và phương án tái sử dụng](docs/frontend/design.md), [thiết kế đánh giá](docs/evaluation/design.md).
-- [Kế hoạch PoC](docs/general/implementation-plan.md): đã bắt đầu code nền kết nối DB/readiness; schema, app và workflow triển khai theo điều kiện của từng gói.
+- [Kế hoạch PoC](docs/general/implementation-plan.md): đã có nền DB và API báo giá với quyền fixture; validation/fixture và control/workflow tiếp tục theo điều kiện từng gói.
 - [Trạng thái kiểm chứng](docs/general/project-status.md), [mục lục docs](docs/README.md), [quy tắc cho agent](AGENTS.md).
