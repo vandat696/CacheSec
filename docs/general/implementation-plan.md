@@ -2,9 +2,9 @@
 
 ## Trạng thái và nguyên tắc
 
-Lập ngày 2026-11-02; cập nhật danh sách công việc tuần tự ngày **2026-11-07**. Các mục T01–T17 dưới đây **chưa được hoàn thành**; dấu chọn chỉ cập nhật khi có đầu ra và kiểm chứng tương ứng. Đợt này chỉ lập kế hoạch, không tạo backend, schema, fixture hoặc chạy thực nghiệm. Hiện có UI IDE xem trước theo [thiết kế frontend](../frontend/design.md), FastAPI health/CORS và cấu hình Compose; các phần này chưa hoàn thành workflow thật.
+Lập ngày 2026-11-02; cập nhật tiến độ ngày **2026-11-07**. Trạng thái từng gói T01–T17 nằm ở checklist; dấu chọn chỉ xác nhận đầu ra và kiểm chứng thuộc gói đó. **T02 đã hoàn thành đặc tả thiết kế v0.2, chưa triển khai**; T01 còn chờ điều kiện nghiên cứu. Hiện có UI IDE xem trước theo [thiết kế frontend](../frontend/design.md), FastAPI health/CORS và cấu hình Compose; chưa có workflow backend/cache/gate thật. Đợt này không tạo schema, fixture hoặc chạy thực nghiệm.
 
-Phạm vi và câu hỏi mở do [tổng quan](overview.md) sở hữu; kiến trúc/API/ranh giới do [kiến trúc](../system/architecture.md) sở hữu; quyền/gate do [phân quyền](../system/authorization.md) sở hữu; protocol/fixture/acceptance do [đánh giá](../evaluation/design.md) sở hữu. Kế hoạch này quản lý việc cần làm và điều kiện nghiệm thu, không thay đặc tả của các tài liệu đó.
+Phạm vi và câu hỏi mở do [tổng quan](overview.md) sở hữu; module/runtime do [kiến trúc](../system/architecture.md) sở hữu, request/response/thao tác do [contract API](../system/api.md) sở hữu; quyền/gate do [phân quyền](../system/authorization.md) sở hữu; protocol/fixture/acceptance do [đánh giá](../evaluation/design.md) sở hữu. Kế hoạch này quản lý việc cần làm và điều kiện nghiệm thu, không thay đặc tả của các tài liệu đó.
 
 Giữ một repo, một fixture cố định, một approval-control implementation và một acceptance rule định trước. Đúng một feature change là flag báo giá thiếu ngày hết hạn hợp lệ. Cache, Agent/tools, gate và trace là hạ tầng chuẩn bị cho cả hai workflow, không phải các feature changes bổ sung trong thí nghiệm. Cache không cấp quyền, bỏ test hoặc thay approval; không tự commit, push hoặc deploy.
 
@@ -32,10 +32,10 @@ Không tự chọn thay người dùng/giảng viên các giá trị ảnh hư�
 
 ### T02 — Thiết kế module backend và contract API/cache
 
-- [ ] Hoàn thành T02. **Phụ thuộc:** T01 cho phạm vi và quyết định liên quan.
-- **Trạng thái:** có [bản nháp module/API và contract](../system/architecture.md#bản-nháp-t02-module-và-contract) dựa trên đầu vào kỹ thuật đã chọn; chưa khóa types/transitions/permissions hoặc triển khai. T01 vẫn chờ phần nghiên cứu; T02 chỉ tiến hành ở mức nháp được phép.
+- [x] Hoàn thành **đặc tả thiết kế T02 v0.2**. **Phụ thuộc:** các đầu vào kỹ thuật T01 đã chọn; không chốt thay phần nghiên cứu còn chờ.
+- **Trạng thái:** module/runtime và vị trí source tại architecture; [contract v0.2](../system/api.md) có types, request/response, quyền theo thao tác, transitions, retry/lỗi và bảng ca đối chiếu. Đã rà tài liệu, liên kết và ví dụ JSON; không phải test implementation. Chuyển sang T03 để thiết kế ERD; đối chiếu T03/control T04 có thể yêu cầu version mới. Grants/freshness/integrity, sandbox/activation/deadlines và limits còn mở, không bị đóng ngầm bởi dấu chọn. Chưa có endpoint/schema được triển khai.
 - **Làm:** phân ranh source/entrypoint ứng dụng báo giá, control Agent/IDE và lõi cache; định nghĩa luồng request/context/proposal/test/approval/deployment. Đặc tả API theo thao tác, request/response, ID/revision, lỗi, trạng thái bất đồng bộ và cách retry không tạo thao tác trùng. Contract cache không chứa kiểu dữ liệu nghiệp vụ hoặc browser session.
-- **Đầu ra:** sơ đồ phụ thuộc/runtime, contract dữ liệu và bảng API/state transitions trong architecture; ranh giới adapter LLM/embedding/storage/source verification.
+- **Đầu ra:** sơ đồ phụ thuộc/runtime và ranh giới adapter tại architecture; contract dữ liệu/API, ma trận quyền và state transitions tại api.md.
 - **Nghiệm thu:** đi được cả đường thành công, reject/error/timeout và nguồn đổi; frontend không tự ghi Approved/ALLOW, Agent không có tool approve/deploy. Contract chưa phải endpoint đang chạy hoặc SDK đã phát hành.
 
 ### T03 — Thiết kế database, artifact storage và vòng đời dữ liệu
@@ -153,7 +153,7 @@ Không tự chọn thay người dùng/giảng viên các giá trị ảnh hư�
 
 ## Bước tiếp theo ngay lúc này
 
-Bắt đầu **T01**, sau đó soạn thiết kế T02–T04 trong tài liệu sở hữu chủ đề. Chưa tạo database schema hoặc code mới chỉ dựa trên tên bảng/module dự kiến. Có thể dùng bảng sau làm thứ tự review các đầu vào; chi tiết câu hỏi nằm tại [overview](overview.md#giả-định-và-câu-hỏi-mở).
+Tiếp tục **T03 — ERD, artifact storage và vòng đời dữ liệu** từ contract T02 v0.2; T01 giữ riêng phần fixture/oracle/baseline/acceptance đang chờ xác nhận. T04 sẽ chốt control và rà lại contract/ERD; không triển khai phần phụ thuộc các quyết định còn mở. Chưa tạo database schema hoặc code mới chỉ dựa trên tên bảng/module dự kiến. Bảng dưới là thứ tự review đầu vào; chi tiết câu hỏi nằm tại [overview](overview.md#giả-định-và-câu-hỏi-mở).
 
 | Trước bước phụ thuộc | Cần khóa |
 | --- | --- |

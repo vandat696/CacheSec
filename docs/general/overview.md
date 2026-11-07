@@ -96,6 +96,8 @@ Người dùng đã chọn bộ 6 trường dưới đây cho phạm vi nhập/d
 | currency | Đơn vị tiền tệ minh họa, chưa chốt danh sách |
 | expires_on | Giá trị ngày hết hạn đầu vào; giữ phân biệt thiếu field, null, rỗng và giá trị thô cho validation/fixture |
 
+T02 đã có [wire contract v0.2](../system/api.md#dữ-liệu-ứng-dụng-báo-giá): tiền biểu diễn bằng DecimalString, expires_on giữ JsonValue/absent thay vì parse date tại HTTP boundary. Đây là đặc tả kỹ thuật, chưa có schema chạy; giới hạn nội dung/tiền tệ/precision và validation nền tiếp tục review ở T03 trước T07.
+
 Kết quả validation đề xuất có danh sách cờ, với cờ expiration_review cho rule mới; tên/shape trả về chưa chốt. Không nhận cờ do client/Agent gửi như kết quả validation đáng tin cậy. Khi ca ngày sai thuộc fixture, parsing/chuẩn hóa ở API không được làm mất dấu hiệu đầu vào khiến rule nghiệp vụ không còn được kiểm tra. Test nền và schema nền không được bổ sung trước chính rule mà Agent sẽ được giao.
 
 Vai trò Developer, Reviewer và Deployment Control đã có trong thiết kế. Người dùng chọn identity fixture do backend quản lý cho PoC, không triển khai đăng nhập thật ngay từ đầu; đây là mô phỏng danh tính, không phải production authentication. Developer được tự duyệt nếu có quyền Reviewer hiện tại và thực hiện quyết định tường minh; không yêu cầu reviewer phải khác người đề xuất. Mapping danh tính/quyền và freshness vẫn cần chốt trước thực thi; không tự biến ba capability thành yêu cầu ba tài khoản riêng. Fixture/oracle, acceptance và baseline/số lặp vẫn chờ xác nhận theo [thiết kế đánh giá](../evaluation/design.md).

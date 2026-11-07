@@ -1,5 +1,11 @@
 # Trạng thái dự án
 
+## 2026-11-07 — Hoàn thiện đặc tả kỹ thuật T02 v0.2
+
+- Tách [contract backend và cache](../system/api.md) thành nơi sở hữu types, request/response và ví dụ, ContextRequest trước local lookup, nhóm route app/control, capability matrix, state transitions, retry/idempotency và lỗi. Architecture giữ module/runtime và phân bổ source, liên kết thay vì chép bảng API cũ. Các GET/status/events/context và replay đều phải kiểm tra quyền; quyết định cũ không làm sống lại approval đã mất hiệu lực.
+- T02 hoàn thành **đầu ra thiết kế v0.2**, chưa triển khai hoặc đóng các quyết định T04. Giữ sáu trường báo giá; expires_on qua HTTP/storage ở dạng missing/null/raw để không cài trước rule vào baseline. Host IDE ngoài có thể dùng contract cache qua adapter mà không dựng toàn bộ app báo giá/WorkflowRun API. T01 vẫn chờ fixture/oracle/baseline/acceptance; bước tiếp theo T03 thiết kế ERD/storage/lifecycle, rồi đối chiếu control T04 trước code.
+- Kiểm chứng tài liệu: nội dung, liên kết/anchor, JSON examples, ID/checklist và diff/whitespace; so sánh hash xác nhận chỉ tài liệu thuộc tác vụ đổi. Chưa chạy lint/typecheck/backend/browser/DB hoặc thực nghiệm vì không đổi implementation/configuration; chưa có API, SDK, migration hay fixture mới.
+
 ## 2026-11-07 — Bản nháp T02: module backend và API
 
 - Từ các đầu vào kỹ thuật T01 đã được người dùng chọn, soạn [bản nháp T02](../system/architecture.md#bản-nháp-t02-module-và-contract): ranh giới module/runtime, nhóm API app/control, contract cache độc lập host, trạng thái, retry/idempotency, lỗi và trace. Bám code hiện tại chỉ có health/CORS; các route trong thiết kế chưa tồn tại.
@@ -332,7 +338,7 @@ Danh sách quyết định đầy đủ ở [tổng quan](overview.md#giả-đ�
 
 [Lộ trình PoC](implementation-plan.md) hiện chia T01–T17: khóa đầu vào và thiết kế trước, sau đó backend/database/quyền/trace, app nền/fixture, retrieval/model/cache, executor/gate, Agent, UI và runner; cuối cùng mới so sánh chính. Gate phải có trước mọi activation rule mới; không chạy thí nghiệm trước khi hạ tầng, fixture, acceptance và protocol được khóa. Phép thử cache và tích hợp IDE bên ngoài nằm ở nhóm mở rộng riêng.
 
-Bước tiếp theo là T01 để chốt đầu vào cần thiết và T02–T04 để thiết kế contract, dữ liệu và control; lập trình bắt đầu từ T05 sau khi điều kiện liên quan được xác nhận. Chưa tạo module, fixture hoặc API mới trong đợt lập kế hoạch này. Việc upload/ingestion tài liệu nội bộ không còn là đầu việc bắt buộc trước PoC này.
+T02 đã hoàn thành đầu ra đặc tả thiết kế v0.2, chưa triển khai; bước tiếp theo là T03 cho ERD/storage/lifecycle rồi T04 control, song song giữ phần nghiên cứu T01 đang chờ xác nhận. Lập trình bắt đầu từ T05 khi các điều kiện liên quan đã chốt. Chưa tạo module, fixture hoặc API mới trong đợt thiết kế này. Upload/ingestion tài liệu nội bộ không còn là đầu việc bắt buộc trước PoC này.
 
 ## Lịch sử tổ chức tài liệu
 

@@ -115,43 +115,25 @@ Soạn ngày 2026-11-07 từ đầu vào kỹ thuật T01 đã được người
 
 Đây là ranh giới trách nhiệm, không phải yêu cầu tạo một microservice/class cho mỗi hàng. Tên thư mục/entrypoint cụ thể và các kiểu dữ liệu sẽ hoàn thiện trong T02–T03 trước khi tạo source mới.
 
-#### Bề mặt API đề xuất
+Phân bổ source cho giai đoạn triển khai theo thiết kế T02, chưa tạo các đường dẫn mới:
 
-App báo giá và control có base URL/entrypoint riêng. Các đường dẫn dưới đây là bản nháp; không phải route đang chạy, chưa chốt transport/SDK cho lõi cache. HTTP adapter không được trở thành dependency của logic nghiệp vụ hoặc matching.
-
-| API/thao tác dự kiến | Đầu vào và đầu ra chính | Kiểm soát bắt buộc |
-| --- | --- | --- |
-| App: POST/GET /quotations, GET /quotations/{id} | Tạo, liệt kê và xem sáu trường; ID do app quản lý | Validation nền riêng; giữ missing/null/raw của ngày theo contract, không bổ sung trước rule mới |
-| App: POST /quotations/{id}/validate | Trả flags, reference_date và active_artifact reference | Kết quả từ code runtime đang chạy; client không gửi flags làm kết quả tin cậy; R fixture cố định, chính sách R ngoài fixture còn cần đặc tả |
-| Control: GET /session, GET /repositories/{id}/snapshot | Principal/capability thực tế trong fixture và snapshot nguồn được phép | Backend cấp identity/scope và đọc nguồn hiện tại; mọi ID/hash từ client chỉ là yêu cầu/tham chiếu cần kiểm tra |
-| Control: POST /runs; GET /runs/{id}, GET /runs/{id}/events | Repo/snapshot reference, prompt/intent, config reference và candidate context nếu có; trả run ID, trạng thái, nội dung/proposal và event cursor | Kiểm tra quyền/intent/snapshot, xác minh candidate trước generation; không candidate thì authorized retrieval. Cache disabled vẫn giữ authorization |
-| Control: GET /proposals/{id}, GET /proposals/{id}/diff | Đọc source/diff, base/revision và artifact/evidence references | Nội dung từ snapshot thật; kiểm tra quyền trên dữ liệu trả về, không lấy diff UI làm artifact nguồn |
-| Control: POST /proposals/{id}/tests; GET /test-runs/{id} | Suite/config reference và revision; trả job/evidence ID, outcome/usage thực | Không nhận lệnh shell tùy ý; executor chỉ chạy scope/allowlist đã chốt, evidence ràng buộc đúng artifact/fixture |
-| Control: POST /proposals/{id}/decisions | Quyết định tường minh, revision, artifact/evidence reference | Principal có quyền Reviewer hiện tại; proposer được trùng reviewer theo policy đã chọn. Agent không có tool gọi thao tác này |
-| Control: POST /deployments; GET /deployments/{id} | Artifact/approval/target reference; trả activation hoặc blocked/failed | Capability deploy không tự có từ quyền Reviewer; gate kiểm tra lại đúng bytes/digest và authority/evidence, không rebuild sau duyệt |
-
-Với Context Cache, candidate đính kèm run là đầu vào không tin cậy. Backend phải so payload/provenance với registry/chứng thực và mọi nguồn/quyền hiện tại, rồi mới chuyển context vào LLM. Verifier lỗi không được biến thành ALLOW hoặc truy xuất không hạn chế. TTL/freshness và thời điểm kiểm tra lại khi sử dụng thuộc T04; giá trị cụ thể chưa chốt. Semantic score chỉ phục vụ tìm candidate.
-
-#### Contract cache không phụ thuộc host
-
-| Thao tác logic | Ý nghĩa và ranh giới |
+| Vị trí | Vai trò và ranh giới |
 | --- | --- |
-| Lookup | Nhận query/intent/context và namespace references; trả candidate IDs/scores từ local store, chưa tuyên bố Safe Hit |
-| Verify/resolve | Trusted provider kiểm tra request/payload/dependencies/quyền/config; trả context hợp lệ hoặc lý do từ chối/lỗi theo [cache flow](cache.md#lookup-verification-và-fallback-mục-tiêu) |
-| Admit/store | Chỉ ghi context có provenance/integrity và policy đủ điều kiện; không cho client tự chứng thực payload. Kết quả ghi local lỗi phải được báo đúng, không biến thành hit |
-| Invalidate/evict | Loại reuse theo namespace/source/policy/TTL/config; eviction quản lý dung lượng, không thay verifier tại lần dùng |
+| backend/app/main.py và backend/app/config.py hiện có | Giữ entrypoint/config control, không đổi package/path; health/CORS hiện tại vẫn là code duy nhất chạy |
+| backend/app/quotation_demo/ | Package app mục tiêu với main.py riêng; domain/service/config của app không import app.main, app.config, workflow hoặc cache. app/__init__.py không được khởi tạo control gây side effect khi app báo giá chạy độc lập |
+| backend/app/identity/, repositories/, workflows/, cache_verification/, integrations/, execution/ | Nhóm trách nhiệm control/adapter; chỉ tạo module khi thực hiện năng lực tương ứng, không scaffold thư mục/tầng rỗng. execution gọi worker/launcher theo contract, cơ chế sandbox/worker entrypoint chờ T04 |
+| frontend/src/lib/cache/ | Logic local cache/contract TypeScript tách UI; không import React/Next hoặc object báo giá. Storage và HTTP verifier là adapter riêng; engine chưa chọn |
+| backend/tests/ và research/datasets/ | Test theo namespace app/control/cache và fixture đọc theo schema chung; backend/app không import script nghiên cứu. Không tạo fixture thực nghiệm thứ hai |
 
-Payload context dự kiến có contract version, entry/context reference, repo/snapshot/dependencies, intent/scope, payload digest, config/embedding namespace và thông tin TTL/freshness đủ xác minh. Trust không đến từ việc client gửi đủ trường. Schema/chứng thực, storage IndexedDB/Dexie và adapter packaging chưa khóa; không có SDK hoặc server cache mới được tạo ở bước này.
+T02 chọn ranh giới và vị trí module theo cấu trúc hiện có, không đổi tên repository hoặc dịch chuyển source đã có. Lệnh chạy app/control sẽ ghi vào setup khi entrypoint thật được triển khai; chưa có lệnh mới nào được kiểm chứng.
 
-#### Trạng thái, retry và lỗi
+#### Đặc tả thao tác và dữ liệu
 
-Run hỏi hiểu repo có thể kết thúc sau retrieval/generation. Run yêu cầu thay đổi phải phân biệt resolving_context, generating/proposal_ready, testing, awaiting_approval, deploying và completed/blocked/failed/timed_out; không coi tạo được diff là đã triển khai. Test/deployment jobs có ID/outcome riêng. Trạng thái thuộc backend, UI chỉ đọc và gửi yêu cầu chuyển trạng thái hợp lệ.
+Chi tiết request/response, ContextRequest/WorkflowRun/AgentTurn, proposal/test/binding/decision/deployment, HTTP routes, capability matrix, state transitions, retry và lỗi được quản lý tại [contract backend và cache v0.2](api.md). Tách tài liệu để kiến trúc giữ ranh giới module/runtime, API có một nơi sở hữu, không chép lặp hai bảng route khác nhau.
 
-Mỗi bản source/patch/artifact là revision có binding bất biến; sửa bản sau tạo revision mới, vô hiệu test/approval không còn khớp. Approval tham chiếu test evidence bất biến của đúng artifact, không dựa vào tên file/branch hoặc nhãn UI. Trace ghi actor, nguồn/repo, run/proposal/test/approval/artifact/deployment IDs, config và terminal outcome cho đường đã thực thi; không sinh event cache/test/deploy giả cho đường không đi qua.
+Bản v0.2 đề xuất chuẩn bị ContextRequest trước local lookup để backend xác định repo/snapshot/namespace/config, sau đó mới nhận candidate report và xác minh trước khi LLM dùng. expires_on giữ missing/null/raw ở HTTP/storage để rule mới được kiểm tra thật. Các GET/status/events/context đều cần quyền hiện tại; self-approval cần human Reviewer, không ủy quyền cho Agent.
 
-Đề xuất dùng idempotency key cho tạo job/decision/activation, gắn principal/scope và request fingerprint: retry cùng request trả lại tham chiếu/outcome cũ, key trùng nhưng nội dung khác phải báo conflict; vẫn kiểm tra quyền hiện tại trước trả dữ liệu. Lỗi có code, message ngắn, request/run reference và details được phép lộ. Phân biệt validation, deny, stale/conflict, upstream/model error, timeout và storage/executor error; không trả fixture mẫu để che lỗi thật. HTTP codes, event cursor, giới hạn payload và cancellation sẽ khóa khi hoàn thiện T02/T04.
-
-T02 chưa hoàn thành: cần cụ thể hóa request/response types, operation permissions và các transition hợp lệ, rồi đối chiếu ERD T03/control T04. Một-manifest fixture/oracle, protocol baseline/số lặp và acceptance vẫn chờ xác nhận; các giá trị này không được lấp bằng giả định trong contract.
+Đầu ra thiết kế T02 v0.2 đã soạn và được rà theo phạm vi kỹ thuật, dùng để chuyển sang T03; việc đối chiếu T03–T04 và khóa policy còn phía trước. Mapping grants/freshness, algorithms/integrity, storage/schema, sandbox/activation, cancellation/deadlines và resource limits vẫn mở; ngưỡng nghiên cứu tiếp tục chờ cô. Không tạo OpenAPI/Pydantic/SQL hoặc endpoint ở bước này.
 
 Module nghiệp vụ đặt riêng trong `backend/app/`; adapter LLM, embedding và Agent tách khỏi HTTP/storage. `frontend/src/lib/` dự kiến chứa API client/cache khi cần; chưa có implementation hiện tại. App báo giá có thể ở `backend/app/quotation_demo/`, test trong `backend/tests/`, fixture ở `research/datasets/`; cấu trúc cụ thể là đề xuất trong [implementation plan](../general/implementation-plan.md). Vị trí thư mục không cho phép trộn nghiệp vụ với control/cache: khi triển khai phải có entrypoint chạy app độc lập và tuân thủ ba ranh giới bên trên. Backend không phụ thuộc script nghiên cứu; fixture đọc theo contract chung.
 

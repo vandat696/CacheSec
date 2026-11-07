@@ -11,6 +11,7 @@ Hồ sơ thiết kế và trạng thái hệ thống. Nội dung dự kiến kh�
 | General | [Kế hoạch PoC](general/implementation-plan.md) | T01–T17 tuần tự: thiết kế, database/backend, app/cache/Agent/gate, UI, runner và đánh giá; mở rộng X01–X03 riêng |
 | General | [Cài đặt](general/setup.md) | Môi trường, lệnh chạy và kiểm tra |
 | System | [Kiến trúc](system/architecture.md) | As-Is có bằng chứng, ba ranh giới ứng dụng/Agent-IDE/cache, tám bước cache/Agent/test/approval/deploy |
+| System | [Contract backend và cache](system/api.md) | Thiết kế T02 v0.2: resource/request/response, nhóm API, quyền, trạng thái, retry/lỗi; chưa triển khai |
 | System | [Cache](system/cache.md) | Answer/Context Cache, Hit/Miss/Rejected, verification, metadata và lifecycle |
 | System | [Phân quyền](system/authorization.md) | RBAC/ABAC, verifier, exact-change approval gate, deployment binding và threat model |
 | Frontend | [Thiết kế](frontend/design.md) | Workspace/review/approval UI mô phỏng, bốn màn cũ và phương án tích hợp thật |

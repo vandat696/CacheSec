@@ -21,6 +21,8 @@ Payload đầu tiên là ngữ cảnh repo có provenance, không phải câu tr
 
 Một Context Cache Hit không bảo đảm giảm số LLM calls hoặc tokens: nếu vẫn gửi cùng ngữ cảnh, input tokens có thể tương đương. Đo thời gian context sẵn sàng, phần retrieval tránh được và chi phí lookup/embedding/verification/mạng; có thể không có lợi ích ròng. Adapter IDE làm sau, dùng cùng contract với storage phù hợp được chọn riêng.
 
+Bản [contract T02 v0.2](api.md#chuẩn-bị-context-và-chạy-agent) đề xuất ContextRequest do backend chuẩn bị trước browser lookup, lookup report không tin cậy và bước verified resolution trước generation. Dữ liệu/request/response và retry/error do api.md sở hữu; tài liệu này sở hữu điều kiện reuse và lifecycle, không mặc định một report no_candidate là bằng chứng trusted hoặc một HTTP 200 là Safe Hit.
+
 Không cache approval để cấp phép deployment; không coi cached patch, test pass hoặc context là chứng nhận code hiện tại đúng. Safe Hit của một câu hỏi không tự hoàn thành tác vụ sửa code hoặc bảo đảm không còn LLM calls cho cả workflow.
 
 ## Lookup, verification và fallback mục tiêu

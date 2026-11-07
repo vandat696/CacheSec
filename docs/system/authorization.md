@@ -22,6 +22,8 @@ Agent chỉ nhận capability được ủy quyền cho đọc/đề xuất/test
 
 RBAC dựa role, ABAC dựa tenant/repo/path, hành động, trạng thái change và policy hiện tại. Chi tiết tổ hợp và freshness còn mở. Quyền đọc source không đồng nghĩa quyền sửa, duyệt hay deploy. Backend kiểm tra mọi nguồn phụ thuộc khi retrieval, generation và reuse. Role/quyền cũ trong token/entry không chứng minh quyền hiện tại; không xác minh được thì không trả cache.
 
+[Ma trận capability T02](api.md#ma-trận-capability-theo-thao-tác) mô tả quyền cần có cho từng operation, bao gồm GET/status/events/context và idempotent replay; đó không phải danh sách grants đã cấp cho fixture user. T04 phải chốt mapping principal/scope, delegation và freshness rồi đối chiếu lại contract. ID resource/cursor/idempotency key hoặc receipt context không tự cấp quyền.
+
 ## Cache verification và toàn vẹn
 
 [Thiết kế cache](cache.md) sở hữu lookup/admission/lifecycle. Verifier kiểm tra tenant/repo/principal, intent/context, mọi source version/hash, TTL, policy/config và payload integrity từ nguồn tin cậy. Source hash không đủ nếu local answer bị thay. Đề xuất backend registry/chứng thực ràng buộc entry ID, payload hash, nguồn và configuration; thuật toán, key management và replay protection chưa chốt.
