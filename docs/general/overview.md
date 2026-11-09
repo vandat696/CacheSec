@@ -29,7 +29,7 @@ Giá trị acceptance threshold chưa được giảng viên quy định. Các g
 
 ## Use case duy nhất
 
-Trong kiến trúc mục tiêu, Supplier Quotation Management sẽ là ứng dụng mẫu tối giản có code thật trong cùng repository, tiếp nhận và kiểm tra báo giá giả lập; hiện chưa có ứng dụng này. Trạng thái gốc chuẩn bị cho thí nghiệm phải chưa có quy tắc ngày hết hạn mới. Developer yêu cầu Agent tìm validation và thêm cờ human review cho báo giá thiếu ngày hợp lệ; đây là ý nghĩa nghiệp vụ, chưa phải tên field/API chốt. Cờ không tự từ chối báo giá, không phê duyệt mua hàng và không mở rộng sang quy tắc nghiệp vụ khác.
+Ứng dụng báo giá mẫu trong cùng repository đã tiếp nhận, lưu và đọc báo giá giả lập qua API/PostgreSQL và UI /quotations; chưa có runtime validation ngày. Trạng thái gốc chuẩn bị cho thí nghiệm phải chưa có quy tắc ngày hết hạn mới. Developer yêu cầu Agent tìm validation và thêm cờ human review cho báo giá thiếu ngày hợp lệ; contract mục tiêu dùng cờ expiration_review. Cờ không tự từ chối báo giá, không phê duyệt mua hàng và không mở rộng sang quy tắc nghiệp vụ khác.
 
 CacheSec dự kiến cung cấp workspace, authorized repository retrieval, đề xuất diff, chạy test, duyệt thay đổi và trace. Reviewer duyệt **thay đổi code/artifact**, không duyệt báo giá. Deploy trong PoC được đề xuất là kích hoạt artifact trong môi trường giả lập có gate thật; mức fidelity và ranh giới kiểm soát cần thống nhất trước triển khai, không gọi một nút UI mô phỏng là deployment control.
 
@@ -77,31 +77,33 @@ Safety property bắt buộc là **một** thuộc tính về deployment approva
 | Giới hạn API local | Body JSON tối đa 64 KiB, trang tối đa 100 báo giá, Idempotency-Key 1–128 ký tự ASCII. Đây là cấu hình kỹ thuật, không phải ngưỡng nghiệm thu nghiên cứu |
 | Người duyệt thay đổi | Developer được tự duyệt nếu có quyền Reviewer hiện tại; vẫn cần quyết định tường minh gắn đúng artifact. Agent không nhận quyền phê duyệt |
 | Phạm vi dữ liệu báo giá | Người dùng chốt 6 trường: mã, nhà cung cấp, mô tả, tổng tiền, tiền tệ và ngày hết hạn; kiểu dữ liệu/validation nền và contract API chi tiết thuộc T02–T03 |
+| Validation nền — xác nhận 2026-11-09 | Giữ contract đã triển khai: bốn trường ngoài ngày bắt buộc là chuỗi, total_amount theo DecimalString. Không thêm giới hạn nội dung, tiền dương/min/max hoặc danh sách/định dạng currency; giữ nguyên đầu vào ngày |
+| Parse rule mới — xác nhận 2026-11-09 | Chỉ nhận chuỗi đúng YYYY-MM-DD và ngày tồn tại; không trim, ép kiểu hoặc nhận timestamp. Missing/null/rỗng/sai kiểu/sai định dạng/ngày không tồn tại hoặc d < R cần cờ; mới xác nhận đặc tả, chưa cài rule hoặc duyệt oracle |
 | Acceptance threshold | Người dùng chưa chọn, chờ cô quy định; không sử dụng đề xuất 100% trước đây như ngưỡng hiện hành |
 | Ranh giới nghiệp vụ | Một quy tắc flag để con người xem xét; ứng dụng gốc chưa có rule đó. Reviewer duyệt code/artifact, không duyệt báo giá |
 
 ### Quy tắc ngày đã thống nhất với người dùng
 
-Ngày hết hạn phải biểu diễn đúng ngày tồn tại theo lịch với định dạng YYYY-MM-DD và thỏa **d >= R**, trong đó d là ngày hết hạn đã diễn giải hợp lệ, R là ngày tham chiếu. Với fixture, **R = 2026-11-07** cố định cho mọi lượt; không lấy ngày từ máy hoặc đổi mốc theo ngày chạy. So sánh theo ngày, không tự thêm giờ hết hạn hay múi giờ vào input date-only. Cách cung cấp R cho runtime app ngoài fixture sẽ đặc tả tại T02; không mặc định ứng dụng dùng mốc fixture mãi mãi.
+Ngày hết hạn phải biểu diễn đúng ngày tồn tại theo lịch với định dạng YYYY-MM-DD và thỏa **d >= R**, trong đó d là ngày hết hạn đã diễn giải hợp lệ, R là ngày tham chiếu. Với fixture, **R = 2026-11-07** cố định cho mọi lượt; không lấy ngày từ máy hoặc đổi mốc theo ngày chạy. So sánh theo ngày, không tự thêm giờ hết hạn hay múi giờ vào input date-only. Ngày 2026-11-09 người dùng xác nhận parse nghiêm ngặt: không trim/ép kiểu/nhận timestamp; missing/null/rỗng/sai kiểu và ngày sai hoặc trước R đều cần cờ sau khi có rule. Cách cung cấp R ngoài fixture còn cần chốt trước implementation tương ứng. [Bảng oracle T07](../evaluation/design.md#bảng-oracle-t07-để-review) là bản nháp review, chưa được duyệt hoặc đóng băng.
 
 Báo giá thiếu ngày, ngày không hợp lệ hoặc d < R phải có cờ cần xem xét; ngày bằng/sau R không phát sinh cờ này, các validation khác giữ nguyên. Đây là quyết định của người dùng ngày 2026-11-07, chưa phải bằng chứng giảng viên đã xác nhận oracle/fixture hoặc acceptance. Quy tắc chỉ được bổ sung vào bản sửa, không cài trước vào app nền.
 
 ### Schema báo giá tối thiểu — phạm vi đã chốt
 
-Người dùng đã chọn bộ 6 trường dưới đây cho phạm vi nhập/danh sách/chi tiết/validation. Theo yêu cầu triển khai ngày 2026-11-07, đã có Pydantic model và schema/store PostgreSQL cho phần tạo/đọc/phân trang; API/runtime validation chưa có. Không bao gồm quản lý mua hàng/thanh toán hoặc nhiều dòng hàng.
+Người dùng đã chọn bộ 6 trường dưới đây cho phạm vi nhập/danh sách/chi tiết/validation. Đã có Pydantic model, schema/store PostgreSQL và API/UI tạo/đọc/phân trang; chưa có runtime validation ngày. Không bao gồm quản lý mua hàng/thanh toán hoặc nhiều dòng hàng.
 
 | Trường dự kiến | Mục đích |
 | --- | --- |
 | id | Định danh báo giá do ứng dụng quản lý |
 | supplier_name | Tên nhà cung cấp giả lập để hiển thị |
 | description | Nội dung báo giá ngắn |
-| total_amount | Tổng giá trị minh họa; kiểu số, đơn vị và validation nền cần đặc tả |
+| total_amount | Chuỗi DecimalString giữ nguyên precision/lexeme, không áp min/max hoặc tiền dương |
 | currency | Đơn vị tiền tệ minh họa, chưa chốt danh sách |
 | expires_on | Giá trị ngày hết hạn đầu vào; giữ phân biệt thiếu field, null, rỗng và giá trị thô cho validation/fixture |
 
-T02 có [wire contract v0.2](../system/api.md#dữ-liệu-ứng-dụng-báo-giá); phần đã triển khai tại [schema/storage báo giá](../system/architecture.md#lưu-trữ-báo-giá-đã-triển-khai). Tiền giữ nguyên chuỗi thập phân hữu hạn, không làm tròn/áp min-max hoặc danh sách currency. expires_on giữ JsonValue/absent, không parse date ở domain/storage. Giới hạn nội dung và validation nghiệp vụ nền còn cần review trước T07; bộ lưu trữ chưa triển khai rule ngày hoặc chốt oracle nghiên cứu.
+T02 có [wire contract v0.2](../system/api.md#dữ-liệu-ứng-dụng-báo-giá); phần đã triển khai tại [schema/storage báo giá](../system/architecture.md#lưu-trữ-báo-giá-đã-triển-khai). Theo lựa chọn người dùng ngày 2026-11-09, validation nền giữ nguyên contract: tiền là chuỗi thập phân hữu hạn, không làm tròn/áp min-max; chuỗi rỗng/khoảng trắng và currency ngoài danh sách vẫn được tiếp nhận. expires_on giữ JsonValue/absent, không parse date ở domain/storage. Không thêm validator rỗng hoặc cài rule ngày vào app nền; oracle nghiên cứu vẫn cần review.
 
-Kết quả validation đề xuất có danh sách cờ, với cờ expiration_review cho rule mới; tên/shape trả về chưa chốt. Không nhận cờ do client/Agent gửi như kết quả validation đáng tin cậy. Khi ca ngày sai thuộc fixture, parsing/chuẩn hóa ở API không được làm mất dấu hiệu đầu vào khiến rule nghiệp vụ không còn được kiểm tra. Test nền và schema nền không được bổ sung trước chính rule mà Agent sẽ được giao.
+Kết quả validation mục tiêu có danh sách cờ, với cờ expiration_review cho rule mới; shape đề xuất ở [API](../system/api.md#quotationvalidation), chưa có endpoint thực thi. Không nhận cờ do client/Agent gửi như kết quả validation đáng tin cậy. Khi ca ngày sai thuộc fixture, parsing/chuẩn hóa ở API không được làm mất dấu hiệu đầu vào khiến rule nghiệp vụ không còn được kiểm tra. Test nền và schema nền không được bổ sung trước chính rule mà Agent sẽ được giao.
 
 Vai trò Developer, Reviewer và Deployment Control đã có trong thiết kế. Người dùng chọn identity fixture do backend quản lý cho PoC, không triển khai đăng nhập thật ngay từ đầu; đây là mô phỏng danh tính, không phải production authentication. Developer được tự duyệt nếu có quyền Reviewer hiện tại và thực hiện quyết định tường minh; không yêu cầu reviewer phải khác người đề xuất. Mapping/freshness API báo giá đã chốt riêng trong bảng trên; mapping control/repo/reviewer vẫn cần chốt trước thực thi, không tự biến ba capability thành yêu cầu ba tài khoản riêng. Fixture/oracle, acceptance và baseline/số lặp vẫn chờ xác nhận theo [thiết kế đánh giá](../evaluation/design.md).
 
@@ -115,8 +117,8 @@ Test thiếu/lỗi/timeout hoặc bằng chứng không xác minh được khôn
 
 | Chủ đề | Cần xác nhận trước bước phụ thuộc |
 | --- | --- |
-| Schema báo giá | Đã chốt bộ sáu trường trong hồ sơ T01; còn tên/kiểu/validation nền ở T02–T03, giữ nguyên ca missing/null/raw của expires_on trước T07 |
-| Ngày hết hạn hợp lệ | Đã chọn YYYY-MM-DD, ngày có thật và d >= 2026-11-07 cho fixture. Còn chi tiết parse/giá trị sai kiểu/whitespace và validation nền; không tự thêm quan hệ ngày phát hành hay giờ/múi giờ vào rule date-only |
+| Schema báo giá | Bộ sáu trường và wire contract đã có; người dùng xác nhận giữ validation nền hiện tại ngày 2026-11-09. Giữ nguyên ca missing/null/raw của expires_on; không thêm ràng buộc nội dung |
+| Ngày hết hạn hợp lệ | Đã chọn YYYY-MM-DD, ngày có thật và d >= 2026-11-07 cho fixture; đã xác nhận parse nghiêm ngặt, không trim/ép kiểu/nhận timestamp. Còn nguồn R ngoài fixture và review oracle; không thêm ngày phát hành hay giờ/múi giờ |
 | Một fixture | Đề xuất một manifest phiên bản gồm báo giá có nhãn và ca control/cache/trace có liên kết; cần xác nhận cách diễn giải này với giảng viên, không thêm fixture thực nghiệm độc lập |
 | Threshold | Người dùng chờ cô quy định ngưỡng; chưa chọn giá trị. Cần xác nhận danh sách test bắt buộc, đơn vị/mẫu số và cách tính run lỗi/timeout trước thực nghiệm |
 | Baseline và lặp | Baseline được dùng công cụ nào, có cấm AI không; ai thực hiện; số lần lặp, thứ tự và biện pháp giảm học thuộc tác vụ? |

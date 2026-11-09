@@ -110,6 +110,47 @@ def test_client_owned_input_does_not_accept_server_metadata(runtime, extra):
     assert sessions.opens == 0
 
 
+@pytest.mark.parametrize("field", ["supplier_name", "description", "total_amount", "currency"])
+def test_baseline_required_fields_are_rejected_before_storage(runtime, field):
+    client, _, sessions = runtime
+    body = {key: value for key, value in BODY.items() if key != field}
+    response = client.post(
+        "/api/v1/quotations",
+        json=body,
+        headers={"Authorization": f"Bearer {OPERATOR}", "Idempotency-Key": "missing-field"},
+    )
+    assert response.status_code == 400
+    assert response.json()["error"]["code"] == "INVALID_REQUEST"
+    assert sessions.opens == 0
+
+
+@pytest.mark.parametrize("field", ["supplier_name", "description", "total_amount", "currency"])
+@pytest.mark.parametrize("value", [None, False, 10, [], {}])
+def test_baseline_fields_do_not_coerce_non_string_json_values(runtime, field, value):
+    client, _, sessions = runtime
+    response = client.post(
+        "/api/v1/quotations",
+        json={**BODY, field: value},
+        headers={"Authorization": f"Bearer {OPERATOR}", "Idempotency-Key": "wrong-type"},
+    )
+    assert response.status_code == 400
+    assert response.json()["error"]["code"] == "INVALID_REQUEST"
+    assert sessions.opens == 0
+
+
+@pytest.mark.parametrize("amount", ["1e3", "NaN", "Infinity", " 1", "1\n"])
+def test_baseline_decimal_syntax_errors_do_not_open_storage(runtime, amount):
+    client, _, sessions = runtime
+    response = client.post(
+        "/api/v1/quotations",
+        json={**BODY, "total_amount": amount},
+        headers={"Authorization": f"Bearer {OPERATOR}", "Idempotency-Key": "wrong-amount"},
+    )
+    assert response.status_code == 400
+    assert response.json()["error"]["code"] == "INVALID_REQUEST"
+    assert sessions.opens == 0
+
+
 @pytest.mark.parametrize("key", [None, "", "x" * 129])
 def test_required_bounded_ascii_idempotency_key(runtime, key):
     client, _, sessions = runtime

@@ -44,8 +44,19 @@ def test_create_read_list_and_raw_expiration_round_trip(api):
         {"expires_on": None},
         {"expires_on": ""},
         {"expires_on": "2026-02-30"},
-        {"expires_on": "2024-01-01"},
+        {"expires_on": "2026-11-06"},
+        {"expires_on": "2026-11-07"},
+        {"expires_on": "2026-11-08"},
+        {"expires_on": "2027-02-29"},
+        {"expires_on": "2028-02-29"},
+        {"expires_on": "2026-1-7"},
+        {"expires_on": "20261107"},
+        {"expires_on": " 2026-11-07 "},
+        {"expires_on": "2026-11-07\n"},
+        {"expires_on": "2026-11-07T00:00:00Z"},
         {"expires_on": False},
+        {"expires_on": 20261107},
+        {"expires_on": []},
         {"expires_on": {"raw": 1}},
     ]
     for index, expiration in enumerate(cases):
@@ -63,6 +74,8 @@ def test_create_read_list_and_raw_expiration_round_trip(api):
         restored = client.get(f"/api/v1/quotations/{record['id']}", headers=READ_HEADERS)
         assert restored.status_code == 200
         assert restored.json()["data"] == record
+        if "expires_on" in expiration:
+            assert type(restored.json()["data"]["expires_on"]) is type(expiration["expires_on"])
     ids, cursor = [], None
     while True:
         response = client.get(
@@ -77,6 +90,40 @@ def test_create_read_list_and_raw_expiration_round_trip(api):
         if cursor is None:
             break
     assert len(ids) == len(set(ids)) == len(cases)
+
+
+def test_baseline_preserves_unrestricted_text_and_decimal_lexemes(api):
+    """Technical regression inputs, not the labeled research fixture or its oracle."""
+    client, _, database, _ = api
+    cases = [
+        {"supplier_name": "", "description": "", "currency": "", "total_amount": "0"},
+        {"supplier_name": " \t", "description": "\n", "currency": " vnd ", "total_amount": "-1"},
+        {"currency": "UNLISTED", "total_amount": "+0001.230000"},
+        {"total_amount": "9" * 100 + ".000001"},
+    ]
+    expected = {}
+    for index, overrides in enumerate(cases):
+        body = {**BODY, **overrides}
+        response = client.post(
+            "/api/v1/quotations",
+            json=body,
+            headers={**WRITE_HEADERS, "Idempotency-Key": f"baseline-{index}"},
+        )
+        assert response.status_code == 201
+        record = response.json()["data"]
+        assert record == {**body, "id": record["id"]}
+        expected[record["id"]] = record
+        restored = client.get(f"/api/v1/quotations/{record['id']}", headers=READ_HEADERS)
+        assert restored.status_code == 200
+        assert restored.json()["data"] == record
+
+    response = client.get("/api/v1/quotations", headers=READ_HEADERS)
+    assert response.status_code == 200
+    assert {row["id"]: row for row in response.json()["data"]["items"]} == expected
+    with database.connection() as connection:
+        assert connection.execute("SELECT count(*) FROM quotation_demo.quotations").fetchone() == (
+            len(cases),
+        )
 
 
 def test_replay_creates_one_row_and_conflicting_payload_returns_409(api):

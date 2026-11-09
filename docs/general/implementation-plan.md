@@ -20,14 +20,14 @@ Theo yêu cầu ngày 2026-11-09, triển khai đến đâu nối giao diện s�
 
 T01–T04 ưu tiên **thiết kế và xác nhận**. Có thể soạn nháp các mục thiết kế khi còn câu hỏi, nhưng đánh dấu phần chưa chốt và dừng phần triển khai phụ thuộc vào chúng. T05–T16 là phát triển/kiểm chứng kỹ thuật, không được ghi thành kết quả thực nghiệm. T17 mới thu thập dữ liệu so sánh chính khi các điều kiện đã khóa. Khi hoàn thành mục nào, ghi ngắn đầu ra, kiểm tra, giới hạn và bước kế tiếp trong [project status](project-status.md).
 
-Không tự chọn thay người dùng/giảng viên các giá trị ảnh hưởng nghiệp vụ, quyền hoặc tính đúng nghiên cứu. Người dùng đã chọn Context Cache/browser trước, ngày YYYY-MM-DD có thật và không trước mốc fixture 2026-11-07, cùng identity fixture backend quản lý cho PoC. Schema/parse chi tiết, acceptance, mapping authority/freshness, storage engine/model/sandbox/deploy target còn mở. Tên công việc dưới đây không thay quyết định đã được xác nhận trong overview.
+Không tự chọn thay người dùng/giảng viên các giá trị ảnh hưởng nghiệp vụ, quyền hoặc tính đúng nghiên cứu. Người dùng đã chọn Context Cache/browser trước, ngày YYYY-MM-DD có thật và không trước mốc fixture 2026-11-07, cùng identity fixture backend quản lý cho PoC. Ngày 2026-11-09 đã xác nhận giữ validation nền hiện tại và parse nghiêm ngặt không trim/ép kiểu/nhận timestamp; oracle/fixture, acceptance, mapping authority/freshness, storage engine/model/sandbox/deploy target còn mở. Tên công việc dưới đây không thay quyết định đã được xác nhận trong overview.
 
 ## Danh sách công việc tuần tự
 
 ### T01 — Khóa phạm vi và các đầu vào cần xác nhận
 
 - [ ] Hoàn thành T01. **Phụ thuộc:** không có.
-- **Trạng thái:** đang thực hiện; [hồ sơ đầu vào T01](overview.md#hồ-sơ-đầu-vào-t01--đang-thực-hiện) đã ghi Context Cache/browser, rule ngày/mốc fixture, bộ sáu trường và identity fixture. Developer có quyền Reviewer được tự duyệt tường minh; acceptance chưa chọn, chờ cô quy định. Fixture/oracle và protocol baseline/số lặp còn mở; chưa đánh dấu hoàn thành hoặc chuyển sang triển khai. Có thể soạn nháp T02–T04 cho phần độc lập với ngưỡng theo nguyên tắc ở trên.
+- **Trạng thái:** đang thực hiện; [hồ sơ đầu vào T01](overview.md#hồ-sơ-đầu-vào-t01--đang-thực-hiện) đã ghi Context Cache/browser, rule ngày/mốc fixture, bộ sáu trường và identity fixture; ngày 2026-11-09 xác nhận giữ validation nền và parse nghiêm ngặt. Developer có quyền Reviewer được tự duyệt tường minh; acceptance chưa chọn, chờ cô quy định. Fixture/oracle và protocol baseline/số lặp còn mở; chưa đánh dấu hoàn thành T01. Các phần kỹ thuật đã đủ contract được thực hiện theo trạng thái từng gói, không chạy thực nghiệm hoặc triển khai phần phụ thuộc điều kiện còn mở.
 - **Làm:** thống nhất schema báo giá tối thiểu, nghĩa ngày hợp lệ/mốc thời gian; vai trò và quyền cần có; chọn lát cắt Answer Cache hoặc Context Cache, vị trí local và host tích hợp đầu tiên. Xác nhận one-fixture contract, oracle, acceptance threshold, công cụ baseline và protocol lặp; phần chưa xác nhận phải có bước bị chặn rõ ràng.
 - **Đầu ra:** bảng đã thống nhất/đề xuất/còn mở tại overview; protocol nháp tại evaluation, tách acceptance khỏi similarity threshold.
 - **Nghiệm thu:** biết đầu vào, kết quả flag mong đợi và capability được duyệt; không gán quyết định người dùng thành yêu cầu giảng viên đã phê duyệt. Acceptance phải chờ cô quy định, không dùng 100% làm mặc định. T02–T04 có thể soạn nháp, nhưng không triển khai phần phụ thuộc quyết định còn mở.
@@ -75,7 +75,7 @@ Không tự chọn thay người dùng/giảng viên các giá trị ảnh hư�
 ### T07 — Dựng ứng dụng báo giá nền và fixture duy nhất
 
 - [ ] Hoàn thành T07. **Phụ thuộc:** T01, T05–T06 và contract app ở T02.
-- **Trạng thái:** đã có domain/application/storage và entrypoint API tạo/đọc/phân trang độc lập control/Agent/cache; Bearer fixture và idempotency chạy thật, UI /quotations đã nối HTTP/PostgreSQL. Chưa có runtime validation ngày hoặc fixture/oracle nghiên cứu; chưa cài rule expiration_review vào app nền.
+- **Trạng thái:** đã có domain/application/storage và entrypoint API tạo/đọc/phân trang độc lập control/Agent/cache; Bearer fixture và idempotency chạy thật, UI /quotations đã nối HTTP/PostgreSQL. Ngày 2026-11-09 người dùng xác nhận giữ validation nền hiện tại; bổ sung hồi quy HTTP/logic frontend và ca tích hợp giữ nguyên chuỗi, tiền và raw date. Đã kiểm chứng toàn bộ 155 test backend với PostgreSQL thật, không skip, gồm các ca tích hợp T07 mới. [Bảng oracle T07](../evaluation/design.md#bảng-oracle-t07-để-review) đã soạn theo parse được xác nhận, còn cần review nhãn và one-fixture contract. Chưa có runtime validation ngày, manifest đóng băng hoặc rule expiration_review trong app nền; chưa hoàn thành T07.
 - **Làm:** app tiếp nhận/danh sách/chi tiết/validation tối thiểu chạy độc lập, **chưa có rule mới**. Tạo một fixture manifest có nhãn, mốc thời gian, phần ca gate/reuse liên kết và oracle theo contract đã xác nhận; backend đọc schema dùng chung, không import script nghiên cứu.
 - **Đầu ra:** source app nền, entrypoint/API riêng với control, test nền và manifest có version/digest; ghi revision gốc và cách tái tạo trạng thái ban đầu.
 - **Nghiệm thu:** app chạy không import code Agent/IDE/cache; test hành vi cũ pass. Ca kiểm tra rule mới chứng minh thiếu sót có chủ đích, phân biệt expected failure của app gốc với lỗi của workflow đã hoàn thành. Fixture UI cũ không trở thành fixture thực nghiệm; các test double đơn vị không phải tập benchmark thứ hai.
@@ -161,11 +161,11 @@ Không tự chọn thay người dùng/giảng viên các giá trị ảnh hư�
 
 ## Bước tiếp theo ngay lúc này
 
-Lát cắt API báo giá/quyền fixture/idempotency đã có code và kiểm chứng HTTP → PostgreSQL thật. Tiếp theo hoàn thiện validation nền và fixture/oracle T07 sau khi xác nhận các ràng buộc còn mở; không cài trước rule expiration_review. T03–T04 tiếp tục thiết kế dữ liệu control/artifact và executor/gate trước triển khai phụ thuộc. T01 giữ riêng baseline/acceptance đang chờ cô. Bảng dưới là thứ tự review đầu vào; chi tiết tại [overview](overview.md#giả-định-và-câu-hỏi-mở).
+Lát cắt API báo giá/quyền fixture/idempotency đã có code và kiểm chứng HTTP → PostgreSQL thật ở các mốc trước. Validation nền đã được người dùng xác nhận giữ nguyên contract; ngày 2026-11-09 toàn bộ 155 test backend đạt với PostgreSQL thật, không skip, gồm các ca tích hợp T07 mới. Tiếp theo review bảng oracle T07 và one-fixture contract trước tạo manifest; không cài trước rule expiration_review. T03–T04 tiếp tục thiết kế dữ liệu control/artifact và executor/gate trước triển khai phụ thuộc. T01 giữ riêng baseline/acceptance đang chờ cô. Bảng dưới là thứ tự review đầu vào; chi tiết tại [overview](overview.md#giả-định-và-câu-hỏi-mở).
 
 | Trước bước phụ thuộc | Cần khóa |
 | --- | --- |
-| T07 và nhãn fixture | Schema báo giá, nghĩa ngày hợp lệ, thời điểm tham chiếu, oracle và one-fixture contract |
+| T07 và nhãn fixture | Review bảng oracle theo schema/validation nền và parse đã xác nhận, chốt one-fixture contract; kiểm chứng tích hợp mới đã đạt |
 | T05–T06, T08 và T12–T13 | Data/API contract, identity/authority, freshness, source integrity, executor/sandbox, artifact binding và deploy target liên quan |
 | T09–T11 | Đã chọn Context Cache/browser cho web đầu tiên; còn model/embedding, storage engine, similarity threshold, TTL/invalidation và phạm vi chia sẻ |
 | T16–T17 | Acceptance rule, baseline tools, số lặp/thứ tự, reset/preload, nguồn đo và expected trace; không điều chỉnh theo kết quả |

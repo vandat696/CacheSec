@@ -17,7 +17,7 @@ T01 đang thực hiện ngày 2026-11-07 theo [hồ sơ đầu vào](../general/
 | Đơn vị đo | Một lượt thực hiện cùng một thay đổi code từ source gốc tới terminal outcome; query/context lookup là số quan sát thành phần, không phải Developer hoặc workflow độc lập |
 | Nhánh chính | Developer-guided / AI-assisted, cùng fixture/gate/acceptance; công cụ baseline, người thực hiện, số lặp và thứ tự chưa chọn |
 | Cache trong nhánh AI | Context Cache/browser đã chọn; namespace, trạng thái khởi đầu và preload cần ghi và chốt. LLM vẫn xử lý; calls/tokens có thể không giảm, không gán 0 calls cho Context Hit |
-| Fixture/oracle | Đã có rule ngày do người dùng chọn và ma trận ca bên dưới; cách diễn giải một manifest gồm báo giá/nhãn và ca control liên kết vẫn cần xác nhận, oracle phải review trước tạo/đóng băng |
+| Fixture/oracle | Người dùng đã xác nhận parse nghiêm ngặt ngày 2026-11-09; bảng oracle T07 bên dưới còn là bản nháp review. Cách diễn giải một manifest gồm báo giá/nhãn và ca control liên kết vẫn cần xác nhận, oracle phải review trước tạo/đóng băng |
 | Acceptance | Người dùng chưa chọn, chờ cô quy định ngưỡng/danh sách ca bắt buộc; không lấy đề xuất 100% trước đây làm mặc định |
 | Bằng chứng và reset | Ghi phiên bản source/config/fixture/gate, planned/attempted/completed, trace và mọi failure/timeout; cơ chế reset và lịch chạy phải khóa trước T17 |
 
@@ -36,7 +36,7 @@ Baseline ở đây là **workflow Developer-guided**, khác với No Cache của
 
 Đề xuất một fixture manifest phiên bản, có digest, chứa tập báo giá giả lập có nhãn flag/not-flag và các ca kiểm soát liên kết cho gate, reuse, trace. Đây là cách diễn giải **cần xác nhận** cho “one test fixture”, không tự tạo thêm tập thực nghiệm độc lập. Fixture UI cũ không được dùng làm fixture thực nghiệm mới.
 
-Người dùng đã chọn ngày có thật, định dạng YYYY-MM-DD và d >= R; **R = 2026-11-07** là mốc fixture cố định, không lấy đồng hồ máy. Ngày bằng mốc là hợp lệ đối với rule mới. Trước đóng băng còn phải khóa field/schema, chi tiết parse/null/rỗng/sai kiểu và review oracle; không tự thêm điều kiện ngày phát hành hay giờ/múi giờ. Nhãn cuối do oracle đã review xác định, không lấy output Agent làm ground truth.
+Người dùng đã chọn ngày có thật, định dạng YYYY-MM-DD và d >= R; **R = 2026-11-07** là mốc fixture cố định, không lấy đồng hồ máy. Ngày bằng mốc là hợp lệ đối với rule mới. Ngày 2026-11-09 người dùng xác nhận giữ validation nền hiện tại và parse ngày nghiêm ngặt: không trim/ép kiểu/nhận timestamp; missing/null/rỗng/sai kiểu hoặc ngày sai/trước R cần cờ. Đây là xác nhận đặc tả từ người dùng, không phải duyệt nhãn oracle hoặc nghiệm thu của giảng viên. Trước đóng băng còn phải review oracle; không tự thêm điều kiện ngày phát hành hay giờ/múi giờ. Nhãn cuối do oracle đã review xác định, không lấy output Agent làm ground truth.
 
 Ma trận kỳ vọng theo lựa chọn người dùng, chưa phải fixture đã tạo hoặc nghiệm thu giảng viên:
 
@@ -49,6 +49,33 @@ Ma trận kỳ vọng theo lựa chọn người dùng, chưa phải fixture đ�
 | 2026-11-08 — sau mốc | Không thêm cờ này |
 
 Các cờ validation khác không bị xóa bởi ngày hợp lệ; ma trận này không bổ sung rule vào app gốc hoặc tạo thêm fixture độc lập. Tất cả lượt và hai workflow phải dùng cùng R/fixture version. Các trường hợp năm nhuận, sai kiểu và khoảng trắng được thêm theo contract parse đã chốt trước freeze.
+
+### Bảng oracle T07 để review
+
+Đây là **bản nháp review**, không phải manifest đã tạo, oracle đã được duyệt hoặc fixture đã đóng băng. Các ID dưới đây chỉ để trao đổi và truy vết quyết định; chưa phải danh sách ca bắt buộc hay acceptance threshold. Cột kỳ vọng áp dụng sau khi artifact có rule mới; app gốc vẫn tiếp nhận đầu vào mà chưa kiểm tra ngày. Mọi ca dùng cùng các trường ngoài ngày hợp lệ theo contract nền và R = 2026-11-07.
+
+| ID review | Đầu vào expires_on | Kỳ vọng riêng expiration_review | Căn cứ/trạng thái |
+| --- | --- | --- | --- |
+| Q01 | Không có key | Có cờ | Thiếu ngày, theo ma trận hiện có |
+| Q02 | JSON null | Có cờ | Null, theo ma trận hiện có; khác Q01 trên wire/storage |
+| Q03 | `""` | Có cờ | Rỗng, theo ma trận hiện có |
+| Q04 | `"2026-11-06"` | Có cờ | Ngày trước R |
+| Q05 | `"2026-11-07"` | Không thêm cờ | Ngày bằng R |
+| Q06 | `"2026-11-08"` | Không thêm cờ | Ngày sau R |
+| Q07 | `"2026-02-30"` | Có cờ | Ngày không tồn tại |
+| Q08 | `"2027-02-29"` | Có cờ | Ngày nhuận không tồn tại, sau R để tách lỗi lịch khỏi ngày quá hạn |
+| Q09 | `"2028-02-29"` | Không thêm cờ | Ngày nhuận có thật, sau R |
+| Q10 | `"2100-02-29"` | Có cờ | Năm tròn thế kỷ không chia hết cho 400; cần review ca biên lịch |
+| Q11 | `"2000-02-29"` | Có cờ | Ngày có thật nhưng trước R; không diễn giải thành lỗi ngày nhuận |
+| Q12 | `"2026-13-01"` / `"2026-00-01"` / `"2026-11-00"` | Có cờ | Tháng/ngày ngoài lịch; tách thành ca riêng khi khóa manifest |
+| Q13 | `"2026-1-7"` / `"20261107"` / `"07/11/2026"` | Có cờ | Parse nghiêm ngặt đã được người dùng xác nhận; nhãn chờ review |
+| Q14 | `" 2026-11-07"` / `"2026-11-07 "` / `"2026-11-07\n"` | Có cờ | Không trim đã được xác nhận; nhãn chờ review |
+| Q15 | `"2026-11-07T00:00:00Z"` | Có cờ | Không nhận timestamp đã được xác nhận; nhãn chờ review |
+| Q16 | `20261107` / `false` / `[]` / `{}` | Có cờ | Không ép kiểu JSON đã được xác nhận; nhãn chờ review, tách ca riêng khi khóa manifest |
+
+Mỗi biến thể được ngăn bởi `/` ở bảng trên là đầu vào riêng, không phải một giá trị chuỗi ghép. JSON false phải giữ kiểu boolean, không đổi thành chuỗi; key vắng mặt không được thay bằng null. Kỳ vọng ghi trực tiếp để người review kiểm tra, không sinh nhãn bằng implementation rule của Agent. Parse nghiêm ngặt đã được xác nhận nhưng bảng nhãn chưa được duyệt; chưa tạo parser/oracle thực thi hoặc manifest đóng băng.
+
+Trước tạo/đóng băng fixture: review từng đầu vào/nhãn; chốt cách một manifest liên kết ca báo giá với ca gate/reuse/trace; sau đó chọn version/digest và ghi source gốc chưa có rule. Acceptance và protocol baseline/số lặp tiếp tục là điều kiện riêng trước thực nghiệm, không suy từ số dòng trong bảng. Phần kiểm thử kỹ thuật HTTP/storage hiện tại chỉ xác nhận khả năng giữ dữ liệu đầu vào và quyền, không trở thành một fixture nghiên cứu khác.
 
 Đề xuất ca báo giá: thiếu field, null, rỗng, sai định dạng, ngày không tồn tại, ngày hợp lệ và các ca biên theo nghĩa ngày đã chốt. Expected flag của ca phụ thuộc định nghĩa chưa được tự chốt. App gốc phải pass test hành vi cũ nhưng **chưa đáp ứng** acceptance rule mới; test tái hiện thiếu rule không được tính như failure của workflow đã hoàn thành. Khi đánh giá kết quả patch mới phải chạy đầy đủ fixture bắt buộc và hồi quy.
 

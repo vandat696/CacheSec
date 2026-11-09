@@ -1,5 +1,18 @@
 # Trạng thái dự án
 
+## 2026-11-09 — Kiểm chứng lại T07 với PostgreSQL thật
+
+- Sau khi người dùng mở Docker Desktop, khởi động lại container PostgreSQL CacheSec hiện có; giữ nguyên volume và dữ liệu app. Chạy toàn bộ backend với DSN test chỉ đặt trong process, không in credentials hoặc đổi file cấu hình. Test báo giá tạo/dọn database ngẫu nhiên riêng; test hạ tầng dùng bảng TEMP.
+- **155 test backend đạt, không skip**, gồm 23 test PostgreSQL từng bị chặn và các ca T07 mới giữ missing/null/raw date, ngày biên/nhuận/whitespace/timestamp, chuỗi rỗng, tiền âm/zero/precision và currency ngoài danh sách. Còn cảnh báo TestClient/httpx và pytest cache không ghi được trong sandbox; không ảnh hưởng kết quả. Không đổi implementation nên không chạy lại frontend/browser.
+- Đã gỡ blocker kiểm chứng DB trong lộ trình. T07 vẫn chưa hoàn tất: [bảng oracle](../evaluation/design.md#bảng-oracle-t07-để-review) và one-fixture contract cần review trước tạo manifest. Chưa thêm rule ngày, đóng băng fixture, chạy thực nghiệm hoặc chốt acceptance; container DB được giữ chạy để tiếp tục phát triển.
+
+## 2026-11-09 — Khóa contract nền T07 và soạn bảng oracle review
+
+- Người dùng xác nhận giữ validation nền hiện tại, không thêm giới hạn nội dung/tiền/currency; đồng thời xác nhận parse của rule mới chỉ nhận YYYY-MM-DD có thật, không trim/ép kiểu/nhận timestamp. Missing/null/rỗng/sai kiểu/ngày sai hoặc trước R = 2026-11-07 cần cờ sau khi có rule. Đây là quyết định đặc tả của người dùng, chưa phải duyệt oracle hoặc nghiệm thu giảng viên.
+- Contract nền đã có implementation nên không thêm validator/layer hoặc đổi schema/API/UI. Bổ sung 29 ca HTTP từ chối thiếu trường/sai kiểu/sai cú pháp tiền trước storage, hồi quy frontend về chuỗi/precision/currency và kiểm tra response tiền sai. Mở rộng test HTTP → PostgreSQL giữ missing/null/raw date, ngày biên/nhuận/whitespace/timestamp; thêm ca giữ chuỗi rỗng, tiền âm/zero/dài và currency ngoài danh sách. Dữ liệu test kỹ thuật không phải fixture nghiên cứu.
+- Kiểm chứng lượt này: **132 test backend đạt, 23 test PostgreSQL skip** khi không cấu hình DSN test; Ruff lint/format đạt. Đã thử DSN local riêng trong process test nhưng kết nối timeout, Docker Linux Engine chưa chạy; dừng lượt lỗi kết nối, chưa xác nhận các ca tích hợp mới. **66 test frontend, ESLint và typecheck đạt**; test Studio cần chạy ngoài sandbox do spawn Node con bị EPERM, lượt ngoài sandbox đạt. Cảnh báo Node module detection và TestClient/httpx có sẵn còn tồn tại; không chạy build/browser vì không đổi implementation ứng dụng.
+- Cập nhật overview, API, evaluation và lộ trình; sửa vài mô tả hiện trạng báo giá cũ trong overview. [Bảng oracle T07](../evaluation/design.md#bảng-oracle-t07-để-review) có 16 nhóm ca để review, chưa tạo parser/oracle thực thi hoặc manifest đóng băng. T07 còn review nhãn/one-fixture contract và kiểm chứng tích hợp mới; T03–T04 còn thiết kế control/artifact/executor/gate. Không cài rule mới, kích hoạt artifact, chạy thực nghiệm hoặc chốt acceptance.
+
 ## 2026-11-09 — Đặt lại tên và tổ chức backend theo công việc
 
 - Theo phương án người dùng duyệt, báo giá chia api/business/auth/database; models/service/quyền/interface repository thuộc business, token fixture thuộc auth, SQL/transaction/migration thuộc database. Đổi tên rõ mục đích như quotation_routes, quotation_responses, postgres_connection; gom interface và implementation cấp service vào quotation_service_factory. Không thêm tầng hoặc dependency. [Bản đồ source](../system/code-organization.md#backend) sở hữu cây file và luồng đọc code.

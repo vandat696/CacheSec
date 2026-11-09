@@ -33,6 +33,27 @@ test("rejects invalid decimal/JSON and counts UTF-8 bytes", () => {
   assert.throws(() => quotationFromDraft(draft({ description: "đ".repeat(33000) })), /64 KiB/);
 });
 
+test("rejects decimal strings with trailing line breaks in drafts and API responses", async () => {
+  for (const suffix of ["\n", "\r", "\r\n", "\u2028", "\u2029"]) {
+    const amount = `1.2300${suffix}`;
+    assert.throws(() => quotationFromDraft(draft({ amount })), /chuỗi thập phân/);
+    const api = new QuotationHttpClient("http://local.test", "test-only-token", async () =>
+      Response.json({ data: { ...record, total_amount: amount }, meta }));
+    await assert.rejects(api.get(id, signal()), (error) => error instanceof QuotationApiError && error.status === 502);
+  }
+});
+
+test("baseline keeps unrestricted text, currency and decimal lexemes", () => {
+  for (const amount of ["0", "-1", "+0001.230000", `${"9".repeat(100)}.000001`]) {
+    const data = quotationFromDraft(draft({ supplier: "", description: " \n", currency: " vnd ", amount }));
+    assert.equal(data.supplier_name, "");
+    assert.equal(data.description, " \n");
+    assert.equal(data.currency, " vnd ");
+    assert.equal(data.total_amount, amount);
+    assert.equal(Object.hasOwn(data, "expires_on"), false);
+  }
+});
+
 test("HTTP adapter sends Bearer/key with no browser credentials/cache and preserves retry body", async () => {
   const calls = [];
   const api = new QuotationHttpClient("http://local.test/", "test-only-token", async (url, options) => {
