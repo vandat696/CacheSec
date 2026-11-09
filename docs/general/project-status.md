@@ -1,5 +1,12 @@
 # Trạng thái dự án
 
+## 2026-11-09 — Thêm Prisma Studio cho database local
+
+- Theo yêu cầu, cài Prisma CLI **7.10.1** dạng devDependency trong npm workspace frontend, ghim package-lock và thêm npm run db:studio (cổng 5555, browser none). Chọn bản stable vì tag latest lúc cài là 8.0.0-rc.33; không đổi phiên bản dependency ứng dụng đã có. Studio dùng trực tiếp PostgreSQL hiện tại; SQL migration/nghiệp vụ vẫn thuộc backend Python.
+- prisma.config.ts chỉ lấy QUOTATION_DATABASE_URL từ môi trường hoặc backend/.env, không fallback DSN control, không đưa mật khẩu vào argv hoặc export token fixture; lỗi cấu hình được rút gọn và tắt checkpoint telemetry cho process. Không tạo Prisma schema/client/migration hoặc thêm dữ liệu. Studio có quyền database từ DSN, thao tác trực tiếp không thuộc Bearer/idempotency/approval gate của API; chỉ dùng cho dev.
+- Kiểm chứng: npm ls xác nhận phiên bản, ESLint/typecheck và **64 test frontend đạt**, gồm kiểm tra chọn đúng DSN, config độc lập cwd, thiếu/sai URI và không lộ secrets/token. Studio HTTP/SQL proxy trả 200, đọc được ba bảng quotation_demo; Edge hiển thị schema/bảng, không lỗi runtime. Xác nhận socket chỉ bind 127.0.0.1:5555; đã để Studio chạy để dùng thử. Mặc định schema public có thể trống; setup có link mở thẳng quotations.
+- Cập nhật README, setup và bản đồ source. Đây là công cụ phát triển, không phải kết quả thực nghiệm hoặc thay đổi quyền/schema backend. Không chạy lại backend/full browser app vì không đổi code ứng dụng; cảnh báo Node module detection có sẵn còn tồn tại. Các phần nghiên cứu/Agent/cache/gate và câu hỏi mở giữ trạng thái trước đó.
+
 ## 2026-11-09 — Nối giao diện báo giá với API/PostgreSQL
 
 - Theo yêu cầu làm và nối đồng thời, thêm /quotations và liên kết Báo giá ở sidebar/toolbar Workspace. Form tạo, danh sách/phân trang và chi tiết dùng HTTP/PostgreSQL thật; IDE giữ hai vùng code/chat và các thao tác Agent/review/test/deploy mẫu. Model, HTTP adapter, hook phiên và từng component tách theo ownership tại features/quotations; không thêm dependency.

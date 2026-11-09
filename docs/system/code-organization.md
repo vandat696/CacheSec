@@ -40,6 +40,8 @@ Trong quotations: quotationModel.ts sở hữu wire types/draft và bảo toàn 
 
 ## Backend
 
+Công cụ xem DB local ở frontend/prisma.config.ts và script npm db:studio để dùng lại npm workspace hiện có. Đây là dev tooling, không import vào React/backend; nó chọn QUOTATION_DATABASE_URL của app, còn SQL migrations bên dưới tiếp tục do Python sở hữu. Cách chạy và ranh giới quyền ở [setup](../general/setup.md#xem-database-bằng-prisma-studio).
+
 ```text
 backend/app/
   main.py                                      ASGI composition root

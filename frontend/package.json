@@ -6,11 +6,12 @@
     "dev": "next dev --hostname 127.0.0.1",
     "build": "next build",
     "start": "next start --hostname 127.0.0.1",
+    "db:studio": "prisma studio --config prisma.config.ts --port 5555 --browser none",
     "lint": "eslint .",
     "typecheck": "tsc --noEmit",
     "templates:build": "node scripts/build-ui-templates.mjs",
     "templates:check": "node scripts/build-ui-templates.mjs --check",
-    "test": "node --experimental-strip-types --test --test-isolation=none scripts/chat-state.test.mjs scripts/documents.test.mjs scripts/experiment-config.test.mjs scripts/metrics-model.test.mjs scripts/developer-preview.test.mjs scripts/quotations.test.mjs",
+    "test": "node --experimental-strip-types --test --test-isolation=none scripts/chat-state.test.mjs scripts/documents.test.mjs scripts/experiment-config.test.mjs scripts/metrics-model.test.mjs scripts/developer-preview.test.mjs scripts/quotations.test.mjs scripts/database-studio.test.mjs",
     "test:browser": "node scripts/browser-smoke.mjs"
   },
   "dependencies": {
@@ -24,6 +25,7 @@
     "@types/react-dom": "^19.3.0",
     "eslint": "^9.39.5",
     "eslint-config-next": "^16.4.3",
+    "prisma": "7.10.1",
     "typescript": "^6.0.3"
   }
 }

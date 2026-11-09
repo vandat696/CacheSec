@@ -64,6 +64,8 @@ python -m venv .venv
 
 Frontend: http://127.0.0.1:3000; bản xem trước mới: http://127.0.0.1:3000/workspace. Health: http://127.0.0.1:8000/health. UI mô phỏng không cần API key/database. API báo giá dùng factory app.quotation_demo.main:create_app --factory, cổng 8001 sau migration và cấu hình token; [setup](docs/general/setup.md#2b-api-báo-giá-độc-lập) có lệnh đầy đủ. Chưa chạy Agent/cache/gate; setup cũng chứa lệnh kiểm tra.
 
+Xem database trên web: sau npm ci và cấu hình QUOTATION_DATABASE_URL trong backend/.env, chạy `npm --prefix frontend run db:studio` từ thư mục gốc, mở http://localhost:5555. [Prisma Studio local](docs/general/setup.md#xem-database-bằng-prisma-studio) dùng trực tiếp PostgreSQL; migration/ứng dụng vẫn thuộc backend Python.
+
 ## Tài liệu và bước tiếp theo
 
 - [Tổng quan/yêu cầu/câu hỏi mở](docs/general/overview.md): ràng buộc giảng viên, định nghĩa nghiệp vụ và threshold cần xác nhận.

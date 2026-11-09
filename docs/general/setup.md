@@ -2,7 +2,7 @@
 
 ## Phạm vi hướng dẫn
 
-Các lệnh dưới đây chạy frontend hiện có, control health/readiness và **API báo giá độc lập**; chưa chạy UI báo giá thật, AI Coding Agent, Local Semantic Cache hoặc approval/deployment control. Bối cảnh nghiên cứu đã đổi sang AI-assisted software development ngày 2026-11-02; UI chatbot nội bộ vẫn được giữ để tái sử dụng. Xem [hiện trạng](project-status.md) và [lộ trình PoC](implementation-plan.md).
+Các lệnh dưới đây chạy frontend, control health/readiness, **API và UI báo giá thật**, cùng Prisma Studio để xem database local; chưa chạy AI Coding Agent, Local Semantic Cache hoặc approval/deployment control. Bối cảnh nghiên cứu đã đổi sang AI-assisted software development ngày 2026-11-02; UI chatbot nội bộ vẫn được giữ để tái sử dụng. Xem [hiện trạng](project-status.md) và [lộ trình PoC](implementation-plan.md).
 
 Chỉ xem UI mô phỏng cần frontend; không cần backend, Docker/database hoặc API key. Backend health có thể chạy độc lập database. Chỉ cần khởi động Docker khi muốn kiểm tra hạ tầng PostgreSQL/pgvector; hướng dẫn này không yêu cầu cài thêm dịch vụ/model SDK.
 
@@ -18,6 +18,21 @@ docker compose --env-file infra/.env -f infra/compose.yaml exec db psql -U cache
 ```
 
 Lệnh kiểm tra giả định tên user/database mặc định. Database chỉ mở cổng localhost. Volume giữ dữ liệu khi dừng container. init.sql chỉ chạy lúc tạo volume mới; không xóa volume để cập nhật cấu hình vì có thể mất dữ liệu.
+
+### Xem database bằng Prisma Studio
+
+Studio là công cụ dev trong npm workspace frontend, ghim Prisma CLI **7.10.1** bằng package-lock.json. Cần Node.js 20.19+/22.12+/24+ (đã kiểm chứng Node 24.21.0). Sau khi PostgreSQL chạy và QUOTATION_DATABASE_URL đã cấu hình theo mục 2a, chạy từ thư mục gốc:
+
+```powershell
+npm --prefix frontend ci
+npm --prefix frontend run db:studio
+```
+
+Mở **http://localhost:5555** theo URL terminal hiển thị, hoặc [mở thẳng bảng báo giá](http://localhost:5555/#schema=quotation_demo&table=quotations). Studio không tự mở cửa sổ browser; Ctrl+C trong terminal dừng công cụ. Mặc định Studio chọn schema public có thể trống: đổi Schema sang quotation_demo rồi chọn quotations; creation_requests là metadata retry, schema_migrations là lịch sử migration. Studio đọc trực tiếp schema hiện tại, khởi động không tạo/seed/migrate bảng. [Hướng dẫn Prisma Studio](https://www.prisma.io/docs/cli/v7/studio).
+
+[prisma.config.ts](../../frontend/prisma.config.ts) chỉ lấy QUOTATION_DATABASE_URL: biến môi trường của terminal nếu đã đặt, nếu không thì đọc từ backend/.env bằng đường dẫn tương đối theo file config. Không fallback sang DATABASE_URL control, không chép DSN sang frontend/.env hoặc đưa mật khẩu vào command line. File backend/.env được parse cục bộ, không export các token fixture sang môi trường Studio. Thiếu/sai URI thì fail với thông báo ngắn không chứa DSN. Cấu hình tắt Prisma checkpoint telemetry cho process Studio.
+
+Studio chạy local bằng quyền database trong DSN, **không phải phiên reader/operator của API**. Sửa dữ liệu ở đây đi trực tiếp vào database, không qua quyền/idempotency của API; không dùng Studio làm tool của Agent hoặc cơ chế duyệt/deploy. Backend Python và SQL migration vẫn là nơi sở hữu nghiệp vụ/schema. Studio chỉ phục vụ phát triển, không đưa vào runtime hoặc expose ra mạng.
 
 ## 2. Backend
 
