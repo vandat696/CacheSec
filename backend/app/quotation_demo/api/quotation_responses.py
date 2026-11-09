@@ -3,7 +3,7 @@ from uuid import UUID
 
 from pydantic import BaseModel
 
-from app.quotation_demo.domain.quotation import QuotationRecord
+from app.quotation_demo.business.quotation_models import QuotationRecord
 
 Payload = TypeVar("Payload")
 CONTRACT_VERSION = "v0.2"

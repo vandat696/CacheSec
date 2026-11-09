@@ -4,9 +4,9 @@ import pytest
 from fastapi.testclient import TestClient
 from pydantic import SecretStr
 
-from app.quotation_demo.main import create_app
-from app.quotation_demo.settings import QuotationSettings
-from app.shared.postgres import PostgresDatabase
+from app.quotation_demo.quotation_api import create_app
+from app.quotation_demo.quotation_settings import QuotationSettings
+from app.shared.postgres_connection import PostgresDatabase
 
 ORIGIN = "http://127.0.0.1:3000"
 READER = "cors-test-reader-" + "r" * 32

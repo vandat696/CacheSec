@@ -41,7 +41,7 @@ Response thành công dùng data và meta; meta có contract_version, request_id
 
 ### HTTP báo giá đã triển khai
 
-Entrypoint app.quotation_demo.main:create_app chạy bằng --factory, độc lập app.main/control; [cách chạy](../general/setup.md#2b-api-báo-giá-độc-lập). Các thao tác sau kiểm tra token/quyền ở đầu thao tác, trước mở transaction, kể cả replay:
+Entrypoint app.quotation_demo.quotation_api:create_app chạy bằng --factory, độc lập app.control.control_api/control; [cách chạy](../general/setup.md#2b-api-báo-giá-độc-lập). Các thao tác sau kiểm tra token/quyền ở đầu thao tác, trước mở transaction, kể cả replay:
 
 | Method/path | Quyền | Thành công |
 | --- | --- | --- |

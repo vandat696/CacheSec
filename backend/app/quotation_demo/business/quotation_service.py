@@ -1,11 +1,15 @@
 from uuid import UUID
 
-from app.quotation_demo.application.quotation_access import QuotationAccess, QuotationCapability
-from app.quotation_demo.application.quotation_repository import (
-    QuotationCreationIdentity,
-    QuotationRepositorySessions,
+from app.quotation_demo.business.quotation_models import (
+    QuotationCreate,
+    QuotationPage,
+    QuotationRecord,
 )
-from app.quotation_demo.domain.quotation import QuotationCreate, QuotationPage, QuotationRecord
+from app.quotation_demo.business.quotation_permissions import QuotationAccess, QuotationCapability
+from app.quotation_demo.business.quotation_repository_interface import (
+    QuotationCreationIdentity,
+    QuotationRepositoryTransactions,
+)
 
 
 class QuotationNotFound(LookupError):
@@ -25,14 +29,14 @@ class QuotationService:
 
     def __init__(
         self,
-        sessions: QuotationRepositorySessions,
+        transactions: QuotationRepositoryTransactions,
         access: QuotationAccess,
         *,
         max_page_size: int,
     ) -> None:
         if type(max_page_size) is not int or max_page_size < 1:
             raise ValueError("Maximum page size must be a positive integer.")
-        self._sessions = sessions
+        self._transactions = transactions
         self._access = access
         self._max_page_size = max_page_size
 
@@ -41,7 +45,7 @@ class QuotationService:
         if not 1 <= len(idempotency_key) <= 128 or not idempotency_key.isascii():
             raise InvalidIdempotencyKey("Idempotency key must contain 1-128 ASCII characters.")
         caller = self._access.caller
-        with self._sessions.open() as repository:
+        with self._transactions.open() as repository:
             record = repository.create_once(
                 data,
                 QuotationCreationIdentity(caller.principal_id, caller.scope_id, idempotency_key),
@@ -51,7 +55,7 @@ class QuotationService:
 
     def get(self, quotation_id: UUID) -> QuotationRecord:
         self._access.require(QuotationCapability.READ)
-        with self._sessions.open() as repository:
+        with self._transactions.open() as repository:
             record = repository.get(quotation_id)
         if record is None:
             raise QuotationNotFound("Quotation was not found.")
@@ -63,6 +67,6 @@ class QuotationService:
             limit = min(50, self._max_page_size)
         if type(limit) is not int or not 1 <= limit <= self._max_page_size:
             raise InvalidQuotationPage("Page size is outside the configured range.")
-        with self._sessions.open() as repository:
+        with self._transactions.open() as repository:
             page = repository.list(limit=limit, after=after)
         return page

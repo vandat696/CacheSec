@@ -4,8 +4,8 @@ import psycopg
 import pytest
 from pydantic import SecretStr, ValidationError
 
-from app.control.settings import Settings
-from app.shared.postgres import (
+from app.control.control_settings import Settings
+from app.shared.postgres_connection import (
     DatabaseInfo,
     DatabaseNotConfigured,
     DatabaseProbeError,

@@ -1,5 +1,12 @@
 # Trạng thái dự án
 
+## 2026-11-09 — Đặt lại tên và tổ chức backend theo công việc
+
+- Theo phương án người dùng duyệt, báo giá chia api/business/auth/database; models/service/quyền/interface repository thuộc business, token fixture thuộc auth, SQL/transaction/migration thuộc database. Đổi tên rõ mục đích như quotation_routes, quotation_responses, postgres_connection; gom interface và implementation cấp service vào quotation_service_factory. Không thêm tầng hoặc dependency. [Bản đồ source](../system/code-organization.md#backend) sở hữu cây file và luồng đọc code.
+- Điểm khởi động mới: control = app.control.control_api:app; báo giá = app.quotation_demo.quotation_api:create_app --factory; migration = python -m app.quotation_demo.migrate_quotations. Đã cập nhật import, tests và lệnh/link docs; không giữ module alias cũ. Business tiếp tục nhận dependency qua Protocol nhỏ, không import API/DB/auth/control. Bổ sung luật đặt tên theo đối tượng/công việc trong AGENTS.
+- Kiểm chứng: **125 test backend và browser integration riêng đạt**, Ruff lint/format đạt. Hai OpenAPI đối chiếu bằng bản trước refactor khớp hoàn toàn; SQL giữ nguyên từng byte/checksum, migration local replay no-op, số dòng app/retry và history khớp trước/sau. Uvicorn khởi động bằng cả hai entrypoint mới; health/ready và đọc báo giá có token trả 200, thiếu token 401, CORS/request ID giữ nguyên. Edge → API mới → DB test riêng kiểm quyền, dữ liệu, retry/response đến trễ và responsive đạt; đã dọn DB/API test, bật lại API app local cổng 8001 bằng module mới.
+- Đây là refactor tên/vị trí và lắp ghép, không thêm nghiệp vụ hoặc rule expiration_review, không sửa dữ liệu app/fixture nghiên cứu. Không đổi code/frontend/Prisma, không chạy lại bộ test frontend vì HTTP contract giữ nguyên; còn cảnh báo TestClient/httpx có sẵn. T07 validation nền/fixture-oracle và thiết kế control/gate vẫn là bước tiếp theo theo các điều kiện đã ghi.
+
 ## 2026-11-09 — Thêm Prisma Studio cho database local
 
 - Theo yêu cầu, cài Prisma CLI **7.10.1** dạng devDependency trong npm workspace frontend, ghim package-lock và thêm npm run db:studio (cổng 5555, browser none). Chọn bản stable vì tag latest lúc cài là 8.0.0-rc.33; không đổi phiên bản dependency ứng dụng đã có. Studio dùng trực tiếp PostgreSQL hiện tại; SQL migration/nghiệp vụ vẫn thuộc backend Python.
@@ -53,7 +60,7 @@
 
 ## 2026-11-07 — Bắt đầu code nền PostgreSQL/readiness (một phần T05)
 
-- Theo yêu cầu chuyển sang code, thêm [adapter PostgreSQL](../../backend/app/shared/postgres.py) dùng Psycopg, kết nối theo thao tác với commit/rollback/close, secret DSN và connect/statement timeout. Không có schema/migration, retry ngầm hoặc tự tạo extension. Adapter độc lập HTTP, workflow và nghiệp vụ báo giá; không chốt thay quyền/integrity/executor/gate còn mở.
+- Theo yêu cầu chuyển sang code, thêm [adapter PostgreSQL](../../backend/app/shared/postgres_connection.py) dùng Psycopg, kết nối theo thao tác với commit/rollback/close, secret DSN và connect/statement timeout. Không có schema/migration, retry ngầm hoặc tự tạo extension. Adapter độc lập HTTP, workflow và nghiệp vụ báo giá; không chốt thay quyền/integrity/executor/gate còn mở.
 - Thêm GET /ready: query DB thành công mới trả 200; chưa cấu hình hoặc DB lỗi trả 503 với mã trạng thái ngắn, không lộ DSN/exception. GET /health vẫn không gọi DB. Readiness hiện chỉ kiểm tra PostgreSQL, chưa chứng minh schema/model/quyền/workflow sẵn sàng; vector chưa là dependency bắt buộc.
 - Kiểm chứng: Ruff lint/format, pip check và 23 test backend đạt; hai test PostgreSQL thật skip do chưa đặt CACHESEC_TEST_DATABASE_URL và Docker Linux Engine chưa chạy. Có test lỗi qua driver thật với DSN sai, nhưng không tính là DB integration đã đạt. Còn cảnh báo deprecation TestClient/httpx từ dependency, không đổi thêm dependency ngoài nhu cầu driver. Chưa chạy frontend hoặc thực nghiệm.
 - Cập nhật README, setup, API/architecture và lộ trình. T05 vẫn chưa hoàn thành; tiếp theo chuẩn bị schema/migration từ T03 và control T04, kiểm chứng kết nối/transaction trên DB thật khi có môi trường. Acceptance nghiên cứu vẫn chờ cô; app báo giá, Agent, cache và gate chưa được triển khai.

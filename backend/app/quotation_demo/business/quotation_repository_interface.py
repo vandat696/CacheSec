@@ -3,7 +3,11 @@ from dataclasses import dataclass
 from typing import Protocol
 from uuid import UUID
 
-from app.quotation_demo.domain.quotation import QuotationCreate, QuotationPage, QuotationRecord
+from app.quotation_demo.business.quotation_models import (
+    QuotationCreate,
+    QuotationPage,
+    QuotationRecord,
+)
 
 
 class QuotationPersistenceError(RuntimeError):
@@ -31,7 +35,7 @@ class QuotationRepository(Protocol):
     def list(self, *, limit: int = 50, after: UUID | None = None) -> QuotationPage: ...
 
 
-class QuotationRepositorySessions(Protocol):
+class QuotationRepositoryTransactions(Protocol):
     def open(self) -> AbstractContextManager[QuotationRepository]:
         """Commit on normal exit, roll back on failure; propagate commit errors before return."""
         ...

@@ -3,14 +3,14 @@ from contextlib import contextmanager
 import pytest
 from pydantic import SecretStr
 
-from app.quotation_demo.application.quotation_access import (
+from app.quotation_demo.auth.fixture_identity import FixtureIdentityRegistry
+from app.quotation_demo.business.quotation_models import QuotationPage
+from app.quotation_demo.business.quotation_permissions import (
     QuotationAccessDenied,
     QuotationCapability,
     QuotationIdentityRequired,
 )
-from app.quotation_demo.application.quotation_service import QuotationService
-from app.quotation_demo.domain.quotation import QuotationPage
-from app.quotation_demo.identity.fixture_registry import FixtureIdentityRegistry
+from app.quotation_demo.business.quotation_service import QuotationService
 
 
 def test_access_handle_checks_revocation_instead_of_reusing_an_authentication_decision():

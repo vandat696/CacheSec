@@ -22,7 +22,7 @@ class Migration:
 
 
 def load_migrations() -> tuple[Migration, ...]:
-    directory = files("app.quotation_demo.persistence").joinpath("sql")
+    directory = files("app.quotation_demo.database").joinpath("migrations")
     migrations = []
     for name in _MIGRATION_NAMES:
         content = directory.joinpath(name).read_bytes().decode("utf-8").replace("\r\n", "\n")

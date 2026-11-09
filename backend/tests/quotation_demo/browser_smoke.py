@@ -16,11 +16,11 @@ from urllib.parse import urlsplit
 import uvicorn
 from pydantic import SecretStr
 
-from app.quotation_demo import main
-from app.quotation_demo.domain.quotation import QuotationCreate
-from app.quotation_demo.persistence.migrations import apply_migrations
-from app.quotation_demo.persistence.postgres_quotation_repository import PostgresQuotationRepository
-from app.quotation_demo.settings import QuotationSettings
+from app.quotation_demo import quotation_api
+from app.quotation_demo.business.quotation_models import QuotationCreate
+from app.quotation_demo.database.postgres_quotation_repository import PostgresQuotationRepository
+from app.quotation_demo.database.quotation_migrations import apply_migrations
+from app.quotation_demo.quotation_settings import QuotationSettings
 
 
 def test_quotation_browser_round_trip(quotation_database, monkeypatch):
@@ -42,8 +42,10 @@ def test_quotation_browser_round_trip(quotation_database, monkeypatch):
                     currency="VND",
                 )
             )
-    monkeypatch.setattr(main, "PostgresDatabase", lambda *args, **kwargs: quotation_database)
-    app = main.create_app(
+    monkeypatch.setattr(
+        quotation_api, "PostgresDatabase", lambda *args, **kwargs: quotation_database
+    )
+    app = quotation_api.create_app(
         QuotationSettings(
             _env_file=None,
             database_url=None,

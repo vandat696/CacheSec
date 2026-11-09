@@ -41,7 +41,7 @@ cd backend
 python -m venv .venv
 .\.venv\Scripts\python.exe -m pip install -r requirements-dev.lock.txt
 if (-not (Test-Path -LiteralPath .env)) { Copy-Item .env.example .env }
-.\.venv\Scripts\python.exe -m uvicorn app.main:app --reload --host 127.0.0.1 --port 8000
+.\.venv\Scripts\python.exe -m uvicorn app.control.control_api:app --reload --host 127.0.0.1 --port 8000
 ```
 
 Health: http://127.0.0.1:8000/health. PostgreSQL readiness: http://127.0.0.1:8000/ready. OpenAPI UI: http://127.0.0.1:8000/docs.
@@ -55,12 +55,12 @@ DATABASE_CONNECT_TIMEOUT_SECONDS mặc định 3 (tối thiểu 2), DATABASE_STA
 App dùng QUOTATION_DATABASE_URL trong backend/.env, không tự dùng DATABASE_URL của control. Local có thể cấu hình cùng URI PostgreSQL; schema quotation_demo và cấu hình vẫn thuộc app riêng. QUOTATION_DATABASE_CONNECT_TIMEOUT_SECONDS / QUOTATION_DATABASE_STATEMENT_TIMEOUT_MS có mặc định 3 / 1000, cùng ý nghĩa timeout của adapter ở trên. Chạy từ backend:
 
 ```powershell
-.\.venv\Scripts\python.exe -m app.quotation_demo.migrate
+.\.venv\Scripts\python.exe -m app.quotation_demo.migrate_quotations
 ```
 
 DB mới trả status = ok, scope = quotation_demo và applied = [001_create_quotations.sql, 002_creation_requests.sql]; DB đã có 001 chỉ áp dụng 002. Chạy lại applied = [] và giữ dữ liệu. CLI chỉ báo ok sau commit. Lỗi cấu hình/kết nối/history trả exit code 1 và mã lỗi ngắn, không DSN/exception. Migration có transaction/advisory lock/checksum, không chạy tự động khi khởi động API, /health hoặc /ready. Schema, quy ước missing/null và phục hồi batch lỗi ở [kiến trúc dữ liệu](../system/architecture.md#lưu-trữ-báo-giá-đã-triển-khai).
 
-Store nội bộ [PostgresQuotationRepository](../../backend/app/quotation_demo/persistence/postgres_quotation_repository.py) nhận connection do caller quản lý; HTTP đi qua QuotationService để kiểm quyền và commit trước response. Xuất [model](../../backend/app/quotation_demo/domain/quotation.py) với exclude_unset=True để giữ thiếu expires_on khác null. Chưa có validation ngày hoặc cờ expiration_review, không ghi dữ liệu nghiên cứu/seed khi migrate.
+Store nội bộ [PostgresQuotationRepository](../../backend/app/quotation_demo/database/postgres_quotation_repository.py) nhận connection do caller quản lý; HTTP đi qua QuotationService để kiểm quyền và commit trước response. Xuất [model](../../backend/app/quotation_demo/business/quotation_models.py) với exclude_unset=True để giữ thiếu expires_on khác null. Chưa có validation ngày hoặc cờ expiration_review, không ghi dữ liệu nghiên cứu/seed khi migrate.
 
 ## 2b. API báo giá độc lập
 
@@ -78,10 +78,10 @@ for name in ('QUOTATION_FIXTURE_READER_TOKEN', 'QUOTATION_FIXTURE_OPERATOR_TOKEN
         set_key(path, name, token_urlsafe(32))
 '@ | .\.venv\Scripts\python.exe -
 
-.\.venv\Scripts\python.exe -m uvicorn app.quotation_demo.main:create_app --factory --host 127.0.0.1 --port 8001
+.\.venv\Scripts\python.exe -m uvicorn app.quotation_demo.quotation_api:create_app --factory --host 127.0.0.1 --port 8001
 ```
 
-App dùng http://127.0.0.1:8001; /docs và /openapi.json mô tả API, chọn Authorize để dùng Bearer token local. Control vẫn ở cổng 8000 với app.main:app; app báo giá không yêu cầu chạy control. Dùng một worker cho registry fixture trong process. Đây là identity fixture local, chưa phải đăng nhập production; không công khai service này ra mạng.
+App dùng http://127.0.0.1:8001; /docs và /openapi.json mô tả API, chọn Authorize để dùng Bearer token local. Control vẫn ở cổng 8000 với app.control.control_api:app; app báo giá không yêu cầu chạy control. Dùng một worker cho registry fixture trong process. Đây là identity fixture local, chưa phải đăng nhập production; không công khai service này ra mạng.
 
 Ba thao tác là POST /api/v1/quotations (operator), GET danh sách và GET /api/v1/quotations/{UUID} (reader/operator). POST cần Idempotency-Key 1–128 ký tự ASCII; retry cùng key/body trả cùng record, đổi body với key cũ trả 409. Cả replay cũng kiểm quyền hiện tại. Cap QUOTATION_MAX_BODY_BYTES mặc định 65536, QUOTATION_MAX_PAGE_SIZE mặc định 100; chỉ cho phép hạ các cap này. Danh sách mặc định 50 mục, hoặc cap thấp hơn; cursor UUID không phải thứ tự thời gian.
 

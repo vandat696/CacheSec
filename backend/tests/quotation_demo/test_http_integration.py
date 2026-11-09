@@ -5,11 +5,13 @@ import pytest
 from fastapi.testclient import TestClient
 from pydantic import SecretStr
 
-from app.quotation_demo.http.application import create_quotation_app
-from app.quotation_demo.http.fixture_service_provider import FixtureQuotationServiceProvider
-from app.quotation_demo.identity.fixture_registry import FixtureIdentityRegistry
-from app.quotation_demo.persistence.migrations import apply_migrations
-from app.quotation_demo.persistence.postgres_quotation_sessions import PostgresQuotationSessions
+from app.quotation_demo.api.quotation_http_app import create_quotation_http_app
+from app.quotation_demo.api.quotation_service_factory import FixtureQuotationServiceFactory
+from app.quotation_demo.auth.fixture_identity import FixtureIdentityRegistry
+from app.quotation_demo.database.postgres_quotation_transactions import (
+    PostgresQuotationTransactions,
+)
+from app.quotation_demo.database.quotation_migrations import apply_migrations
 
 READER = "integration-test-reader-" + "r" * 32
 OPERATOR = "integration-test-operator-" + "o" * 32
@@ -28,9 +30,9 @@ def api(quotation_database):
     with quotation_database.connection() as connection:
         apply_migrations(connection)
     registry = FixtureIdentityRegistry(SecretStr(READER), SecretStr(OPERATOR))
-    sessions = PostgresQuotationSessions(quotation_database)
-    provider = FixtureQuotationServiceProvider(registry, sessions, max_page_size=100)
-    app = create_quotation_app(provider, max_body_bytes=65536)
+    sessions = PostgresQuotationTransactions(quotation_database)
+    provider = FixtureQuotationServiceFactory(registry, sessions, max_page_size=100)
+    app = create_quotation_http_app(provider, max_body_bytes=65536)
     with TestClient(app) as client:
         yield client, registry, quotation_database, app
 

@@ -1,13 +1,13 @@
-"""CLI entrypoint: python -m app.quotation_demo.migrate."""
+"""CLI entrypoint: python -m app.quotation_demo.migrate_quotations."""
 
 import json
 
 import psycopg
 from pydantic import ValidationError
 
-from app.quotation_demo.persistence.migrations import MigrationError, apply_migrations
-from app.quotation_demo.settings import QuotationSettings
-from app.shared.postgres import DatabaseNotConfigured, PostgresDatabase
+from app.quotation_demo.database.quotation_migrations import MigrationError, apply_migrations
+from app.quotation_demo.quotation_settings import QuotationSettings
+from app.shared.postgres_connection import DatabaseNotConfigured, PostgresDatabase
 
 
 def main() -> int:

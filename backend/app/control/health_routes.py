@@ -6,8 +6,12 @@ import psycopg
 from fastapi import APIRouter, Depends, Response
 from pydantic import BaseModel
 
-from app.control.settings import settings
-from app.shared.postgres import DatabaseNotConfigured, DatabaseProbeError, PostgresDatabase
+from app.control.control_settings import settings
+from app.shared.postgres_connection import (
+    DatabaseNotConfigured,
+    DatabaseProbeError,
+    PostgresDatabase,
+)
 
 router = APIRouter()
 

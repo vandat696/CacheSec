@@ -1,14 +1,16 @@
-"""Standalone app: uvicorn app.quotation_demo.main:create_app --factory."""
+"""Standalone app: uvicorn app.quotation_demo.quotation_api:create_app --factory."""
 
 from fastapi.middleware.cors import CORSMiddleware
 from starlette.types import ASGIApp
 
-from app.quotation_demo.http.application import create_quotation_app
-from app.quotation_demo.http.fixture_service_provider import FixtureQuotationServiceProvider
-from app.quotation_demo.identity.fixture_registry import FixtureIdentityRegistry
-from app.quotation_demo.persistence.postgres_quotation_sessions import PostgresQuotationSessions
-from app.quotation_demo.settings import QuotationSettings
-from app.shared.postgres import PostgresDatabase
+from app.quotation_demo.api.quotation_http_app import create_quotation_http_app
+from app.quotation_demo.api.quotation_service_factory import FixtureQuotationServiceFactory
+from app.quotation_demo.auth.fixture_identity import FixtureIdentityRegistry
+from app.quotation_demo.database.postgres_quotation_transactions import (
+    PostgresQuotationTransactions,
+)
+from app.quotation_demo.quotation_settings import QuotationSettings
+from app.shared.postgres_connection import PostgresDatabase
 
 
 def create_app(settings: QuotationSettings | None = None) -> ASGIApp:
@@ -23,12 +25,12 @@ def create_app(settings: QuotationSettings | None = None) -> ASGIApp:
         connect_timeout_seconds=settings.database_connect_timeout_seconds,
         statement_timeout_ms=settings.database_statement_timeout_ms,
     )
-    sessions = PostgresQuotationSessions(database)
-    provider = FixtureQuotationServiceProvider(
-        registry, sessions, max_page_size=settings.max_page_size
+    transactions = PostgresQuotationTransactions(database)
+    factory = FixtureQuotationServiceFactory(
+        registry, transactions, max_page_size=settings.max_page_size
     )
     # Wrap the whole app so even sanitized 500 responses have CORS headers.
-    app = create_quotation_app(provider, max_body_bytes=settings.max_body_bytes)
+    app = create_quotation_http_app(factory, max_body_bytes=settings.max_body_bytes)
     return CORSMiddleware(
         app,
         allow_origins=settings.cors_origins,

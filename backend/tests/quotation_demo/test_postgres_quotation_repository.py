@@ -3,9 +3,9 @@ from uuid import uuid4
 import psycopg
 import pytest
 
-from app.quotation_demo.domain.quotation import QuotationCreate
-from app.quotation_demo.persistence.migrations import apply_migrations
-from app.quotation_demo.persistence.postgres_quotation_repository import PostgresQuotationRepository
+from app.quotation_demo.business.quotation_models import QuotationCreate
+from app.quotation_demo.database.postgres_quotation_repository import PostgresQuotationRepository
+from app.quotation_demo.database.quotation_migrations import apply_migrations
 
 BASE = dict(
     supplier_name="Nhà cung cấp O'Reilly",

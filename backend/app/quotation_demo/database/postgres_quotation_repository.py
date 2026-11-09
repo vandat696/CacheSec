@@ -7,12 +7,16 @@ from psycopg import Connection
 from psycopg.rows import dict_row
 from psycopg.types.json import Json
 
-from app.quotation_demo.application.quotation_repository import (
+from app.quotation_demo.business.quotation_models import (
+    QuotationCreate,
+    QuotationPage,
+    QuotationRecord,
+)
+from app.quotation_demo.business.quotation_repository_interface import (
     QuotationCreationIdentity,
     QuotationIdempotencyConflict,
     QuotationPersistenceError,
 )
-from app.quotation_demo.domain.quotation import QuotationCreate, QuotationPage, QuotationRecord
 
 _COLUMNS = (
     "id, supplier_name, description, total_amount, currency, expires_on, "

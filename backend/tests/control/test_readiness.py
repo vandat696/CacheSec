@@ -5,9 +5,9 @@ import pytest
 from fastapi.testclient import TestClient
 from pydantic import SecretStr
 
-from app.control.health import get_database
-from app.main import app
-from app.shared.postgres import (
+from app.control.control_api import app
+from app.control.health_routes import get_database
+from app.shared.postgres_connection import (
     DatabaseInfo,
     DatabaseNotConfigured,
     DatabaseProbeError,

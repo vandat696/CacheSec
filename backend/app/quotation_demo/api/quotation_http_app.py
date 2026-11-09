@@ -2,34 +2,34 @@ from fastapi import FastAPI, Request
 from fastapi.exceptions import RequestValidationError
 from fastapi.responses import JSONResponse
 
-from app.quotation_demo.application.quotation_access import (
+from app.quotation_demo.api.quotation_request_middleware import QuotationRequestMiddleware
+from app.quotation_demo.api.quotation_responses import CONTRACT_VERSION
+from app.quotation_demo.api.quotation_routes import create_quotation_router
+from app.quotation_demo.api.quotation_service_factory import QuotationServiceFactory
+from app.quotation_demo.business.quotation_permissions import (
     QuotationAccessDenied,
     QuotationAuthorityUnavailable,
     QuotationIdentityRequired,
 )
-from app.quotation_demo.application.quotation_repository import (
+from app.quotation_demo.business.quotation_repository_interface import (
     QuotationIdempotencyConflict,
     QuotationPersistenceError,
 )
-from app.quotation_demo.application.quotation_service import (
+from app.quotation_demo.business.quotation_service import (
     InvalidIdempotencyKey,
     InvalidQuotationPage,
     QuotationNotFound,
 )
-from app.quotation_demo.http.contracts import CONTRACT_VERSION
-from app.quotation_demo.http.request_context import QuotationRequestContext
-from app.quotation_demo.http.router import create_quotation_router
-from app.quotation_demo.http.service_provider import QuotationServiceProvider
 
 
-def create_quotation_app(provider: QuotationServiceProvider, *, max_body_bytes: int) -> FastAPI:
-    """Requires an explicit trusted provider; no allow-all/default fixture identity."""
+def create_quotation_http_app(factory: QuotationServiceFactory, *, max_body_bytes: int) -> FastAPI:
+    """Configure HTTP delivery with an explicit service factory and no default identity."""
     app = FastAPI(
         title="Quotation API",
         version=CONTRACT_VERSION,
         description="Local PoC with backend-controlled fixture identities; not production login.",
     )
-    app.add_middleware(QuotationRequestContext, max_body_bytes=max_body_bytes)
+    app.add_middleware(QuotationRequestMiddleware, max_body_bytes=max_body_bytes)
 
     cases = {
         QuotationIdentityRequired: (401, "IDENTITY_REQUIRED", "Valid identity is required."),
@@ -77,5 +77,5 @@ def create_quotation_app(provider: QuotationServiceProvider, *, max_body_bytes: 
     app.add_exception_handler(
         Exception, error_handler(500, "INTERNAL_ERROR", "Internal server error.")
     )
-    app.include_router(create_quotation_router(provider))
+    app.include_router(create_quotation_router(factory))
     return app

@@ -13,7 +13,7 @@ Kiến trúc nghiên cứu là Secure Local Semantic Cache; bối cảnh mục t
 | Số liệu | [metricsPreview](../../frontend/src/features/metrics/metricsPreview.ts), [metricsModel](../../frontend/src/features/metrics/metricsModel.ts) | Fixture UI 24 query hoặc dữ liệu phiên; không kết quả benchmark |
 | Thiết lập | [SetupWorkspace](../../frontend/src/features/setup/SetupWorkspace.tsx), [experiment-config](../../frontend/src/features/experiment-config/) | Validation/snapshot/JSON results null; không runner hoặc cấp quyền |
 | Tài liệu | [documentModel](../../frontend/src/features/documents/documentModel.ts), [provider](../../frontend/src/features/documents/DocumentsProvider.tsx) | Giữ File/metadata trong phiên; không đọc/upload/index |
-| FastAPI | [main.py](../../backend/app/main.py), [test health](../../backend/tests/control/test_health.py) | Chỉ GET /health xác nhận process liveness và CORS local; không auth/DB/model |
+| FastAPI | [control_api.py](../../backend/app/control/control_api.py), [test health](../../backend/tests/control/test_health.py) | Chỉ GET /health xác nhận process liveness và CORS local; không auth/DB/model |
 | PostgreSQL/pgvector | [compose](../../infra/compose.yaml), [init SQL](../../infra/init.sql) | Cấu hình hạ tầng, chưa schema/adapter/migration hoặc kiểm chứng DB trong lượt khảo sát |
 | Research | `research/datasets/`, `research/results/` | Chỗ dành sẵn; không có fixture báo giá, protocol chạy hoặc ghi chú bài báo được tìm thấy |
 
@@ -95,11 +95,11 @@ Browser và nội dung repository/LLM không có thẩm quyền cấp quyền ho
 
 ## Dữ liệu/API và tổ chức dự kiến
 
-Control hiện có **GET /health** cho process liveness và **GET /ready** cho PostgreSQL probe; response và giới hạn tại [API nền](api.md#endpoint-nền-đã-triển-khai). [Database adapter](../../backend/app/shared/postgres.py) không phụ thuộc HTTP, workflow hoặc app báo giá; mở connection theo thao tác, commit/rollback qua context manager và luôn đóng connection kể cả khi commit lỗi. Không retry transaction hoặc tạo schema/extension tự động. App báo giá có API/fixture authority riêng như dưới; LLM, cache và API workflow/control vẫn chưa triển khai.
+Control hiện có **GET /health** cho process liveness và **GET /ready** cho PostgreSQL probe; response và giới hạn tại [API nền](api.md#endpoint-nền-đã-triển-khai). [Database adapter](../../backend/app/shared/postgres_connection.py) không phụ thuộc HTTP, workflow hoặc app báo giá; mở connection theo thao tác, commit/rollback qua context manager và luôn đóng connection kể cả khi commit lỗi. Không retry transaction hoặc tạo schema/extension tự động. App báo giá có API/fixture authority riêng như dưới; LLM, cache và API workflow/control vẫn chưa triển khai.
 
 ### Lưu trữ báo giá đã triển khai
 
-Lát cắt ngày 2026-11-07 có [domain models](../../backend/app/quotation_demo/domain/quotation.py), [PostgreSQL repository](../../backend/app/quotation_demo/persistence/postgres_quotation_repository.py), [migration CLI](../../backend/app/quotation_demo/migrate.py) và [entrypoint API riêng](../../backend/app/quotation_demo/main.py). Ngày 2026-11-09 nối UI /quotations qua HTTP/CORS: tạo/danh sách/chi tiết chạy thật với Bearer fixture; chưa có runtime validation ngày. Domain/application không phụ thuộc HTTP/storage; factory ASGI bọc CORS ngoài app để response lỗi cũng đến được browser, không import app.main/control, Agent hoặc cache. QUOTATION_DATABASE_URL là cấu hình riêng, không tự fallback sang DATABASE_URL của control. Local dùng chung PostgreSQL nhưng tách schema; đây là ranh giới sở hữu, chưa phải phân quyền database đã thực thi.
+Lát cắt ngày 2026-11-07 có [models](../../backend/app/quotation_demo/business/quotation_models.py), [PostgreSQL repository](../../backend/app/quotation_demo/database/postgres_quotation_repository.py), [migration CLI](../../backend/app/quotation_demo/migrate_quotations.py) và [entrypoint API riêng](../../backend/app/quotation_demo/quotation_api.py). Ngày 2026-11-09 nối UI /quotations qua HTTP/CORS, sau đó đổi tên source theo các nhóm api/business/auth/database: tạo/danh sách/chi tiết chạy thật với Bearer fixture; chưa có runtime validation ngày. business không phụ thuộc HTTP/storage; factory ASGI bọc CORS ngoài app để response lỗi cũng đến được browser, không import control, Agent hoặc cache. QUOTATION_DATABASE_URL là cấu hình riêng, không tự fallback sang DATABASE_URL của control. Local dùng chung PostgreSQL nhưng tách schema; đây là ranh giới sở hữu, chưa phải phân quyền database đã thực thi.
 
 Schema quotation_demo có bảng quotations với **đúng sáu cột**:
 
@@ -114,7 +114,7 @@ Schema quotation_demo có bảng quotations với **đúng sáu cột**:
 
 DecimalString nhận dạng `[+-]?[0-9]+(\.[0-9]+)?` trên toàn chuỗi; không nhận exponent/whitespace/NaN/Infinity hoặc ép JSON number thành string. Đây là kiểm tra biểu diễn, chưa thêm quy tắc tiền dương/min/max hoặc currency. expires_on nhận giá trị JSON hữu hạn, kể cả chuỗi ngày sai/rỗng, boolean, số, array/object. Dùng JSON thay vì JSONB vì không cần truy vấn/index ngày và cần giữ đầu vào; không chuyển ngày sai thành null. Model dùng model_fields_set để nhớ missing; khi xuất wire phải dùng exclude_unset=True để không biến missing thành null. Các giới hạn JSON/encoding của storage vẫn áp dụng; không coi lỗi lưu trữ là ngày đã được validate.
 
-PostgresQuotationRepository nhận connection do caller quản lý transaction; create/get/list/create_once không tự commit hoặc cấp quyền. get không tìm thấy trả None; list dùng keyset UUID tăng dần, đọc limit+1 để tạo next_cursor. Thứ tự là UUID, không phải ngày tạo; từng trang đọc snapshot tại statement hiện tại, chưa bảo đảm snapshot nhất quán qua nhiều request. QuotationService kiểm quyền qua port trước mở PostgresQuotationSessions; session commit trước khi HTTP có thể trả thành công, rollback khi lỗi và luôn đóng connection. [Bản đồ source/SOLID](code-organization.md#backend) ghi hướng phụ thuộc; [API](api.md#http-báo-giá-đã-triển-khai) sở hữu cap/phân trang/retry và [authorization](authorization.md#quyền-api-báo-giá-đã-triển-khai) sở hữu mapping/freshness.
+PostgresQuotationRepository nhận connection do caller quản lý transaction; create/get/list/create_once không tự commit hoặc cấp quyền. get không tìm thấy trả None; list dùng keyset UUID tăng dần, đọc limit+1 để tạo next_cursor. Thứ tự là UUID, không phải ngày tạo; từng trang đọc snapshot tại statement hiện tại, chưa bảo đảm snapshot nhất quán qua nhiều request. QuotationService kiểm quyền qua port trước mở PostgresQuotationTransactions; session commit trước khi HTTP có thể trả thành công, rollback khi lỗi và luôn đóng connection. [Bản đồ source/SOLID](code-organization.md#backend) ghi hướng phụ thuộc; [API](api.md#http-báo-giá-đã-triển-khai) sở hữu cap/phân trang/retry và [authorization](authorization.md#quyền-api-báo-giá-đã-triển-khai) sở hữu mapping/freshness.
 
 Migration 002 thêm bảng metadata quotation_demo.creation_requests, không thêm cột vào quotations: principal_id, scope_id, key_hash, payload_hash, quotation_id (FK) và created_at. PK là (principal_id, scope_id, key_hash). SHA-256 đối chiếu key/payload chuẩn hóa; transaction advisory lock theo principal/scope/key ngăn tạo trùng khi retry song song. Collision của lock chỉ làm serialize; quyết định reuse vẫn dựa PK/hash đầy đủ. Metadata và quotation cùng transaction; lỗi commit rollback cả hai. Principal/scope lấy từ authority, không từ client. Chưa có TTL/GC/reset tự động; metadata hiện giữ nguyên, chưa có audit durability/integrity bảo vệ trước người quản trị DB. Không dùng hash retry làm cơ chế approval/cache integrity.
 
@@ -142,17 +142,17 @@ Soạn ngày 2026-11-07 từ đầu vào kỹ thuật T01; [API](api.md) ghi đ�
 
 Đây là ranh giới trách nhiệm, không phải yêu cầu tạo một microservice/class cho mỗi hàng. Tên thư mục/entrypoint cụ thể và các kiểu dữ liệu sẽ hoàn thiện trong T02–T03 trước khi tạo source mới.
 
-Phân bổ source cho giai đoạn triển khai theo thiết kế T02, chưa tạo các đường dẫn mới:
+Phân bổ source hiện tại và các module mục tiêu của T02; chi tiết file sau refactor tên ngày 2026-11-09 ở [bản đồ source](code-organization.md#backend):
 
 | Vị trí | Vai trò và ranh giới |
 | --- | --- |
-| backend/app/main.py, config.py và database.py hiện có | Entrypoint/config control, health/readiness và adapter PostgreSQL; chưa có endpoint workflow. database.py không import config/control để adapter có thể tái sử dụng độc lập |
-| backend/app/quotation_demo/ | Đã có models/storage/config và migration CLI chạy độc lập; main.py/API app chưa tạo. App không import app.main, app.config, workflow hoặc cache; app/__init__.py không khởi tạo control khi import app báo giá |
+| backend/app/control/ và shared/postgres_connection.py | Control API/config/health/readiness; shared adapter PostgreSQL không import control/nghiệp vụ. Chưa có endpoint workflow |
+| backend/app/quotation_demo/ | Đã có quotation_api.py, quotation_settings.py, migrate_quotations.py cùng api/business/auth/database. API tạo/đọc/phân trang và UI chạy thật; import app báo giá không khởi tạo control/Agent/cache |
 | backend/app/identity/, repositories/, workflows/, cache_verification/, integrations/, execution/ | Nhóm trách nhiệm control/adapter; chỉ tạo module khi thực hiện năng lực tương ứng, không scaffold thư mục/tầng rỗng. execution gọi worker/launcher theo contract, cơ chế sandbox/worker entrypoint chờ T04 |
 | frontend/src/lib/cache/ | Logic local cache/contract TypeScript tách UI; không import React/Next hoặc object báo giá. Storage và HTTP verifier là adapter riêng; engine chưa chọn |
 | backend/tests/ và research/datasets/ | Test theo namespace app/control/cache và fixture đọc theo schema chung; backend/app không import script nghiên cứu. Không tạo fixture thực nghiệm thứ hai |
 
-T02 chọn ranh giới và vị trí module theo cấu trúc hiện có, không đổi tên repository hoặc dịch chuyển source đã có. Lệnh chạy app/control sẽ ghi vào setup khi entrypoint thật được triển khai; chưa có lệnh mới nào được kiểm chứng.
+T02 giữ ranh giới độc lập giữa app, control và cache. Việc đổi tên/di chuyển source ngày 2026-11-09 được người dùng yêu cầu để dễ đọc, không đổi bối cảnh/repository hoặc hành vi; lệnh chạy mới nằm tại [setup](../general/setup.md). Các module mục tiêu chưa có năng lực tương ứng vẫn chưa được scaffold.
 
 #### Đặc tả thao tác và dữ liệu
 

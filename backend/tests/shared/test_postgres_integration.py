@@ -6,7 +6,7 @@ import psycopg
 import pytest
 from pydantic import SecretStr
 
-from app.shared.postgres import PostgresDatabase
+from app.shared.postgres_connection import PostgresDatabase
 
 
 @pytest.fixture

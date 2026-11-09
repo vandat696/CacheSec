@@ -18,7 +18,7 @@ Identity/tenant lấy từ nguồn backend xác thực; client không được t
 
 ### Quyền API báo giá đã triển khai
 
-Theo lựa chọn người dùng, [FixtureIdentityRegistry](../../backend/app/quotation_demo/identity/fixture_registry.py) có hai principal trong scope cố định quotation_demo:
+Theo lựa chọn người dùng, [FixtureIdentityRegistry](../../backend/app/quotation_demo/auth/fixture_identity.py) có hai principal trong scope cố định quotation_demo:
 
 | Principal | Capability |
 | --- | --- |

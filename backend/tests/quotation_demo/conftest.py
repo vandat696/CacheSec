@@ -7,7 +7,7 @@ from psycopg import sql
 from psycopg.conninfo import make_conninfo
 from pydantic import SecretStr
 
-from app.shared.postgres import PostgresDatabase
+from app.shared.postgres_connection import PostgresDatabase
 
 
 @pytest.fixture

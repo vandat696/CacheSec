@@ -3,10 +3,10 @@ from uuid import uuid4
 from fastapi.responses import JSONResponse
 from starlette.types import ASGIApp, Message, Receive, Scope, Send
 
-from app.quotation_demo.http.contracts import CONTRACT_VERSION
+from app.quotation_demo.api.quotation_responses import CONTRACT_VERSION
 
 
-class QuotationRequestContext:
+class QuotationRequestMiddleware:
     """Bound actual request bytes and provide backend-generated correlation IDs."""
 
     def __init__(self, app: ASGIApp, *, max_body_bytes: int):

@@ -3,19 +3,23 @@ from uuid import uuid4
 
 import pytest
 
-from app.quotation_demo.application.quotation_access import (
+from app.quotation_demo.business.quotation_models import (
+    QuotationCreate,
+    QuotationPage,
+    QuotationRecord,
+)
+from app.quotation_demo.business.quotation_permissions import (
     QuotationAccessDenied,
     QuotationCaller,
     QuotationCapability,
 )
-from app.quotation_demo.application.quotation_repository import QuotationIdempotencyConflict
-from app.quotation_demo.application.quotation_service import (
+from app.quotation_demo.business.quotation_repository_interface import QuotationIdempotencyConflict
+from app.quotation_demo.business.quotation_service import (
     InvalidIdempotencyKey,
     InvalidQuotationPage,
     QuotationNotFound,
     QuotationService,
 )
-from app.quotation_demo.domain.quotation import QuotationCreate, QuotationPage, QuotationRecord
 
 
 class TestAuthority:

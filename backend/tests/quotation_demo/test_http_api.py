@@ -5,11 +5,11 @@ import pytest
 from fastapi.testclient import TestClient
 from pydantic import SecretStr
 
-from app.quotation_demo.application.quotation_repository import QuotationPersistenceError
-from app.quotation_demo.domain.quotation import QuotationPage
-from app.quotation_demo.http.application import create_quotation_app
-from app.quotation_demo.http.fixture_service_provider import FixtureQuotationServiceProvider
-from app.quotation_demo.identity.fixture_registry import FixtureIdentityRegistry
+from app.quotation_demo.api.quotation_http_app import create_quotation_http_app
+from app.quotation_demo.api.quotation_service_factory import FixtureQuotationServiceFactory
+from app.quotation_demo.auth.fixture_identity import FixtureIdentityRegistry
+from app.quotation_demo.business.quotation_models import QuotationPage
+from app.quotation_demo.business.quotation_repository_interface import QuotationPersistenceError
 
 READER = "unit-test-reader-credential-0000000000"
 OPERATOR = "unit-test-operator-credential-00000000"
@@ -36,8 +36,8 @@ class EmptySessions:
 def runtime():
     registry = FixtureIdentityRegistry(SecretStr(READER), SecretStr(OPERATOR))
     sessions = EmptySessions()
-    provider = FixtureQuotationServiceProvider(registry, sessions, max_page_size=100)
-    app = create_quotation_app(provider, max_body_bytes=65536)
+    provider = FixtureQuotationServiceFactory(registry, sessions, max_page_size=100)
+    app = create_quotation_http_app(provider, max_body_bytes=65536)
     with TestClient(app) as client:
         yield client, registry, sessions
 
@@ -142,8 +142,8 @@ def test_storage_failure_is_sanitized_and_never_reported_as_success():
             yield
 
     registry = FixtureIdentityRegistry(SecretStr(READER), SecretStr(OPERATOR))
-    provider = FixtureQuotationServiceProvider(registry, FailedSessions(), max_page_size=100)
-    with TestClient(create_quotation_app(provider, max_body_bytes=65536)) as client:
+    provider = FixtureQuotationServiceFactory(registry, FailedSessions(), max_page_size=100)
+    with TestClient(create_quotation_http_app(provider, max_body_bytes=65536)) as client:
         response = client.get("/api/v1/quotations", headers={"Authorization": f"Bearer {READER}"})
     assert response.status_code == 503
     assert response.json()["error"]["code"] == "STORAGE_UNAVAILABLE"
@@ -163,7 +163,7 @@ def test_unexpected_programming_error_remains_a_sanitized_500():
         def for_credential(self, credential):
             raise TypeError("do-not-echo-an-internal-secret")
 
-    app = create_quotation_app(BrokenProvider(), max_body_bytes=65536)
+    app = create_quotation_http_app(BrokenProvider(), max_body_bytes=65536)
     with TestClient(app, raise_server_exceptions=False) as client:
         response = client.get("/api/v1/quotations", headers={"Authorization": "Bearer test"})
     assert response.status_code == 500

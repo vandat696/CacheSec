@@ -1,15 +1,17 @@
 import psycopg
 import pytest
 
-from app.quotation_demo.application.quotation_access import QuotationCaller
-from app.quotation_demo.application.quotation_repository import (
+from app.quotation_demo.business.quotation_models import QuotationCreate
+from app.quotation_demo.business.quotation_permissions import QuotationCaller
+from app.quotation_demo.business.quotation_repository_interface import (
     QuotationCreationIdentity,
     QuotationPersistenceError,
 )
-from app.quotation_demo.application.quotation_service import QuotationService
-from app.quotation_demo.domain.quotation import QuotationCreate
-from app.quotation_demo.persistence.migrations import apply_migrations
-from app.quotation_demo.persistence.postgres_quotation_sessions import PostgresQuotationSessions
+from app.quotation_demo.business.quotation_service import QuotationService
+from app.quotation_demo.database.postgres_quotation_transactions import (
+    PostgresQuotationTransactions,
+)
+from app.quotation_demo.database.quotation_migrations import apply_migrations
 
 
 class AllowedTestAuthority:
@@ -25,7 +27,7 @@ def test_service_postgresql_commit_and_missing_null_raw_values(quotation_databas
     with quotation_database.connection() as connection:
         apply_migrations(connection)
     service = QuotationService(
-        PostgresQuotationSessions(quotation_database), AllowedTestAuthority(), max_page_size=100
+        PostgresQuotationTransactions(quotation_database), AllowedTestAuthority(), max_page_size=100
     )
     for index, expiration in enumerate([{}, {"expires_on": None}, {"expires_on": "2026-02-30"}]):
         created = service.create(
@@ -54,7 +56,7 @@ def test_database_deferred_commit_failure_is_visible_to_the_caller(quotation_dat
             "UNIQUE (supplier_name) DEFERRABLE INITIALLY DEFERRED"
         )
     service = QuotationService(
-        PostgresQuotationSessions(quotation_database), AllowedTestAuthority(), max_page_size=100
+        PostgresQuotationTransactions(quotation_database), AllowedTestAuthority(), max_page_size=100
     )
     data = QuotationCreate(
         supplier_name="Test", description="Test", total_amount="1", currency="VND"
@@ -69,7 +71,7 @@ def test_database_deferred_commit_failure_is_visible_to_the_caller(quotation_dat
 def test_idempotency_keys_are_separate_for_each_principal_and_scope(quotation_database):
     with quotation_database.connection() as connection:
         apply_migrations(connection)
-    sessions = PostgresQuotationSessions(quotation_database)
+    sessions = PostgresQuotationTransactions(quotation_database)
     data = QuotationCreate(
         supplier_name="Test", description="Test", total_amount="1", currency="VND"
     )

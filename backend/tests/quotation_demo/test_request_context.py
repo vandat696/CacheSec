@@ -3,7 +3,7 @@ import json
 
 import pytest
 
-from app.quotation_demo.http.request_context import QuotationRequestContext
+from app.quotation_demo.api.quotation_request_middleware import QuotationRequestMiddleware
 
 
 @pytest.mark.parametrize("declared", [None, b"1"])
@@ -26,7 +26,7 @@ def test_actual_stream_bytes_are_bounded_even_without_an_honest_content_length(d
         sent.append(message)
 
     scope = {"type": "http", "headers": [(b"content-length", declared)] if declared else []}
-    asyncio.run(QuotationRequestContext(app, max_body_bytes=5)(scope, receive, send))
+    asyncio.run(QuotationRequestMiddleware(app, max_body_bytes=5)(scope, receive, send))
     assert called == []
     assert sent[0]["status"] == 413
     assert json.loads(sent[1]["body"])["error"]["code"] == "PAYLOAD_TOO_LARGE"
@@ -53,7 +53,7 @@ def test_body_at_limit_is_replayed_and_incoming_request_id_does_not_become_autho
         sent.append(message)
 
     scope = {"type": "http", "headers": [(b"x-request-id", b"client-chosen")]}
-    asyncio.run(QuotationRequestContext(app, max_body_bytes=5)(scope, receive, send))
+    asyncio.run(QuotationRequestMiddleware(app, max_body_bytes=5)(scope, receive, send))
     assert seen == [{"type": "http.request", "body": b"abcde", "more_body": False}]
     assert scope["state"]["request_id"] != "client-chosen"
     assert dict(sent[0]["headers"])[b"cache-control"] == b"no-store"

@@ -5,7 +5,7 @@ from threading import RLock
 
 from pydantic import SecretStr
 
-from app.quotation_demo.application.quotation_access import (
+from app.quotation_demo.business.quotation_permissions import (
     QuotationAccessDenied,
     QuotationCaller,
     QuotationCapability,

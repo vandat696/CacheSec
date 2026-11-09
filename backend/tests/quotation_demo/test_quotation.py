@@ -5,8 +5,8 @@ import sys
 import pytest
 from pydantic import ValidationError
 
-from app.quotation_demo.domain.quotation import QuotationCreate
-from app.quotation_demo.settings import QuotationSettings
+from app.quotation_demo.business.quotation_models import QuotationCreate
+from app.quotation_demo.quotation_settings import QuotationSettings
 
 BASE = dict(
     supplier_name="Nhà cung cấp thử",
@@ -53,11 +53,12 @@ def test_quotation_package_imports_without_control_or_http() -> None:
         [
             sys.executable,
             "-c",
-            "import sys,json; import app.quotation_demo.domain.quotation,"
-            "app.quotation_demo.persistence.postgres_quotation_repository,"
-            "app.quotation_demo.migrate; "
+            "import sys,json; import app.quotation_demo.business.quotation_models,"
+            "app.quotation_demo.database.postgres_quotation_repository,"
+            "app.quotation_demo.migrate_quotations; "
             "print(json.dumps([m for m in sys.modules if m in "
-            "('app.main','app.control.settings','fastapi') or m.startswith('app.workflows')]))",
+            "('app.control.control_api','app.control.control_settings','fastapi') "
+            "or m.startswith('app.workflows')]))",
         ],
         capture_output=True,
         text=True,

@@ -4,19 +4,19 @@ from uuid import UUID
 from fastapi import APIRouter, Depends, Header, Request, Security
 from fastapi.security import HTTPAuthorizationCredentials, HTTPBearer
 
-from app.quotation_demo.application.quotation_access import QuotationIdentityRequired
-from app.quotation_demo.application.quotation_service import QuotationService
-from app.quotation_demo.domain.quotation import QuotationCreate, QuotationRecord
-from app.quotation_demo.http.contracts import (
+from app.quotation_demo.api.quotation_responses import (
     CONTRACT_VERSION,
     ApiMeta,
     ApiResponse,
     QuotationList,
 )
-from app.quotation_demo.http.service_provider import QuotationServiceProvider
+from app.quotation_demo.api.quotation_service_factory import QuotationServiceFactory
+from app.quotation_demo.business.quotation_models import QuotationCreate, QuotationRecord
+from app.quotation_demo.business.quotation_permissions import QuotationIdentityRequired
+from app.quotation_demo.business.quotation_service import QuotationService
 
 
-def create_quotation_router(provider: QuotationServiceProvider) -> APIRouter:
+def create_quotation_router(factory: QuotationServiceFactory) -> APIRouter:
     router = APIRouter(prefix="/api/v1/quotations", tags=["quotations"])
     bearer = HTTPBearer(auto_error=False)
 
@@ -26,7 +26,7 @@ def create_quotation_router(provider: QuotationServiceProvider) -> APIRouter:
     ) -> QuotationService:
         if len(request.headers.getlist("authorization")) != 1:
             raise QuotationIdentityRequired()
-        return provider.for_credential(credential.credentials if credential else None)
+        return factory.for_credential(credential.credentials if credential else None)
 
     def metadata(request: Request) -> ApiMeta:
         return ApiMeta(

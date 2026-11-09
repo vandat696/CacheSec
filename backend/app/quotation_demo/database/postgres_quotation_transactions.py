@@ -3,15 +3,15 @@ from contextlib import contextmanager
 
 import psycopg
 
-from app.quotation_demo.application.quotation_repository import (
+from app.quotation_demo.business.quotation_repository_interface import (
     QuotationPersistenceError,
     QuotationRepository,
 )
-from app.quotation_demo.persistence.postgres_quotation_repository import PostgresQuotationRepository
-from app.shared.postgres import DatabaseNotConfigured, PostgresDatabase
+from app.quotation_demo.database.postgres_quotation_repository import PostgresQuotationRepository
+from app.shared.postgres_connection import DatabaseNotConfigured, PostgresDatabase
 
 
-class PostgresQuotationSessions:
+class PostgresQuotationTransactions:
     def __init__(self, database: PostgresDatabase) -> None:
         self._database = database
 

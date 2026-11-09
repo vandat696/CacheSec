@@ -4,13 +4,17 @@ from threading import Barrier
 import psycopg
 import pytest
 
-from app.quotation_demo.persistence import migrations as migrate
-from app.quotation_demo.persistence.migrations import Migration, MigrationError, apply_migrations
+from app.quotation_demo.database import quotation_migrations as migrate
+from app.quotation_demo.database.quotation_migrations import (
+    Migration,
+    MigrationError,
+    apply_migrations,
+)
 
 
 def test_migration_replay_preserves_existing_records(quotation_database) -> None:
-    from app.quotation_demo.domain.quotation import QuotationCreate
-    from app.quotation_demo.persistence.postgres_quotation_repository import (
+    from app.quotation_demo.business.quotation_models import QuotationCreate
+    from app.quotation_demo.database.postgres_quotation_repository import (
         PostgresQuotationRepository,
     )
 
