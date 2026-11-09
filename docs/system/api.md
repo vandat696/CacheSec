@@ -49,7 +49,7 @@ Entrypoint app.quotation_demo.main:create_app chạy bằng --factory, độc l�
 | GET /api/v1/quotations?limit=50&after=UUID | quotation.read | 200, data = {items, next_cursor}; hết trang next_cursor = null |
 | GET /api/v1/quotations/{UUID} | quotation.read | 200, data = QuotationRecord; không thấy trả 404 |
 
-Response có meta = {contract_version: "v0.2", request_id, identity_mode: "fixture"}. X-Request-ID do backend sinh khớp meta; Cache-Control: no-store. Identity chỉ được kiểm tra cho dữ liệu báo giá; /docs và /openapi.json mở để xem contract, không chứa token/dữ liệu báo giá. Chưa có CORS/frontend integration cho entrypoint app.
+Response có meta = {contract_version: "v0.2", request_id, identity_mode: "fixture"}. X-Request-ID do backend sinh khớp meta; Cache-Control: no-store. Identity chỉ được kiểm tra cho dữ liệu báo giá; /docs và /openapi.json mở để xem contract, không chứa token/dữ liệu báo giá. Giao diện /quotations đã dùng ba thao tác này. App bật CORS theo allowlist QUOTATION_CORS_ORIGINS, chỉ GET/POST, nhận Authorization/Content-Type/Idempotency-Key và expose X-Request-ID, không dùng cookie credentials. CORS bọc cả response lỗi; origin được phép vẫn cần Bearer token/quyền.
 
 Theo lựa chọn kỹ thuật của người dùng: body tối đa **65.536 byte (64 KiB)**, đếm cả bytes thực khi không có Content-Length; page limit từ 1 đến **100**, mặc định 50 (hoặc cap cấu hình nếu thấp hơn). Idempotency-Key từ **1–128 ký tự ASCII**, không trim/đổi hoa thường; client nên dùng UUID hoặc chuỗi in được để truyền qua HTTP. Giới hạn này không phải acceptance threshold nghiên cứu. Cấu hình chỉ cho phép hạ cap; không tự mở rộng giới hạn đã chọn.
 

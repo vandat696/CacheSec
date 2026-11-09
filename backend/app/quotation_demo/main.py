@@ -1,6 +1,7 @@
 """Standalone app: uvicorn app.quotation_demo.main:create_app --factory."""
 
-from fastapi import FastAPI
+from fastapi.middleware.cors import CORSMiddleware
+from starlette.types import ASGIApp
 
 from app.quotation_demo.http.application import create_quotation_app
 from app.quotation_demo.http.fixture_service_provider import FixtureQuotationServiceProvider
@@ -10,7 +11,7 @@ from app.quotation_demo.settings import QuotationSettings
 from app.shared.postgres import PostgresDatabase
 
 
-def create_app(settings: QuotationSettings | None = None) -> FastAPI:
+def create_app(settings: QuotationSettings | None = None) -> ASGIApp:
     settings = settings if settings is not None else QuotationSettings()
     if settings.fixture_reader_token is None or settings.fixture_operator_token is None:
         raise ValueError("Configure both quotation fixture tokens before starting the API.")
@@ -26,4 +27,12 @@ def create_app(settings: QuotationSettings | None = None) -> FastAPI:
     provider = FixtureQuotationServiceProvider(
         registry, sessions, max_page_size=settings.max_page_size
     )
-    return create_quotation_app(provider, max_body_bytes=settings.max_body_bytes)
+    # Wrap the whole app so even sanitized 500 responses have CORS headers.
+    app = create_quotation_app(provider, max_body_bytes=settings.max_body_bytes)
+    return CORSMiddleware(
+        app,
+        allow_origins=settings.cors_origins,
+        allow_methods=["GET", "POST"],
+        allow_headers=["Authorization", "Content-Type", "Idempotency-Key"],
+        expose_headers=["X-Request-ID"],
+    )

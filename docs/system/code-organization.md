@@ -23,6 +23,7 @@ frontend/src/
       Icon.tsx
   features/
     developer/                 Workspace IDE mô phỏng
+    quotations/                form/danh sách/chi tiết nối API, hook phiên và HTTP adapter
     experiment-config/         profile, comparison, experiment-plan, setup-plan
     ui-library/
       catalog/                 definition + snippet theo từng template
@@ -35,6 +36,8 @@ experiment-config thay tên workspace cũ vì module đó giữ cấu hình thí
 
 Một file chứa component chính, props/helper cục bộ liên quan; helper dùng chung có file rõ tên trong cùng nhóm (Field/useField, ChartFrame/CartesianPlot/DonutPlot). Import trực tiếp module, ví dụ `@/components/ui/forms/Select`. Registry catalog chỉ lắp ghép definitions/previews, không chứa implementation. React giữ function component/hooks và composition; CSS app giữ selector/token hiện có.
 
+Trong quotations: quotationModel.ts sở hữu wire types/draft và bảo toàn missing/null/raw; quotationApi.ts là adapter HTTP kiểm response/lỗi, nhận fetch qua constructor. useQuotations.ts quản lý request/abort/phiên trong bộ nhớ; QuotationConnection/Form/List/Details mỗi file một component, QuotationWorkspace chỉ lắp ghép. Form giữ body/key cho retry khi kết quả chưa rõ; không nhét token/nghiệp vụ vào AppShell hoặc route.
+
 ## Backend
 
 ```text
@@ -45,7 +48,7 @@ backend/app/
     health.py                                  router operational + response contracts
   shared/postgres.py                           PostgresDatabase, connection lifecycle
   quotation_demo/
-    main.py                                    composition root API riêng (--factory)
+    main.py                                    composition root ASGI/CORS riêng (--factory)
     settings.py                                cấu hình QUOTATION_ riêng
     domain/quotation.py                        QuotationCreate/Record/Page
     application/

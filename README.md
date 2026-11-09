@@ -28,10 +28,10 @@ Bối cảnh đã cập nhật ngày **2026-11-02**. Frontend có thêm **Develo
 | Số liệu `/metrics` | Ba tab, biểu đồ/bảng/chi tiết; mặc định 24 truy vấn giả, nguồn phiên riêng tại `/metrics?source=session` | Fixture xem UI, không phải kết quả thực nghiệm |
 | Tài liệu `/documents` | Chọn/thả, phân loại, tìm/lọc tệp trong phiên | Chờ tải lên; chưa đọc/ingest/upload hoặc authorized retrieval |
 | Backend control | FastAPI `GET /health`, `GET /ready`, adapter kết nối PostgreSQL/Psycopg, CORS local | Readiness chỉ kiểm tra PostgreSQL; chưa authority control, Agent hoặc gate |
-| Báo giá | API tạo/đọc/phân trang độc lập, application/ports, Bearer fixture reader/operator, PostgreSQL và retry idempotent | Identity local PoC, một dataset dùng chung; chưa UI/runtime validation ngày hoặc rule mới |
+| Báo giá `/quotations` | Form nhập, danh sách/chi tiết nối API và PostgreSQL thật; Bearer fixture reader/operator, retry idempotent | Identity local PoC, một dataset dùng chung; chưa runtime validation ngày hoặc rule mới |
 | Hạ tầng | PostgreSQL 17.11/pgvector 0.8.7 qua Compose; đã áp dụng migration báo giá và kiểm chứng DB thật | Chưa schema/control/artifact của workflow |
 
-App báo giá chạy HTTP độc lập với quyền fixture được backend kiểm tra; chưa nối giao diện. Chưa có fixture báo giá đóng băng, Local Semantic Cache, embedding/matching/verification, phân quyền repo/control, model adapter, backend approval/deployment control, audit log hoặc runner thực nghiệm. Change Review/Phê duyệt/Nhật ký trong Workspace mới là bản mẫu; nút Triển khai luôn khóa. Dữ liệu demo không phải số đo hoặc bằng chứng quyền. Chat/tệp/cấu hình nháp mất khi tải lại; chọn RBAC/ABAC trong UI không cấp quyền.
+App báo giá chạy HTTP độc lập với quyền fixture được backend kiểm tra; giao diện dùng API này tại /quotations, mở từ sidebar hoặc toolbar Workspace. Chưa có fixture báo giá đóng băng, Local Semantic Cache, embedding/matching/verification, phân quyền repo/control, model adapter, backend approval/deployment control, audit log hoặc runner thực nghiệm. Change Review/Phê duyệt/Nhật ký trong Workspace mới là bản mẫu; nút Triển khai luôn khóa. Dữ liệu demo không phải số đo hoặc bằng chứng quyền. Chat/tệp/cấu hình nháp mất khi tải lại; chọn RBAC/ABAC trong UI không cấp quyền.
 
 ## Công nghệ và tổ chức
 

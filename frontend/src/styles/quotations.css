@@ -1,0 +1,58 @@
+.quotation-workspace { font-size: 14px; }
+.quotation-workspace h2 { font-size: 16px; font-weight: 600; }
+.quotation-note { color: var(--nui-muted); font-size: 13px; }
+.quotation-connection {
+  display: flex; align-items: flex-start; gap: 16px;
+  padding: 24px; border: 1px solid var(--nui-border); background: var(--nui-surface);
+}
+.quotation-connection .nui-field { flex: 1; max-width: 560px; min-width: 0; }
+.quotation-connection > button { margin-top: 26px; }
+.quotation-layout { display: grid; grid-template-columns: 340px minmax(0, 1fr); gap: 32px; align-items: start; }
+.quotation-form { display: grid; gap: 16px; padding: 20px; border: 1px solid var(--nui-border); background: var(--nui-surface); }
+.quotation-form fieldset { display: grid; gap: 16px; margin: 0; padding: 0; border: 0; min-width: 0; }
+.quotation-form .nui-field { min-width: 0; }
+.quotation-form textarea { resize: vertical; }
+.quotation-amount-row { display: grid; grid-template-columns: minmax(0, 1fr) 92px; gap: 12px; }
+.quotation-notice { color: var(--nui-success); }
+.quotation-notice:empty { display: none; }
+.quotation-workspace > .quotation-error { margin-bottom: 20px; padding: 16px; border: 1px solid var(--nui-danger); }
+.quotation-error { color: var(--nui-danger); overflow-wrap: anywhere; }
+.quotation-error small { display: block; margin-top: 8px; }
+.quotation-records { min-width: 0; }
+.quotation-section-heading { display: flex; align-items: center; justify-content: space-between; gap: 16px; margin-bottom: 12px; }
+.quotation-empty { padding: 32px 0; color: var(--nui-muted); }
+.quotation-list { list-style: none; padding: 0; margin: 0 0 16px; border-top: 1px solid var(--nui-border); max-height: 460px; overflow-y: auto; scrollbar-width: thin; }
+.quotation-list li { border-bottom: 1px solid var(--nui-border); }
+.quotation-row {
+  display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: 8px 16px;
+  width: 100%; padding: 16px 12px; text-align: left; color: var(--nui-text);
+  font: inherit; border: 0; background: var(--nui-surface); cursor: pointer;
+}
+.quotation-row:hover, .quotation-row[aria-pressed="true"] { background: var(--nui-tint); }
+.quotation-row:focus-visible { outline: 2px solid var(--nui-primary); outline-offset: -2px; }
+.quotation-row:disabled { cursor: wait; opacity: .7; }
+.quotation-row > * { overflow-wrap: anywhere; min-width: 0; }
+.quotation-money { text-align: right; font-variant-numeric: tabular-nums; }
+.quotation-row-description, .quotation-row-expiration { color: var(--nui-muted); font-size: 13px; }
+.quotation-row-description { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.quotation-row-expiration { text-align: right; }
+.quotation-details { border-bottom: 1px solid var(--nui-border); margin-bottom: 24px; padding-bottom: 20px; }
+.quotation-details dl { display: grid; gap: 12px; margin: 16px 0; }
+.quotation-details dl > div { display: grid; grid-template-columns: 120px minmax(0, 1fr); gap: 16px; }
+.quotation-details dt { color: var(--nui-muted); }
+.quotation-details dd { margin: 0; white-space: pre-wrap; overflow-wrap: anywhere; }
+.quotation-details summary { cursor: pointer; color: var(--nui-muted); }
+.quotation-details pre { white-space: pre-wrap; overflow-wrap: anywhere; padding: 16px; margin-top: 12px; background: var(--nui-surface); font-size: 12px; }
+.dev-quotation-link { display: inline-flex; align-items: center; gap: 6px; color: var(--nui-primary); font-size: 13px; text-decoration: none; }
+.dev-quotation-link:hover { text-decoration: underline; }
+@media (max-width: 1100px) {
+  .quotation-layout { grid-template-columns: minmax(260px, .8fr) minmax(0, 1fr); gap: 20px; }
+}
+@media (max-width: 767px) {
+  .quotation-workspace { padding: 20px 16px 32px; }
+  .quotation-layout { grid-template-columns: minmax(0, 1fr); }
+  .quotation-connection { flex-direction: column; padding: 16px; }
+  .quotation-connection .nui-field { width: 100%; }
+  .quotation-connection > button { margin-top: 0; }
+  .quotation-details dl > div { grid-template-columns: 90px minmax(0, 1fr); gap: 12px; }
+}

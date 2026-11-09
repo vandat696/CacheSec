@@ -13,6 +13,7 @@ import { SidebarChat } from "@/features/chat/SidebarChat";
 
 const navigation = [
   { href: "/workspace", label: "Workspace", icon: "code" },
+  { href: "/quotations", label: "Báo giá", icon: "file" },
   { href: "/setup", label: "Thiết lập", icon: "settings" },
   { href: "/", label: "Chat", icon: "chat" },
   { href: "/metrics", label: "Số liệu", icon: "chart" },

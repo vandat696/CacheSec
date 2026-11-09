@@ -1,6 +1,7 @@
 "use client";
 
 import { useReducer, useRef, useState, type FormEvent } from "react";
+import Link from "next/link";
 import { Button } from "@/components/ui/Button";
 import { Icon } from "@/components/ui/Icon";
 import { DeveloperReviewDialog, DiffPanel } from "./DeveloperPanels";
@@ -37,6 +38,7 @@ export function DeveloperWorkspace() {
         <h1>Workspace</h1>
         <span className="dev-demo-label" title="Chưa kết nối Agent, repository hoặc backend">Mô phỏng</span>
         <div className="dev-toolbar-actions">
+          <Link href="/quotations" className="dev-quotation-link"><Icon name="file" />Báo giá</Link>
           <Button variant="tertiary" id="preview-open-tests" aria-haspopup="dialog" aria-controls="developer-review-dialog" aria-expanded={review === "tests"} onClick={() => setReview("tests")} title={testsShown ? "Đã xem kết quả mẫu" : "Xem kiểm thử mẫu"}><Icon name="terminal" />Kiểm thử</Button>
           <Button variant="tertiary" id="preview-open-approval" aria-haspopup="dialog" aria-controls="developer-review-dialog" aria-expanded={review === "approval"} onClick={() => setReview("approval")}><Icon name={approved ? "check" : "shield"} />Phê duyệt</Button>
           <Button variant="tertiary" onClick={reset} id="preview-reset" aria-label="Bắt đầu lại" title="Bắt đầu lại"><Icon name="refresh" /></Button>

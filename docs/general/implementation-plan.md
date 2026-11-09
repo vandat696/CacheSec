@@ -2,7 +2,7 @@
 
 ## Trạng thái và nguyên tắc
 
-Lập ngày 2026-11-02; cập nhật tiến độ ngày **2026-11-07**. Trạng thái từng gói T01–T17 nằm ở checklist; dấu chọn chỉ xác nhận đầu ra và kiểm chứng thuộc gói đó. **T02 đã hoàn thành đặc tả thiết kế v0.2**; T01 còn chờ điều kiện nghiên cứu. Đã có nền PostgreSQL/readiness và API báo giá tạo/đọc/phân trang độc lập, quyền Bearer fixture, application/ports và retry idempotent. Đây là lát cắt app của T03–T07; chưa hoàn thành toàn bộ các gói hoặc chọn thay policy/control còn mở. UI IDE vẫn mô phỏng; chưa có workflow backend/cache/gate hoặc chạy thực nghiệm.
+Lập ngày 2026-11-02; cập nhật tiến độ ngày **2026-11-09**. Trạng thái từng gói T01–T17 nằm ở checklist; dấu chọn chỉ xác nhận đầu ra và kiểm chứng thuộc gói đó. **T02 đã hoàn thành đặc tả thiết kế v0.2**; T01 còn chờ điều kiện nghiên cứu. Đã có nền PostgreSQL/readiness và API báo giá tạo/đọc/phân trang độc lập, quyền Bearer fixture, application/ports và retry idempotent; UI /quotations đã nối API. Đây là lát cắt app T03–T07 và phần UI app T15; chưa hoàn thành toàn bộ gói hoặc chọn thay policy/control còn mở. UI IDE vẫn mô phỏng; chưa có workflow backend/cache/gate hoặc chạy thực nghiệm.
 
 Phạm vi và câu hỏi mở do [tổng quan](overview.md) sở hữu; module/runtime do [kiến trúc](../system/architecture.md) sở hữu, request/response/thao tác do [contract API](../system/api.md) sở hữu; quyền/gate do [phân quyền](../system/authorization.md) sở hữu; protocol/fixture/acceptance do [đánh giá](../evaluation/design.md) sở hữu. Kế hoạch này quản lý việc cần làm và điều kiện nghiệm thu, không thay đặc tả của các tài liệu đó.
 
@@ -15,6 +15,8 @@ Bước T02, T08–T11 và T14 phải giữ [contract tích hợp IDE/Agent](../
 ## Cách thực hiện
 
 Thực hiện T01 → T17. Mỗi mục là một gói công việc có đầu ra review được, thường gồm một năng lực hoàn chỉnh và kiểm chứng liên quan; không coi từng bảng DB, endpoint hay component là một tác vụ riêng. Khi bắt đầu một mục, đọc lại code/trạng thái rồi mới chia checklist kỹ thuật chi tiết; không scaffold trước toàn bộ hệ thống.
+
+Theo yêu cầu ngày 2026-11-09, triển khai đến đâu nối giao diện sử dụng được đến đó khi contract/quyền tương ứng đã sẵn sàng. Không đợi hoàn thành toàn bộ backend mới nối UI; phần chưa có backend giữ trạng thái mô phỏng rõ ràng. Điều kiện nghiên cứu/bảo mật còn mở vẫn chặn phần phụ thuộc, không dùng mock thành công để nối luồng.
 
 T01–T04 ưu tiên **thiết kế và xác nhận**. Có thể soạn nháp các mục thiết kế khi còn câu hỏi, nhưng đánh dấu phần chưa chốt và dừng phần triển khai phụ thuộc vào chúng. T05–T16 là phát triển/kiểm chứng kỹ thuật, không được ghi thành kết quả thực nghiệm. T17 mới thu thập dữ liệu so sánh chính khi các điều kiện đã khóa. Khi hoàn thành mục nào, ghi ngắn đầu ra, kiểm tra, giới hạn và bước kế tiếp trong [project status](project-status.md).
 
@@ -73,7 +75,7 @@ Không tự chọn thay người dùng/giảng viên các giá trị ảnh hư�
 ### T07 — Dựng ứng dụng báo giá nền và fixture duy nhất
 
 - [ ] Hoàn thành T07. **Phụ thuộc:** T01, T05–T06 và contract app ở T02.
-- **Trạng thái:** đã có domain/application/storage và entrypoint API tạo/đọc/phân trang độc lập control/Agent/cache; Bearer fixture và idempotency chạy thật. Chưa có runtime validation ngày, UI báo giá hoặc fixture/oracle nghiên cứu; chưa cài rule expiration_review vào app nền.
+- **Trạng thái:** đã có domain/application/storage và entrypoint API tạo/đọc/phân trang độc lập control/Agent/cache; Bearer fixture và idempotency chạy thật, UI /quotations đã nối HTTP/PostgreSQL. Chưa có runtime validation ngày hoặc fixture/oracle nghiên cứu; chưa cài rule expiration_review vào app nền.
 - **Làm:** app tiếp nhận/danh sách/chi tiết/validation tối thiểu chạy độc lập, **chưa có rule mới**. Tạo một fixture manifest có nhãn, mốc thời gian, phần ca gate/reuse liên kết và oracle theo contract đã xác nhận; backend đọc schema dùng chung, không import script nghiên cứu.
 - **Đầu ra:** source app nền, entrypoint/API riêng với control, test nền và manifest có version/digest; ghi revision gốc và cách tái tạo trạng thái ban đầu.
 - **Nghiệm thu:** app chạy không import code Agent/IDE/cache; test hành vi cũ pass. Ca kiểm tra rule mới chứng minh thiếu sót có chủ đích, phân biệt expected failure của app gốc với lỗi của workflow đã hoàn thành. Fixture UI cũ không trở thành fixture thực nghiệm; các test double đơn vị không phải tập benchmark thứ hai.
@@ -130,6 +132,7 @@ Không tự chọn thay người dùng/giảng viên các giá trị ảnh hư�
 ### T15 — Nối giao diện IDE và màn báo giá với backend
 
 - [ ] Hoàn thành T15. **Phụ thuộc:** API ở T07 và workflow T14.
+- **Trạng thái:** đã nối phần app báo giá: form/danh sách/chi tiết qua API, token fixture trong bộ nhớ, lỗi/quyền/retry thật, liên kết từ Workspace. IDE code/Agent/review/test/deploy còn mô phỏng; T15 chưa hoàn thành toàn bộ.
 - **Làm:** tái sử dụng code/chat IDE, thay fixture bằng source/diff/message/status thật; nối hộp thoại test/approval. Thêm màn báo giá tối giản dùng API app để nhập/xem/validation và quan sát trước/sau activation; route cụ thể theo contract đã chốt, không dựng ERP hoặc IDE đầy đủ.
 - **Đầu ra:** demo sử dụng được từ trình duyệt: prompt → diff/test → reviewer duyệt → kích hoạt → báo giá phản ánh rule mới.
 - **Nghiệm thu:** UI không tự bịa hit/test/approval; loading/error/reconnect và stale revision rõ; thao tác chưa được phép không thành công qua API. Code/chat vẫn là hai vùng chính, giữ UI ít chữ, accessibility/responsive và các màn cũ.

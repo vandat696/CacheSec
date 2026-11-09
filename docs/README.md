@@ -15,7 +15,7 @@ Hồ sơ thiết kế và trạng thái hệ thống. Nội dung dự kiến kh�
 | System | [Contract backend và cache](system/api.md) | T02 v0.2; API tạo/đọc báo giá và health/readiness đã triển khai, phần control/cache còn là thiết kế |
 | System | [Cache](system/cache.md) | Answer/Context Cache, Hit/Miss/Rejected, verification, metadata và lifecycle |
 | System | [Phân quyền](system/authorization.md) | RBAC/ABAC, verifier, exact-change approval gate, deployment binding và threat model |
-| Frontend | [Thiết kế](frontend/design.md) | Workspace/review/approval UI mô phỏng, bốn màn cũ và phương án tích hợp thật |
+| Frontend | [Thiết kế](frontend/design.md) | Báo giá nối API thật, Workspace/review/approval mô phỏng và các màn cũ |
 | Evaluation | [Thiết kế đánh giá](evaluation/design.md) | So sánh chính năm chiều, phép thử cache phụ, mẫu số/nguồn đo, fixture và threshold |
 
 ## Cách đọc và cập nhật

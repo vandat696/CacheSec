@@ -1,5 +1,16 @@
 # Thiết kế frontend
 
+## Báo giá — nối API thật ngày 2026-11-09
+
+Route /quotations mở từ sidebar hoặc liên kết Báo giá trên toolbar Workspace; IDE giữ hai vùng code/chat. Trang dùng UI kit hiện có: form tạo bên trái, danh sách và chi tiết bên phải, mobile xếp dọc. Không có dữ liệu/phản hồi thành công mẫu. Tạo, làm mới, tải thêm và chọn chi tiết gọi API báo giá độc lập, lưu/đọc PostgreSQL; mã do server cấp.
+
+- Kết nối bằng token fixture nhập ở ô password; token chỉ giữ trong bộ nhớ component, không lưu cookie/localStorage/sessionStorage hoặc cấu hình public. Rời route/reload/ngắt kết nối xóa phiên UI; 401 xóa dữ liệu và yêu cầu kết nối lại. Client không có dropdown role/tenant hoặc token mặc định; backend vẫn quyết định quyền, kể cả khi người dùng tự gọi API.
+- QuotationHttpClient tách khỏi hook/UI, nhận fetch adapter để kiểm thử. Chỉ tin response đúng contract v0.2/identity fixture; lỗi mạng/schema/quyền không đổi thành dữ liệu giả hoặc thông báo lưu thành công. Request không dùng browser credentials/cache; redirect bị từ chối. Hook abort và kiểm tra request hiện tại để response đến trễ không khôi phục dữ liệu sau đổi/ngắt phiên.
+- Form giữ chuỗi tiền, không ép Number hoặc làm tròn; ngày có bốn dạng missing, chuỗi (kể cả rỗng/sai lịch), null và JSON thô. Không parse/validate lịch hoặc sinh expiration_review; ghi ngắn Chưa kiểm tra ngày hết hạn. Chi tiết thể hiện đủ sáu trường và JSON mở khi cần; missing khác null/chuỗi rỗng.
+- Mỗi lần tạo có Idempotency-Key riêng. Khi mất response hoặc gặp lỗi chưa rõ kết quả, giữ nguyên body/key trong bộ nhớ, khóa sửa form và cho Thử lại lần gửi. Thành công chỉ sau response hợp lệ; refresh danh sách lỗi không biến báo giá đã lưu thành lần gửi chưa thành công. Reload/rời route mất key đang chờ: cần xem lại dữ liệu trước khi tạo lại; chưa có recovery bền vững qua reload hoặc audit workflow.
+
+Nguồn ở features/quotations, CSS scope quotations.css; route chỉ lắp ghép. NEXT_PUBLIC_QUOTATION_API_URL là địa chỉ public của API, **không chứa token**. CORS, quyền và lệnh chạy/kiểm tra tại [setup](../general/setup.md#2b-api-báo-giá-độc-lập), [API](../system/api.md#http-báo-giá-đã-triển-khai) và [authorization](../system/authorization.md#quyền-api-báo-giá-đã-triển-khai). Đây là kết nối app báo giá; Agent/code/review/test/deploy trong Workspace vẫn mô phỏng.
+
 ## Developer Workspace — bản xem trước ngày 2026-11-02
 
 Theo quy tắc tối giản chữ: không có lời giới thiệu, mô tả nhiệm vụ lặp, phần tổng kết diff hoặc footer quảng bá. Ghi chú mã/test mở khi cần; điều kiện duyệt và trạng thái chưa kết nối triển khai vẫn rõ.
@@ -63,7 +74,7 @@ So sánh hai nhánh nằm trong Chat với một ô nhập chung. Yêu cầu ng�
 | `/chat`, `/settings`, `/experiments` | Chuyển về Chat để giữ liên kết cũ | Không mở lại màn tham số/thí nghiệm |
 | `/ui` | Thư viện 21 component, truy cập trực tiếp cho phát triển | Không có mục điều hướng trong app chính |
 
-Sidebar theo thứ tự Workspace → Thiết lập → Chat → Số liệu → Tài liệu. Lịch sử chat dùng cùng sidebar, không tạo thêm cột điều hướng. Thanh đầu trang Chat giữ Thông số và cài đặt ở góc phải; đã bỏ nhãn Mô phỏng và phần giới hạn mở từ nhãn đó. Nội dung và hành động giữ ngắn, dùng hệ màu/font/border của Nói.
+Sidebar theo thứ tự Workspace → Báo giá → Thiết lập → Chat → Số liệu → Tài liệu. Lịch sử chat dùng cùng sidebar, không tạo thêm cột điều hướng. Thanh đầu trang Chat giữ Thông số và cài đặt ở góc phải; đã bỏ nhãn Mô phỏng và phần giới hạn mở từ nhãn đó. Nội dung và hành động giữ ngắn, dùng hệ màu/font/border của Nói.
 
 Lịch sử và nút Chat mới nằm lồng ngay dưới mục Chat, trước Số liệu. Mặc định thu gọn; bấm Chat hoặc mũi tên để mở/đóng với hiệu ứng chiều cao và độ mờ (tắt khi giảm chuyển động). Mỗi lần mở hiện 5 hội thoại đầu danh sách, theo thứ tự mới tạo trước; **Hiển thị thêm** mở tiếp từng nhóm 5 và ẩn khi hết. Hội thoại đang chọn được tô nền, tên dài rút gọn bằng dấu ba chấm. Có thể chọn lịch sử từ Số liệu/Tài liệu để trở về đúng hội thoại; giữ bản nháp và chế độ. Trên điện thoại, mở lịch sử giữ drawer để chọn; chọn hội thoại/Chat mới đóng drawer. Nội dung thu gọn không nhận focus hoặc xuất hiện với trình đọc màn hình; nút mũi tên hỗ trợ bàn phím và báo trạng thái mở/đóng.
 

@@ -9,6 +9,7 @@ import { resolve, join, extname } from "node:path";
 import { fileURLToPath } from "node:url";
 import { checkDeveloperPreview } from "./developer-browser-check.mjs";
 import { checkUiTemplates } from "./ui-template-browser-check.mjs";
+import { checkQuotations } from "./quotation-browser-check.mjs";
 
 const frontend = fileURLToPath(new URL("..", import.meta.url));
 const output = join(frontend, "test-results", "browser");
@@ -223,7 +224,7 @@ try {
     await screenshot("failure.png");
     console.error(
       await evaluate(
-        "JSON.stringify({url:location.href,focus:document.activeElement.outerHTML.slice(0,200),width:innerWidth})",
+        "JSON.stringify({url:location.pathname,focus:document.activeElement.type === 'password' ? '[password input]' : document.activeElement.outerHTML.slice(0,200),width:innerWidth})",
       ),
     );
     console.error(errors);
@@ -236,8 +237,12 @@ try {
     deviceScaleFactor: 1,
     mobile: false,
   });
-  await checkDeveloperPreview({ cdp, navigate, evaluate, waitFor, click, fill, key, screenshot });
-  if (!process.argv.includes("--developer-only")) {
+  if (process.argv.includes("--quotations-only")) {
+    await checkQuotations({ cdp, navigate, evaluate, waitFor, click, fill, key, screenshot });
+  } else {
+    await checkDeveloperPreview({ cdp, navigate, evaluate, waitFor, click, fill, key, screenshot });
+  }
+  if (!process.argv.includes("--developer-only") && !process.argv.includes("--quotations-only")) {
   await navigate("/ui");
   await navigate("/setup");
   assert.equal(await evaluate("document.querySelector('.sidebar nav a').getAttribute('href')"), '/workspace');
@@ -447,9 +452,9 @@ try {
   await closeMetrics();
   assert.equal(
     await evaluate("document.querySelectorAll('.sidebar nav a.nav').length"),
-    5,
+    6,
   );
-  assert.deepEqual(await evaluate("[...document.querySelectorAll('.sidebar nav a.nav')].map(link => link.textContent.trim())"), ["Workspace", "Thiết lập", "Chat", "Số liệu", "Tài liệu"]);
+  assert.deepEqual(await evaluate("[...document.querySelectorAll('.sidebar nav a.nav')].map(link => link.textContent.trim())"), ["Workspace", "Báo giá", "Thiết lập", "Chat", "Số liệu", "Tài liệu"]);
   assert.equal(
     await evaluate(
       "document.querySelector('.sidebar').textContent.includes('Cấu hình')",
@@ -1120,7 +1125,9 @@ try {
   }
   assert.deepEqual(errors, [], "Lỗi runtime/React trên trình duyệt");
   console.log(
-    process.argv.includes("--developer-only")
+    process.argv.includes("--quotations-only")
+      ? "Đạt: Báo giá qua HTTP/PostgreSQL thật, quyền reader/operator, pagination, missing/null/raw date, retry sau mất response, dữ liệu đến trễ, token trong bộ nhớ và responsive."
+      : process.argv.includes("--developer-only")
       ? "Đạt: Workspace IDE code/Agent, diff, hộp thoại test/approval mẫu, invalidation theo revision, hội thoại trống/reset, nhập an toàn, focus/keyboard và 16 bố cục."
       : "Đạt: Developer Workspace (16 bố cục), Thiết lập chín nhóm/validation/xuất cấu hình, ba chế độ Chat, Thông số theo lượt gửi, Số liệu ba tab/dữ liệu mẫu tách phiên/lọc/biểu đồ/chi tiết, giữ phiên/reset, Tài liệu, UI kit, keyboard, 72 bố cục và 27 bố cục dữ liệu mẫu.",
   );

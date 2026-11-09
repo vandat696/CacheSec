@@ -14,3 +14,4 @@ class QuotationSettings(BaseSettings):
     fixture_operator_token: SecretStr | None = Field(default=None, repr=False)
     max_page_size: int = Field(default=100, ge=1, le=100)
     max_body_bytes: int = Field(default=65536, ge=1, le=65536)
+    cors_origins: list[str] = ["http://127.0.0.1:3000", "http://localhost:3000"]
