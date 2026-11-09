@@ -10,6 +10,15 @@ export type QuotationCreate = {
 
 export type QuotationRecord = QuotationCreate & { id: string };
 export type QuotationPage = { items: QuotationRecord[]; next_cursor: string | null };
+export type QuotationFlag = { code: string; field: string; message: string };
+export type QuotationValidation = {
+  quotation_id: string;
+  flags: QuotationFlag[];
+  evaluated_rules: string[];
+  validation_config_ref: string;
+  reference_date: null;
+  active_artifact: null;
+};
 export type ExpirationMode = "text" | "missing" | "null" | "json";
 export type QuotationDraft = {
   supplier: string;

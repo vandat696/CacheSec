@@ -6,6 +6,7 @@ from typing import Protocol
 class QuotationCapability(StrEnum):
     READ = "quotation.read"
     CREATE = "quotation.create"
+    VALIDATE = "quotation.validate"
 
 
 class QuotationAccessDenied(PermissionError):

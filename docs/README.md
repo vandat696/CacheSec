@@ -12,7 +12,7 @@ Hồ sơ thiết kế và trạng thái hệ thống. Nội dung dự kiến kh�
 | General | [Cài đặt](general/setup.md) | Môi trường, lệnh chạy và kiểm tra |
 | System | [Kiến trúc](system/architecture.md) | As-Is, ba ranh giới ứng dụng/Agent-IDE/cache, schema/storage báo giá đã triển khai và workflow mục tiêu |
 | System | [Tổ chức source](system/code-organization.md) | Đặt tên/module frontend/backend, UI kit/catalog, template source và bundle |
-| System | [Contract backend và cache](system/api.md) | T02 v0.2; API tạo/đọc báo giá và health/readiness đã triển khai, phần control/cache còn là thiết kế |
+| System | [Contract backend và cache](system/api.md) | T02 v0.2; API tạo/đọc/validate nền báo giá và health/readiness đã triển khai, phần control/cache còn là thiết kế |
 | System | [Cache](system/cache.md) | Answer/Context Cache, Hit/Miss/Rejected, verification, metadata và lifecycle |
 | System | [Phân quyền](system/authorization.md) | RBAC/ABAC, verifier, exact-change approval gate, deployment binding và threat model |
 | Frontend | [Thiết kế](frontend/design.md) | Báo giá nối API thật, Workspace/review/approval mô phỏng và các màn cũ |

@@ -1,9 +1,16 @@
 "use client";
 
 import { useEffect, useRef } from "react";
-import { expirationLabel, type QuotationRecord } from "./quotationModel";
+import { expirationLabel, type QuotationRecord, type QuotationValidation } from "./quotationModel";
+import { QuotationValidationPanel } from "./QuotationValidationPanel";
 
-export function QuotationDetails({ record }: { record: QuotationRecord }) {
+export function QuotationDetails({ record, validation, busy, validating, onValidate }: {
+  record: QuotationRecord;
+  validation: QuotationValidation | null;
+  busy: boolean;
+  validating: boolean;
+  onValidate: () => void;
+}) {
   const heading = useRef<HTMLHeadingElement>(null);
   useEffect(() => {
     heading.current?.focus({ preventScroll: true });
@@ -21,6 +28,7 @@ export function QuotationDetails({ record }: { record: QuotationRecord }) {
         <div><dt>Ngày hết hạn</dt><dd>{expirationLabel(record)}</dd></div>
       </dl>
       <details><summary>JSON</summary><pre>{JSON.stringify(record, null, 2)}</pre></details>
+      <QuotationValidationPanel result={validation} busy={busy} validating={validating} onValidate={onValidate} />
     </section>
   );
 }

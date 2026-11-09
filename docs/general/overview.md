@@ -29,7 +29,7 @@ Giá trị acceptance threshold chưa được giảng viên quy định. Các g
 
 ## Use case duy nhất
 
-Ứng dụng báo giá mẫu trong cùng repository đã tiếp nhận, lưu và đọc báo giá giả lập qua API/PostgreSQL và UI /quotations; chưa có runtime validation ngày. Trạng thái gốc chuẩn bị cho thí nghiệm phải chưa có quy tắc ngày hết hạn mới. Developer yêu cầu Agent tìm validation và thêm cờ human review cho báo giá thiếu ngày hợp lệ; contract mục tiêu dùng cờ expiration_review. Cờ không tự từ chối báo giá, không phê duyệt mua hàng và không mở rộng sang quy tắc nghiệp vụ khác.
+Ứng dụng báo giá mẫu trong cùng repository đã tiếp nhận, lưu và đọc báo giá giả lập qua API/PostgreSQL và UI /quotations; có luồng validator nền nhưng chưa có quy tắc nghiệp vụ hoặc runtime artifact. Trạng thái gốc chuẩn bị cho thí nghiệm phải chưa có quy tắc ngày hết hạn mới. Developer yêu cầu Agent tìm validation và thêm cờ human review cho báo giá thiếu ngày hợp lệ; contract mục tiêu dùng cờ expiration_review. Cờ không tự từ chối báo giá, không phê duyệt mua hàng và không mở rộng sang quy tắc nghiệp vụ khác.
 
 CacheSec dự kiến cung cấp workspace, authorized repository retrieval, đề xuất diff, chạy test, duyệt thay đổi và trace. Reviewer duyệt **thay đổi code/artifact**, không duyệt báo giá. Deploy trong PoC được đề xuất là kích hoạt artifact trong môi trường giả lập có gate thật; mức fidelity và ranh giới kiểm soát cần thống nhất trước triển khai, không gọi một nút UI mô phỏng là deployment control.
 
@@ -72,7 +72,7 @@ Safety property bắt buộc là **một** thuộc tính về deployment approva
 | Vị trí/host đầu tiên | Người dùng chọn cache trong trình duyệt cho web Workspace trước; adapter IDE làm sau. Storage engine/API cụ thể chưa chốt |
 | Ngày hết hạn | Người dùng chọn ngày có thật theo lịch, định dạng YYYY-MM-DD và không trước mốc tham chiếu. Fixture dùng mốc cố định 2026-11-07; ngày bằng mốc được chấp nhận |
 | Nguồn danh tính PoC | Người dùng chọn danh tính giả lập do backend quản lý, công bố rõ giới hạn; approval gate vẫn phải thực thi thật. Mapping principal/quyền và freshness cần chốt ở phần control |
-| Quyền API báo giá | Hai principal fixture: chỉ đọc; tạo và đọc. Bearer token ngẫu nhiên cấu hình riêng, thiếu/sai token bị chặn, không tài khoản mặc định. Tách quyền Reviewer/deployment; [chi tiết](../system/authorization.md#quyền-api-báo-giá-đã-triển-khai) |
+| Quyền API báo giá | Hai principal fixture: chỉ đọc; tạo/đọc/validate. Quyền validate chỉ cấp cho operator theo lựa chọn ngày 2026-11-09. Bearer token ngẫu nhiên cấu hình riêng, thiếu/sai token bị chặn, không tài khoản mặc định. Tách quyền Reviewer/deployment; [chi tiết](../system/authorization.md#quyền-api-báo-giá-đã-triển-khai) |
 | Freshness API báo giá | Kiểm token/quyền ở đầu mỗi thao tác; thu hồi chặn thao tác tiếp theo, không hủy thao tác đang thực hiện hoặc thu lại nội dung đã đọc. Không chốt thay cache/control/gate |
 | Giới hạn API local | Body JSON tối đa 64 KiB, trang tối đa 100 báo giá, Idempotency-Key 1–128 ký tự ASCII. Đây là cấu hình kỹ thuật, không phải ngưỡng nghiệm thu nghiên cứu |
 | Người duyệt thay đổi | Developer được tự duyệt nếu có quyền Reviewer hiện tại; vẫn cần quyết định tường minh gắn đúng artifact. Agent không nhận quyền phê duyệt |
@@ -90,7 +90,7 @@ Báo giá thiếu ngày, ngày không hợp lệ hoặc d < R phải có cờ c�
 
 ### Schema báo giá tối thiểu — phạm vi đã chốt
 
-Người dùng đã chọn bộ 6 trường dưới đây cho phạm vi nhập/danh sách/chi tiết/validation. Đã có Pydantic model, schema/store PostgreSQL và API/UI tạo/đọc/phân trang; chưa có runtime validation ngày. Không bao gồm quản lý mua hàng/thanh toán hoặc nhiều dòng hàng.
+Người dùng đã chọn bộ 6 trường dưới đây cho phạm vi nhập/danh sách/chi tiết/validation. Đã có Pydantic model, schema/store PostgreSQL và API/UI tạo/đọc/phân trang/validate nền; chưa có rule ngày hoặc artifact/gate. Không bao gồm quản lý mua hàng/thanh toán hoặc nhiều dòng hàng.
 
 | Trường dự kiến | Mục đích |
 | --- | --- |
@@ -101,9 +101,9 @@ Người dùng đã chọn bộ 6 trường dưới đây cho phạm vi nhập/d
 | currency | Đơn vị tiền tệ minh họa, chưa chốt danh sách |
 | expires_on | Giá trị ngày hết hạn đầu vào; giữ phân biệt thiếu field, null, rỗng và giá trị thô cho validation/fixture |
 
-T02 có [wire contract v0.2](../system/api.md#dữ-liệu-ứng-dụng-báo-giá); phần đã triển khai tại [schema/storage báo giá](../system/architecture.md#lưu-trữ-báo-giá-đã-triển-khai). Theo lựa chọn người dùng ngày 2026-11-09, validation nền giữ nguyên contract: tiền là chuỗi thập phân hữu hạn, không làm tròn/áp min-max; chuỗi rỗng/khoảng trắng và currency ngoài danh sách vẫn được tiếp nhận. expires_on giữ JsonValue/absent, không parse date ở domain/storage. Không thêm validator rỗng hoặc cài rule ngày vào app nền; oracle nghiên cứu vẫn cần review.
+T02 có [wire contract v0.2](../system/api.md#dữ-liệu-ứng-dụng-báo-giá); phần đã triển khai tại [schema/storage báo giá](../system/architecture.md#lưu-trữ-báo-giá-đã-triển-khai). Theo lựa chọn người dùng ngày 2026-11-09, validation nền giữ nguyên contract: tiền là chuỗi thập phân hữu hạn, không làm tròn/áp min-max; chuỗi rỗng/khoảng trắng và currency ngoài danh sách vẫn được tiếp nhận. expires_on giữ JsonValue/absent, không parse date ở domain/storage. Luồng validator nền có điểm vào source độc lập HTTP/storage, công bố evaluated_rules rỗng vì chưa có quy tắc nghiệp vụ; không suy ra ngày hợp lệ hoặc approval. Không cài rule ngày vào app nền; oracle nghiên cứu vẫn cần review.
 
-Kết quả validation mục tiêu có danh sách cờ, với cờ expiration_review cho rule mới; shape đề xuất ở [API](../system/api.md#quotationvalidation), chưa có endpoint thực thi. Không nhận cờ do client/Agent gửi như kết quả validation đáng tin cậy. Khi ca ngày sai thuộc fixture, parsing/chuẩn hóa ở API không được làm mất dấu hiệu đầu vào khiến rule nghiệp vụ không còn được kiểm tra. Test nền và schema nền không được bổ sung trước chính rule mà Agent sẽ được giao.
+Kết quả validation mục tiêu có danh sách cờ, với cờ expiration_review cho rule mới; shape ở [API](../system/api.md#quotationvalidation); endpoint nền đã có, runtime artifact và rule mới chưa triển khai. Không nhận cờ do client/Agent gửi như kết quả validation đáng tin cậy. Khi ca ngày sai thuộc fixture, parsing/chuẩn hóa ở API không được làm mất dấu hiệu đầu vào khiến rule nghiệp vụ không còn được kiểm tra. Test nền và schema nền không được bổ sung trước chính rule mà Agent sẽ được giao.
 
 Vai trò Developer, Reviewer và Deployment Control đã có trong thiết kế. Người dùng chọn identity fixture do backend quản lý cho PoC, không triển khai đăng nhập thật ngay từ đầu; đây là mô phỏng danh tính, không phải production authentication. Developer được tự duyệt nếu có quyền Reviewer hiện tại và thực hiện quyết định tường minh; không yêu cầu reviewer phải khác người đề xuất. Mapping/freshness API báo giá đã chốt riêng trong bảng trên; mapping control/repo/reviewer vẫn cần chốt trước thực thi, không tự biến ba capability thành yêu cầu ba tài khoản riêng. Fixture/oracle, acceptance và baseline/số lặp vẫn chờ xác nhận theo [thiết kế đánh giá](../evaluation/design.md).
 

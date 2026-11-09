@@ -38,6 +38,11 @@ export async function checkQuotations({ cdp, navigate, evaluate, waitFor, click,
   await create("Reader must not create", "missing");
   await waitFor("document.querySelector('[role=alert]')?.textContent.includes('không có quyền')");
   assert.equal(await evaluate("document.querySelectorAll('.quotation-row').length"), 53);
+  await click(".quotation-row");
+  await waitFor("!!document.querySelector('#quotation-validate')");
+  await click("#quotation-validate");
+  await waitFor("document.querySelector('[role=alert]')?.textContent.includes('không có quyền') && !document.querySelector('#quotation-validate').disabled");
+  assert.equal(await evaluate("!!document.querySelector('[data-quotation-validation]')"), false);
   await click("#quotation-disconnect");
   assert.equal(await evaluate("document.querySelectorAll('.quotation-row, .quotation-details').length"), 0);
 
@@ -47,7 +52,9 @@ export async function checkQuotations({ cdp, navigate, evaluate, waitFor, click,
     window.quotationRetryCalls = [];
     window.fetch = async (...args) => {
       const options = args[1];
-      if (window.quotationTrackRetry && options?.method === 'POST') {
+      const validating = options?.method === 'POST' && String(args[0]).endsWith('/validate');
+      const creating = options?.method === 'POST' && !validating;
+      if (window.quotationTrackRetry && creating) {
         window.quotationRetryCalls.push({key: options.headers['Idempotency-Key'], body: options.body});
       }
       if (window.quotationFailNextRead && options?.method === 'GET') {
@@ -55,7 +62,14 @@ export async function checkQuotations({ cdp, navigate, evaluate, waitFor, click,
         throw new TypeError('Simulated read connection failure');
       }
       const response = await original(...args);
-      if (window.quotationDropNextCreate && options?.method === 'POST') {
+      if (validating) {
+        window.lastQuotationValidation = await response.clone().json();
+        if (window.quotationHoldNextValidation) {
+          window.quotationHoldNextValidation = false;
+          await new Promise(resolve => { window.releaseQuotationValidation = resolve; });
+        }
+      }
+      if (window.quotationDropNextCreate && creating) {
         window.quotationDropNextCreate = false;
         throw new TypeError('Simulated lost response after commit');
       }
@@ -87,6 +101,14 @@ export async function checkQuotations({ cdp, navigate, evaluate, waitFor, click,
     if (mode !== "missing") assert.deepEqual(detail.expires_on, mode === "null" ? null : mode === "json" ? false : value);
     assert.equal(Object.hasOwn(detail, "flags"), false);
     assert.equal(await evaluate("document.querySelector('#quotation-save').textContent"), "Lưu báo giá");
+    assert.equal(await evaluate("!!document.querySelector('[data-quotation-validation]')"), false);
+    await click("#quotation-validate");
+    await waitFor("!!document.querySelector('[data-quotation-validation]') && !document.querySelector('#quotation-validate').disabled");
+    assert.deepEqual(await evaluate("window.lastQuotationValidation.data"), {
+      quotation_id: detail.id, flags: [], evaluated_rules: [], validation_config_ref: "quotation-baseline-v1",
+      reference_date: null, active_artifact: null,
+    });
+    assert.equal(await evaluate("document.querySelector('[data-quotation-validation]').textContent.trim()"), "Chưa áp dụng quy tắc nghiệp vụ.");
   }
   assert.equal(await evaluate("!!window.quotationXss || !!document.querySelector('.quotation-details img')"), false);
 
@@ -119,6 +141,18 @@ export async function checkQuotations({ cdp, navigate, evaluate, waitFor, click,
   assert.equal(await evaluate("document.querySelectorAll('.quotation-row').length"), 0);
   await click("#quotation-refresh");
   await waitFor("document.querySelectorAll('.quotation-row').length === 50");
+
+  // A delayed validation must not restore results or a previous session after disconnect.
+  await click(".quotation-row");
+  await waitFor("!!document.querySelector('#quotation-validate')");
+  await evaluate("window.quotationHoldNextValidation = true");
+  await click("#quotation-validate");
+  await waitFor("typeof window.releaseQuotationValidation === 'function'");
+  await click("#quotation-disconnect");
+  await evaluate("window.releaseQuotationValidation()");
+  await connect(operator);
+  await waitFor(connected);
+  assert.equal(await evaluate("!!document.querySelector('[data-quotation-validation]')"), false);
 
   // A late GET response must not restore data after disconnecting.
   await evaluate("window.quotationHoldNextRead = true");

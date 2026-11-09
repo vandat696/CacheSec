@@ -76,6 +76,19 @@ def test_create_read_list_and_raw_expiration_round_trip(api):
         assert restored.json()["data"] == record
         if "expires_on" in expiration:
             assert type(restored.json()["data"]["expires_on"]) is type(expiration["expires_on"])
+        validation = client.post(
+            f"/api/v1/quotations/{record['id']}/validate", headers=WRITE_HEADERS
+        )
+        assert validation.status_code == 200
+        assert validation.json()["data"]["quotation_id"] == record["id"]
+        assert isinstance(validation.json()["data"]["flags"], list)
+        assert isinstance(validation.json()["data"]["evaluated_rules"], list)
+        assert validation.headers["cache-control"] == "no-store"
+        assert validation.json()["meta"]["request_id"] == validation.headers["x-request-id"]
+        assert (
+            client.get(f"/api/v1/quotations/{record['id']}", headers=READ_HEADERS).json()["data"]
+            == record
+        )
     ids, cursor = [], None
     while True:
         response = client.get(
@@ -124,6 +137,46 @@ def test_baseline_preserves_unrestricted_text_and_decimal_lexemes(api):
         assert connection.execute("SELECT count(*) FROM quotation_demo.quotations").fetchone() == (
             len(cases),
         )
+
+
+@pytest.mark.baseline_only
+def test_original_validation_reports_no_rules_or_runtime_binding(api):
+    client, _, _, _ = api
+    record = client.post(
+        "/api/v1/quotations", json={**BODY, "expires_on": "2026-02-30"}, headers=WRITE_HEADERS
+    ).json()["data"]
+    response = client.post(f"/api/v1/quotations/{record['id']}/validate", headers=WRITE_HEADERS)
+    assert response.status_code == 200
+    assert response.json()["data"] == {
+        "quotation_id": record["id"],
+        "flags": [],
+        "evaluated_rules": [],
+        "validation_config_ref": "quotation-baseline-v1",
+        "reference_date": None,
+        "active_artifact": None,
+    }
+
+
+def test_validation_is_read_only_and_cannot_reuse_revoked_authority(api):
+    client, registry, database, _ = api
+    record = client.post("/api/v1/quotations", json=BODY, headers=WRITE_HEADERS).json()["data"]
+    path = f"/api/v1/quotations/{record['id']}/validate"
+    assert client.post(path, headers=READ_HEADERS).status_code == 403
+    assert client.post(path, headers=WRITE_HEADERS).status_code == 200
+    assert client.post(path, headers=WRITE_HEADERS).status_code == 200
+    registry.revoke("quotation-operator")
+    assert client.post(path, headers=WRITE_HEADERS).status_code == 401
+    assert (
+        client.get(f"/api/v1/quotations/{record['id']}", headers=READ_HEADERS).json()["data"]
+        == record
+    )
+    with database.connection() as connection:
+        assert connection.execute("SELECT count(*) FROM quotation_demo.quotations").fetchone() == (
+            1,
+        )
+        assert connection.execute(
+            "SELECT count(*) FROM quotation_demo.creation_requests"
+        ).fetchone() == (1,)
 
 
 def test_replay_creates_one_row_and_conflicting_payload_returns_409(api):

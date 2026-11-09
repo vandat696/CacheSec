@@ -43,6 +43,8 @@
 .quotation-details dd { margin: 0; white-space: pre-wrap; overflow-wrap: anywhere; }
 .quotation-details summary { cursor: pointer; color: var(--nui-muted); }
 .quotation-details pre { white-space: pre-wrap; overflow-wrap: anywhere; padding: 16px; margin-top: 12px; background: var(--nui-surface); font-size: 12px; }
+.quotation-validation { display: grid; gap: 12px; margin-top: 16px; }
+.quotation-validation li { overflow-wrap: anywhere; }
 .dev-quotation-link { display: inline-flex; align-items: center; gap: 6px; color: var(--nui-primary); font-size: 13px; text-decoration: none; }
 .dev-quotation-link:hover { text-decoration: underline; }
 @media (max-width: 1100px) {

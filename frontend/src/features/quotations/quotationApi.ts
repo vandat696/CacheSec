@@ -1,6 +1,6 @@
 import {
   decimalPattern, isJsonValue,
-  type QuotationCreate, type QuotationPage, type QuotationRecord,
+  type QuotationCreate, type QuotationPage, type QuotationRecord, type QuotationValidation,
 } from "./quotationModel.ts";
 
 type ApiMeta = { contract_version: "v0.2"; request_id: string; identity_mode: "fixture" };
@@ -40,6 +40,14 @@ function page(value: unknown): value is QuotationPage {
   return object(value) && Array.isArray(value.items) && value.items.every(record)
     && (value.next_cursor === null || (typeof value.next_cursor === "string" && uuid.test(value.next_cursor)));
 }
+function validation(value: unknown): value is QuotationValidation {
+  return object(value) && typeof value.quotation_id === "string" && uuid.test(value.quotation_id)
+    && Array.isArray(value.flags) && value.flags.every((flag) => object(flag)
+      && typeof flag.code === "string" && typeof flag.field === "string" && typeof flag.message === "string")
+    && Array.isArray(value.evaluated_rules) && value.evaluated_rules.every((rule) => typeof rule === "string")
+    && typeof value.validation_config_ref === "string" && value.validation_config_ref.length > 0
+    && value.reference_date === null && value.active_artifact === null;
+}
 
 export class QuotationHttpClient {
   private readonly baseUrl: string;
@@ -58,12 +66,12 @@ export class QuotationHttpClient {
 
   private async request<T>(
     path: string, decode: (data: unknown) => data is T, signal: AbortSignal,
-    post?: { data: QuotationCreate; key: string },
+    post?: { data: QuotationCreate; key: string } | true,
   ): Promise<Envelope<T>> {
     const response = await this.fetcher(`${this.baseUrl.replace(/\/$/, "")}/api/v1/quotations${path}`, {
       method: post ? "POST" : "GET", signal, cache: "no-store", credentials: "omit", redirect: "error",
-      headers: { Authorization: `Bearer ${this.token}`, ...(post ? { "Content-Type": "application/json", "Idempotency-Key": post.key } : {}) },
-      ...(post ? { body: JSON.stringify(post.data) } : {}),
+      headers: { Authorization: `Bearer ${this.token}`, ...(post && post !== true ? { "Content-Type": "application/json", "Idempotency-Key": post.key } : {}) },
+      ...(post && post !== true ? { body: JSON.stringify(post.data) } : {}),
     });
     const body: unknown = await response.json().catch(() => null);
     const requestId = object(body) && object(body.meta) && typeof body.meta.request_id === "string"
@@ -84,6 +92,13 @@ export class QuotationHttpClient {
   }
   create(data: QuotationCreate, key: string, signal: AbortSignal) {
     return this.request("", record, signal, { data, key });
+  }
+  async validate(id: string, signal: AbortSignal) {
+    const response = await this.request(`/${encodeURIComponent(id)}/validate`, validation, signal, true);
+    if (response.data.quotation_id.toLowerCase() !== id.toLowerCase()) {
+      throw new QuotationApiError(502, response.meta.request_id);
+    }
+    return response;
   }
 }
 

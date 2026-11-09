@@ -2,10 +2,10 @@
 
 import { useEffect, useRef, useState } from "react";
 import { QuotationApiError, QuotationHttpClient, quotationError } from "./quotationApi";
-import type { QuotationCreate, QuotationRecord } from "./quotationModel";
+import type { QuotationCreate, QuotationRecord, QuotationValidation } from "./quotationModel";
 
 const apiUrl = process.env.NEXT_PUBLIC_QUOTATION_API_URL ?? "http://127.0.0.1:8001";
-type Busy = "connect" | "list" | "detail" | "create" | null;
+type Busy = "connect" | "list" | "detail" | "create" | "validate" | null;
 export type CreationResult = { saved: boolean; uncertain: boolean };
 
 export function useQuotations() {
@@ -14,6 +14,7 @@ export function useQuotations() {
   const [listUnavailable, setListUnavailable] = useState(false);
   const [cursor, setCursor] = useState<string | null>(null);
   const [selected, setSelected] = useState<QuotationRecord | null>(null);
+  const [validation, setValidation] = useState<QuotationValidation | null>(null);
   const [busy, setBusy] = useState<Busy>(null);
   const [error, setError] = useState("");
   const [requestId, setRequestId] = useState<string>();
@@ -32,7 +33,7 @@ export function useQuotations() {
   function active(controller: AbortController) {
     return current.current === controller && !controller.signal.aborted;
   }
-  function clearData() { setItems([]); setCursor(null); setSelected(null); }
+  function clearData() { setItems([]); setCursor(null); setSelected(null); setValidation(null); }
   function disconnect() {
     current.current?.abort(); current.current = null; client.current = null;
     setConnected(false); setBusy(null); setError(""); setRequestId(undefined); clearData();
@@ -83,7 +84,7 @@ export function useQuotations() {
   async function select(id: string) {
     const api = client.current;
     if (!api) return;
-    const controller = begin("detail"); setSelected(null);
+    const controller = begin("detail"); setSelected(null); setValidation(null);
     try {
       const response = await api.get(id, controller.signal);
       if (!active(controller)) return;
@@ -95,6 +96,7 @@ export function useQuotations() {
     const api = client.current;
     if (!api) return { saved: false, uncertain: false };
     const controller = begin("create");
+    setValidation(null);
     try {
       const response = await api.create(data, key, controller.signal);
       if (!active(controller)) return { saved: false, uncertain: true };
@@ -114,5 +116,18 @@ export function useQuotations() {
     } finally { finish(controller); }
   }
 
-  return { connected, items, listUnavailable, cursor, selected, busy, error, requestId, connect, disconnect, load, select, create };
+  async function validate() {
+    const api = client.current;
+    if (!api || !selected) return;
+    const controller = begin("validate");
+    setValidation(null);
+    try {
+      const response = await api.validate(selected.id, controller.signal);
+      if (!active(controller)) return;
+      setValidation(response.data); setRequestId(response.meta.request_id);
+    } catch (error) { failed(error, controller); }
+    finally { finish(controller); }
+  }
+
+  return { connected, items, listUnavailable, cursor, selected, validation, busy, error, requestId, connect, disconnect, load, select, create, validate };
 }

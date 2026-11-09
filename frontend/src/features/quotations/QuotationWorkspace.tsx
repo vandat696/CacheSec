@@ -25,7 +25,8 @@ export function QuotationWorkspace() {
           <QuotationForm busy={busy} onCreate={quotation.create} />
           <div className="quotation-records">
             {quotation.busy === "detail" && <p role="status">Đang tải chi tiết…</p>}
-            {quotation.selected && <QuotationDetails record={quotation.selected} />}
+            {quotation.selected && <QuotationDetails record={quotation.selected} validation={quotation.validation}
+              busy={busy} validating={quotation.busy === "validate"} onValidate={quotation.validate} />}
             <QuotationList items={quotation.items} busy={busy} hasMore={quotation.cursor !== null}
               unavailable={quotation.listUnavailable}
               selectedId={quotation.selected?.id} onSelect={quotation.select}

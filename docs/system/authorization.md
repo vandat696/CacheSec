@@ -23,9 +23,11 @@ Theo lựa chọn người dùng, [FixtureIdentityRegistry](../../backend/app/qu
 | Principal | Capability |
 | --- | --- |
 | quotation-reader | quotation.read: danh sách và chi tiết |
-| quotation-operator | quotation.read và quotation.create |
+| quotation-operator | quotation.read, quotation.create và quotation.validate |
 
 Client gửi Bearer token ngẫu nhiên cấu hình riêng qua QUOTATION_FIXTURE_READER_TOKEN / QUOTATION_FIXTURE_OPERATOR_TOKEN; không có token/tài khoản mặc định. Hai token phải khác nhau và ít nhất 32 ký tự; hướng dẫn local sinh bằng nguồn ngẫu nhiên mật mã. Backend giữ digest để đối chiếu constant-time; không nhận role/tenant/capability từ body hoặc header làm authority. Thiếu/sai/thu hồi token trả 401; đúng identity nhưng thiếu capability trả 403. Không có quyền Reviewer, approve hoặc deploy trong các grants này.
+
+Ngày 2026-11-09 người dùng chọn chỉ operator được validate, reader giữ quyền chỉ đọc. Validation cần đồng thời quotation.read và quotation.validate trước đọc storage, kể cả gọi lại; ID không tồn tại không làm lộ khác biệt cho reader không có quyền validate. Quyền này chỉ chạy validator của app, không duyệt báo giá, sửa code, tạo test evidence hoặc cấp approval. [Contract validation nền](api.md#validation-nền-đã-triển-khai) công bố tập quy tắc hiện tại và phần runtime/artifact chưa có.
 
 Giao diện /quotations nhận token bằng ô password, chỉ giữ trong bộ nhớ route và gửi qua Authorization, không lưu cookie/browser storage hoặc NEXT_PUBLIC_*; không tự chọn role hay nạp token backend. Ngắt kết nối/rời route hoặc 401 xóa phiên/dữ liệu UI, hủy/bỏ qua response đến trễ. Nội dung đã đọc/sao chép vẫn không thể thu hồi; token trong bộ nhớ không bảo vệ trước XSS/host bị kiểm soát. CORS chỉ cho origin cấu hình, không bật cookie credentials và không thay kiểm quyền backend. Địa chỉ API public và giới hạn local ở [setup](../general/setup.md#2b-api-báo-giá-độc-lập).
 
@@ -66,6 +68,36 @@ Trạng thái proposal thuộc server, client không được tự ghi Approved.
 Approval là bản ghi quyết định có audit, **không phải answer/context cache entry** để reuse cho thay đổi khác. Self-approval đã được người dùng cho phép với quyền Reviewer hiện tại; deploy lại cùng artifact, expiry và thu hồi approval vẫn cần thống nhất, không giả định quyết định có hiệu lực vĩnh viễn. Không có artifact/build/test hoặc không xác minh được binding thì block.
 
 Deployment PoC được đề xuất là kích hoạt version trong môi trường giả lập có control thật, không deploy ra hệ thống ngoài. Control từ chối đường gọi trực tiếp không có approval, không chỉ đường UI. Cần xác nhận phạm vi adversary và bypass: admin/host bị kiểm soát có thể nằm ngoài PoC, phải công bố, không tuyên bố bảo vệ toàn bộ hệ điều hành.
+
+### Bản nháp gate T04 để review — 2026-11-09
+
+Phần này cụ thể hóa đường thực thi để review; **chưa chọn implementation, chưa có code gate và chưa cấp quyền activation**. Hai workflow đi qua cùng một đường test/review/activation. Endpoint validate báo giá không thay cho bước test bản sửa hoặc gate này. App nền hiện trả active_artifact = null; trước baseline nghiên cứu phải nối metadata runtime từ launcher tin cậy và kiểm chứng khớp bytes được test/kích hoạt.
+
+| Bước control đề xuất | Nguồn tin cậy và ràng buộc cần thực thi | Khi thiếu/sai/lỗi |
+| --- | --- | --- |
+| 1. Chụp source | Backend tạo snapshot gồm repo identity, base revision và mọi bytes/phụ thuộc cần build/run; working tree chưa commit cần manifest hash, không chỉ branch/commit | Không tạo binding từ source chưa xác minh |
+| 2. Chuẩn bị artifact | Executor theo scope tạo gói bất biến của source, dependencies/lock, entrypoint và runtime config; toàn bộ nội dung ảnh hưởng validation nằm trong binding. Chỉ hash file validator không chứng minh cả artifact | Không đánh dấu artifact sẵn sàng; không rebuild sau review |
+| 3. Chạy test | Test trên chính artifact bất biến, gắn suite/config/fixture và evidence; thu đủ exit/outcome/error/timeout. Test kỹ thuật khác acceptance nghiên cứu còn chờ cô | Không cho tạo approval dùng evidence thiếu/lỗi/sai artifact; không giả pass |
+| 4. Tạo change binding | Backend liên kết repo/base/source/patch/artifact/test/evidence/fixture/config/target; client chỉ chọn resource refs đã có quyền, không tự cấp digest hoặc evidence đáng tin | Binding thiếu thành phần hoặc nguồn đổi không được approve |
+| 5. Nhận duyệt tường minh | Human Reviewer xem đúng diff/evidence/binding, gửi quyết định gắn binding; kiểm quyền hiện tại theo repo. Self-approval chỉ khi human thực sự có Reviewer; Agent không được nhận quyền này | Không lưu approval hợp lệ do test pass/cache hit/chọn role ở UI |
+| 6. Lưu approval và quyết định | Bản ghi approval tham chiếu binding bất biến và authority/policy; đề xuất lưu cùng event trong transaction của control | Lỗi commit không trả Approved; không dùng bản ghi trong bộ nhớ làm bằng chứng thay thế |
+| 7. Kiểm tra trước activation | Đọc lại approval/binding/evidence/artifact và authority reviewer/deployer; xác minh bytes và expected_target_version. Đề xuất serialize theo target và compare-and-set version để hai request không cùng thắng | Stale/revoked/sai target/version/bytes hoặc dependency unavailable đều block, có reason |
+| 8. Kích hoạt và đối soát | Launcher chỉ nhận artifact ref bất biến đã qua gate; ghi intent bền vững trước side effect, xác nhận digest/version thực sự active rồi mới báo Deployed | ACK mất/timeout là unknown cần đối soát, không báo thành công hoặc kích hoạt lại mù; khóa đường activation tiếp theo khi trạng thái target chưa xác định |
+
+Transaction DB và thay process/artifact tại launcher không mặc nhiên là một transaction nguyên tử. T03–T04 phải chọn cơ chế reservation/activation/reconciliation và điểm có hiệu lực của revoke/version check. Một lock trong process control không đủ nếu có nhiều worker hoặc launcher có đường gọi ngoài gate. Thất bại ghi kết quả sau activation cần đối soát trạng thái thực tế, không ghi Blocked như thể chưa có side effect. Không tự thêm rollback sang artifact khác: rollback cũng là activation và phải có contract riêng.
+
+Các lựa chọn cần khóa trước triển khai, không coi bảng trên là đã được người dùng duyệt:
+
+| Nhóm quyết định | Phương án để review và đầu ra cần chốt |
+| --- | --- |
+| Authority/scope/freshness | Registry fixture control riêng, mapping principal/tenant/repo và delegation; kiểm ở approve và activation, định nghĩa revoke đang xảy ra đồng thời. Grants app báo giá không được dùng thay |
+| Bytes/binding/storage | Manifest đóng gói bao phủ dependency/config; đề xuất SHA-256 cho bytes và biểu diễn binding có version. Chọn canonicalization, nơi lưu bytes bất biến, quyền ghi và retention; hash không phải chữ ký hoặc authority |
+| Test và thời điểm tham chiếu | Danh sách suite kỹ thuật bắt buộc, nguồn R/config do runtime tin cậy cấp, fixture refs; acceptance vẫn chờ cô, không mặc định 100% |
+| Approval lifecycle | Thời hạn/revoke/supersede/redeploy cùng artifact; authority/policy/source/evidence đổi thì đánh giá lại hoặc block theo policy được chọn |
+| Executor/target/threat boundary | Cơ chế sandbox và giới hạn tài nguyên/lệnh; launcher local giả lập có gate thật, khóa bypass thuộc PoC; nêu rõ giới hạn trước host/admin bị kiểm soát |
+| Atomicity/audit | Storage approval/events, khóa/CAS target, recovery khi crash giữa lưu intent/activation/ACK; nếu chưa xác định trạng thái thì không tiếp tục activation |
+
+Ma trận kiểm chứng khi có implementation phải thêm ca tranh chấp hai activation cùng expected version, đổi bytes sau test/approval, revoke trong lúc chờ activation, crash trước/sau side effect và ACK mất. Kết quả cần phân biệt denied/blocked/failed/unknown/deployed bằng bằng chứng tại đúng điểm thực thi. Đây là kiểm chứng cùng một safety property, không thêm thay đổi nghiệp vụ hoặc chạy thực nghiệm ở bước thiết kế.
 
 ## Ca bắt buộc để kiểm chứng gate
 

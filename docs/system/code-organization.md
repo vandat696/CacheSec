@@ -55,13 +55,14 @@ backend/app/
     migrate_quotations.py                       lệnh chạy migration báo giá
     api/
       quotation_http_app.py                    cấu hình FastAPI và ánh xạ lỗi HTTP
-      quotation_routes.py                      endpoint tạo/danh sách/chi tiết
+      quotation_routes.py                      endpoint tạo/danh sách/chi tiết/validate
       quotation_responses.py                   model response/envelope HTTP
       quotation_request_middleware.py          cap body và request ID
       quotation_service_factory.py             tạo service gắn identity đã xác minh
     business/
       quotation_models.py                      QuotationCreate/Record/Page
       quotation_service.py                     thao tác nghiệp vụ, quyền và transaction
+      quotation_validation.py                  điểm vào validator nền, flags và kết quả/rules
       quotation_permissions.py                 capability, caller, interface kiểm quyền
       quotation_repository_interface.py        interface lưu trữ/transaction, lỗi và retry
     auth/fixture_identity.py                   kiểm token/quyền fixture hiện tại
@@ -74,6 +75,8 @@ backend/app/
 ```
 
 Luồng đọc code: quotation_routes nhận request → quotation_service kiểm quyền và điều phối → postgres_quotation_repository truy vấn SQL trong postgres_quotation_transactions → PostgreSQL. quotation_api chỉ nối các thành phần; quotation_http_app giữ cấu hình/response lỗi thuộc HTTP, tách khỏi nghiệp vụ. Hai phần tạo/cấp service cũ đã gom vào quotation_service_factory, gồm interface nhỏ và implementation fixture cùng trách nhiệm.
+
+Với validate, service yêu cầu cả read và validate trước đọc record rồi gọi function thuần validate_quotation trong business/quotation_validation.py. Đây là điểm sửa code cho nhiệm vụ sau này; baseline công bố evaluated_rules rỗng, không parse ngày hoặc sinh cờ. Kết quả có quotation_id, profile nền và metadata runtime null, không cấp approval hoặc chứng minh đã test artifact. Không tạo rule registry/plug-in/interface validator khi chỉ có một implementation. UI thuộc QuotationValidationPanel.tsx, HTTP decoder ở quotationApi.ts và state/hủy request ở useQuotations.ts.
 
 business không nhập api/database/auth/control, FastAPI hoặc Psycopg. Nó sở hữu các Protocol nhỏ cho quyền và lưu trữ/transaction. QuotationService nhận dependencies qua constructor, kiểm quyền trước mở transaction và chỉ trả thành công sau commit; adapter chuyển lỗi driver sang lỗi nghiệp vụ lưu trữ, không che lỗi lập trình. Repository nhận connection, không tự cấp quyền hoặc commit. Factory app không import control/Agent/cache. tests/control, tests/shared và tests/quotation_demo đi theo module sở hữu.
 

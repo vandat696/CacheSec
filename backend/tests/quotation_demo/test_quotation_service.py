@@ -104,7 +104,7 @@ def quotation(**values):
     )
 
 
-@pytest.mark.parametrize("operation", ["create", "get", "list"])
+@pytest.mark.parametrize("operation", ["create", "get", "list", "validate"])
 @pytest.mark.parametrize("unavailable", [False, True])
 def test_denied_or_unavailable_authority_never_opens_database(operation, unavailable):
     sessions = MemorySessions()
@@ -116,6 +116,8 @@ def test_denied_or_unavailable_authority_never_opens_database(operation, unavail
             service.create(quotation(), idempotency_key="test-create")
         elif operation == "get":
             service.get(uuid4())
+        elif operation == "validate":
+            service.validate(uuid4())
         else:
             service.list(limit=0)
     assert sessions.open_count == 0
@@ -186,3 +188,40 @@ def test_default_page_size_respects_a_lower_configured_cap():
     page = QuotationService(sessions, TestAuthority(), max_page_size=2).list()
     assert len(page.items) == 2
     assert page.next_cursor is not None
+
+
+@pytest.mark.parametrize("denied", [QuotationCapability.READ, QuotationCapability.VALIDATE])
+def test_validation_requires_both_read_and_validate_before_storage(denied):
+    class PartialAccess(TestAuthority):
+        def require(self, capability):
+            super().require(capability)
+            if capability == denied:
+                raise QuotationAccessDenied()
+
+    sessions = MemorySessions()
+    with pytest.raises(QuotationAccessDenied):
+        QuotationService(sessions, PartialAccess(), max_page_size=100).validate(uuid4())
+    assert sessions.open_count == 0
+
+
+def test_validation_reads_existing_record_without_writing_or_creating_evidence():
+    sessions, access = MemorySessions(), TestAuthority()
+    created = sessions.repository.create(quotation(expires_on={"raw": False}))
+    before = created.model_dump(exclude_unset=True)
+    service = QuotationService(sessions, access, max_page_size=100)
+    result = service.validate(created.id)
+    assert result.quotation_id == created.id
+    assert result.reference_date is None
+    assert result.active_artifact is None
+    assert access.requested == [QuotationCapability.READ, QuotationCapability.VALIDATE]
+    assert sessions.repository.get(created.id).model_dump(exclude_unset=True) == before
+    assert sessions.repository.requests == {}
+    with pytest.raises(QuotationNotFound):
+        service.validate(uuid4())
+
+
+def test_validation_does_not_report_a_result_when_storage_commit_fails():
+    sessions = MemorySessions(commit_failure=True)
+    created = sessions.repository.create(quotation())
+    with pytest.raises(RuntimeError, match="Test commit failed"):
+        QuotationService(sessions, TestAuthority(), max_page_size=100).validate(created.id)

@@ -37,7 +37,13 @@ class FixtureIdentityRegistry:
             _FixturePrincipal(
                 QuotationCaller("quotation-operator", "quotation_demo"),
                 hashlib.sha256(operator.encode()).digest(),
-                frozenset({QuotationCapability.READ, QuotationCapability.CREATE}),
+                frozenset(
+                    {
+                        QuotationCapability.READ,
+                        QuotationCapability.CREATE,
+                        QuotationCapability.VALIDATE,
+                    }
+                ),
             ),
         )
         self._revoked: set[str] = set()

@@ -8,6 +8,10 @@ const meta = { request_id: id, contract_version: "v0.2", identity_mode: "fixture
 const draft = (values = {}) => ({ ...emptyQuotationDraft(), amount: "001.2300", ...values });
 const payload = quotationFromDraft(draft());
 const record = { ...payload, id };
+const baselineValidation = {
+  quotation_id: id, flags: [], evaluated_rules: [], validation_config_ref: "quotation-baseline-v1",
+  reference_date: null, active_artifact: null,
+};
 const signal = () => new AbortController().signal;
 
 test("keeps decimal text and missing/null/raw expiration distinct without date validation", () => {
@@ -88,6 +92,40 @@ test("list and detail go to the API, including cursor", async () => {
   assert.equal((await api.get(id, signal())).data.id, id);
   assert.ok(urls[0].endsWith(`?after=${id}`));
   assert.ok(urls[1].endsWith(`/${id}`));
+});
+
+test("validation uses a bodyless POST and decodes the explicit baseline without inventing evidence", async () => {
+  let request;
+  const api = new QuotationHttpClient("http://local.test", "test-only-token", async (url, options) => {
+    request = { url, options };
+    return Response.json({ data: baselineValidation, meta });
+  });
+  assert.deepEqual((await api.validate(id, signal())).data, baselineValidation);
+  assert.ok(request.url.endsWith(`/${id}/validate`));
+  assert.equal(request.options.method, "POST");
+  assert.deepEqual(request.options.headers, { Authorization: "Bearer test-only-token" });
+  assert.equal(request.options.body, undefined);
+  assert.equal(request.options.credentials, "omit");
+  assert.equal(request.options.cache, "no-store");
+});
+
+test("validation rejects mismatched quotation IDs, missing metadata and fabricated evidence", async () => {
+  for (const data of [
+    { ...baselineValidation, quotation_id: "bbbbbbbb-bbbb-4bbb-8bbb-bbbbbbbbbbbb" },
+    { ...baselineValidation, evaluated_rules: undefined },
+    { ...baselineValidation, flags: [{ code: "x", field: "expires_on" }] },
+    { ...baselineValidation, reference_date: "2026-11-07" },
+    { ...baselineValidation, active_artifact: { id: "pretend", digest: "client value" } },
+  ]) {
+    const api = new QuotationHttpClient("http://local.test", "test-only-token", async () =>
+      Response.json({ data, meta }));
+    await assert.rejects(api.validate(id, signal()), (error) => error instanceof QuotationApiError && error.status === 502);
+  }
+  for (const status of [401, 403, 404, 503]) {
+    const api = new QuotationHttpClient("http://local.test", "test-only-token", async () =>
+      Response.json({ error: { message: "do-not-echo" }, meta }, { status }));
+    await assert.rejects(api.validate(id, signal()), (error) => error.status === status && !error.message.includes("do-not-echo"));
+  }
 });
 
 test("does not echo untrusted server errors or treat an invalid response as success", async () => {

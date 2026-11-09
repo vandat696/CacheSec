@@ -13,6 +13,7 @@ from threading import Thread
 from time import monotonic, sleep
 from urllib.parse import urlsplit
 
+import pytest
 import uvicorn
 from pydantic import SecretStr
 
@@ -23,6 +24,7 @@ from app.quotation_demo.database.quotation_migrations import apply_migrations
 from app.quotation_demo.quotation_settings import QuotationSettings
 
 
+@pytest.mark.baseline_only
 def test_quotation_browser_round_trip(quotation_database, monkeypatch):
     frontend = Path(__file__).resolve().parents[3] / "frontend"
     app_url = os.environ.get("CACHESEC_BROWSER_APP_URL", "http://127.0.0.1:3100")

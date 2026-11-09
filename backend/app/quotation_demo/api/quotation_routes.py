@@ -1,7 +1,7 @@
 from typing import Annotated
 from uuid import UUID
 
-from fastapi import APIRouter, Depends, Header, Request, Security
+from fastapi import APIRouter, Body, Depends, Header, Request, Security
 from fastapi.security import HTTPAuthorizationCredentials, HTTPBearer
 
 from app.quotation_demo.api.quotation_responses import (
@@ -14,6 +14,7 @@ from app.quotation_demo.api.quotation_service_factory import QuotationServiceFac
 from app.quotation_demo.business.quotation_models import QuotationCreate, QuotationRecord
 from app.quotation_demo.business.quotation_permissions import QuotationIdentityRequired
 from app.quotation_demo.business.quotation_service import QuotationService
+from app.quotation_demo.business.quotation_validation import QuotationValidation
 
 
 def create_quotation_router(factory: QuotationServiceFactory) -> APIRouter:
@@ -66,5 +67,14 @@ def create_quotation_router(factory: QuotationServiceFactory) -> APIRouter:
         service: Annotated[QuotationService, Depends(service_for_request)],
     ) -> ApiResponse[QuotationRecord]:
         return ApiResponse(data=service.get(quotation_id), meta=metadata(request))
+
+    @router.post("/{quotation_id}/validate")
+    def validate_quotation(
+        quotation_id: UUID,
+        request: Request,
+        service: Annotated[QuotationService, Depends(service_for_request)],
+        _payload: Annotated[None, Body()] = None,
+    ) -> ApiResponse[QuotationValidation]:
+        return ApiResponse(data=service.validate(quotation_id), meta=metadata(request))
 
     return router

@@ -2,7 +2,7 @@
 
 ## Trạng thái và phạm vi
 
-**Đặc tả T02 v0.2 ngày 2026-11-07; đã triển khai ba thao tác tạo/danh sách/chi tiết báo giá, GET /health và GET /ready.** Các route validation/control/cache còn là thiết kế. API báo giá có entrypoint và quyền fixture riêng, được mô tả bên dưới; [domain/storage](architecture.md#lưu-trữ-báo-giá-đã-triển-khai) có migration riêng. Contract này cụ thể hóa [kiến trúc](architecture.md#bản-nháp-t02-module-và-contract), không phải SDK đã phát hành hoặc workflow Agent đang chạy. Các ví dụ JSON đều là dữ liệu giả minh họa, không phải fixture hoặc kết quả đo.
+**Đặc tả T02 v0.2 ngày 2026-11-07; đã triển khai tạo/danh sách/chi tiết và validation nền báo giá, GET /health và GET /ready.** Validation nền chưa có rule ngày; control/cache và validation gắn runtime artifact vẫn là thiết kế. API báo giá có entrypoint và quyền fixture riêng, được mô tả bên dưới; [domain/storage](architecture.md#lưu-trữ-báo-giá-đã-triển-khai) có migration riêng. Contract này cụ thể hóa [kiến trúc](architecture.md#bản-nháp-t02-module-và-contract), không phải SDK đã phát hành hoặc workflow Agent đang chạy. Các ví dụ JSON đều là dữ liệu giả minh họa, không phải fixture hoặc kết quả đo.
 
 Đầu vào đã được người dùng chọn nằm tại [hồ sơ T01](../general/overview.md#hồ-sơ-đầu-vào-t01--đang-thực-hiện): sáu trường báo giá; ngày YYYY-MM-DD có thật và d >= 2026-11-07 trong fixture; Context Cache/browser trước; identity fixture backend quản lý; Developer được duyệt nếu có quyền Reviewer hiện tại. Acceptance vẫn chờ cô quy định, không mặc định 100%.
 
@@ -28,7 +28,7 @@ Hai endpoint vận hành dùng path trực tiếp, không thuộc /api/v1 và ch
 | Id | Chuỗi opaque do backend cấp; client không phân tích ID thành path/role/quyền |
 | Revision | Số nguyên dương tăng khi tạo bản source/patch mới; không cho client ghi đè bản cũ |
 | Digest | Chuỗi có tên thuật toán và giá trị digest; thuật toán, canonicalization và trust mechanism khóa tại T04. Ví dụ sha256 không phải lựa chọn thuật toán đã chốt |
-| DecimalString | Chuỗi khớp toàn bộ `[+-]?[0-9]+(\.[0-9]+)?`, không exponent/whitespace/JSON number/NaN/Infinity; giữ nguyên precision và không làm tròn. Ràng buộc nghiệp vụ min/max/currency còn mở |
+| DecimalString | Chuỗi khớp toàn bộ `[+-]?[0-9]+(\.[0-9]+)?`, không exponent/whitespace/JSON number/NaN/Infinity; giữ nguyên precision và không làm tròn. Không áp min/max/currency theo lựa chọn giữ contract nền ngày 2026-11-09 |
 | JsonValue | Giá trị JSON bất kỳ: null, boolean, number, string, array hoặc object; JSON lỗi cú pháp vẫn là request lỗi |
 | Timestamp | Thời điểm có offset, đề xuất biểu diễn UTC; tách khỏi ngày nghiệp vụ YYYY-MM-DD. Duration đo bằng đồng hồ đơn điệu, không suy từ hiệu hai máy |
 | ConfigRef | ID/version của cấu hình đã đăng ký ở backend, không chứa API key, lệnh shell, raw policy hoặc endpoint provider do client tùy ý nhập |
@@ -48,14 +48,15 @@ Entrypoint app.quotation_demo.quotation_api:create_app chạy bằng --factory, 
 | POST /api/v1/quotations | quotation.create | 201, data = QuotationRecord; bắt buộc Idempotency-Key |
 | GET /api/v1/quotations?limit=50&after=UUID | quotation.read | 200, data = {items, next_cursor}; hết trang next_cursor = null |
 | GET /api/v1/quotations/{UUID} | quotation.read | 200, data = QuotationRecord; không thấy trả 404 |
+| POST /api/v1/quotations/{UUID}/validate | quotation.read và quotation.validate | 200, data = QuotationValidation nền; không thấy trả 404 sau kiểm quyền |
 
-Response có meta = {contract_version: "v0.2", request_id, identity_mode: "fixture"}. X-Request-ID do backend sinh khớp meta; Cache-Control: no-store. Identity chỉ được kiểm tra cho dữ liệu báo giá; /docs và /openapi.json mở để xem contract, không chứa token/dữ liệu báo giá. Giao diện /quotations đã dùng ba thao tác này. App bật CORS theo allowlist QUOTATION_CORS_ORIGINS, chỉ GET/POST, nhận Authorization/Content-Type/Idempotency-Key và expose X-Request-ID, không dùng cookie credentials. CORS bọc cả response lỗi; origin được phép vẫn cần Bearer token/quyền.
+Response có meta = {contract_version: "v0.2", request_id, identity_mode: "fixture"}. X-Request-ID do backend sinh khớp meta; Cache-Control: no-store. Identity chỉ được kiểm tra cho dữ liệu báo giá; /docs và /openapi.json mở để xem contract, không chứa token/dữ liệu báo giá. Giao diện /quotations đã dùng bốn thao tác này. App bật CORS theo allowlist QUOTATION_CORS_ORIGINS, chỉ GET/POST, nhận Authorization/Content-Type/Idempotency-Key và expose X-Request-ID, không dùng cookie credentials. CORS bọc cả response lỗi; origin được phép vẫn cần Bearer token/quyền.
 
 Theo lựa chọn kỹ thuật của người dùng: body tối đa **65.536 byte (64 KiB)**, đếm cả bytes thực khi không có Content-Length; page limit từ 1 đến **100**, mặc định 50 (hoặc cap cấu hình nếu thấp hơn). Idempotency-Key từ **1–128 ký tự ASCII**, không trim/đổi hoa thường; client nên dùng UUID hoặc chuỗi in được để truyền qua HTTP. Giới hạn này không phải acceptance threshold nghiên cứu. Cấu hình chỉ cho phép hạ cap; không tự mở rộng giới hạn đã chọn.
 
 Idempotency được lưu tại creation_requests, ràng buộc **principal + scope do backend gán + hash key** và hash payload chuẩn hóa. Thứ tự key JSON không ảnh hưởng; missing expires_on khác null, lexeme tiền khác nhau vẫn là payload khác. Cùng key/cùng payload trả lại record đã commit (201); cùng key/khác payload trả 409. PostgreSQL transaction/advisory lock đảm bảo retry song song chỉ tạo một record; tạo báo giá và metadata cùng commit, lỗi commit không trả thành công. Quyền luôn được kiểm tra lại trước lookup replay. Metadata chưa có TTL/GC hoặc API xóa, giữ đến khi có policy lifecycle riêng; hash ở đây dùng đối chiếu retry, không phải chứng thực cache/artifact.
 
-Lỗi của ba thao tác dùng error = {code, message} và meta như trên, không echo input/exception/secrets:
+Lỗi của các thao tác dùng error = {code, message} và meta như trên, không echo input/exception/secrets:
 
 | HTTP | Mã/trường hợp |
 | --- | --- |
@@ -68,7 +69,7 @@ Lỗi của ba thao tác dùng error = {code, message} và meta như trên, khô
 | 503 | STORAGE_UNAVAILABLE hoặc AUTHORITY_UNAVAILABLE: dependency không xác minh/thực hiện được |
 | 500 | INTERNAL_ERROR: lỗi lập trình không được giả thành lỗi storage hoặc thành công |
 
-Không triển khai update/delete, validation hoặc expiration_review trong lát cắt này. POST thành công không xác nhận ngày hợp lệ, chưa tạo approval hay artifact.
+Không triển khai update/delete hoặc expiration_review trong lát cắt này. POST tạo hoặc validate thành công không xác nhận ngày hợp lệ, chưa tạo approval hay artifact.
 
 ### QuotationCreate và QuotationRecord
 
@@ -103,7 +104,32 @@ Ví dụ request/record, trong đó null là đầu vào cần thử sau khi b�
 
 ### QuotationValidation
 
-Response có quotation_id, flags (mảng code/field/message), reference_date, validation_config_ref và active_artifact (id/digest). Cờ expiration_review chỉ xuất hiện khi code artifact đang chạy có rule và đầu vào không đạt điều kiện ngày; không phải request field hoặc approval state. Không có cờ này không có nghĩa mọi validation khác đều đạt. Response không chứa một boolean acceptance_passed khi ngưỡng nghiên cứu chưa được chọn.
+#### Validation nền đã triển khai
+
+POST /api/v1/quotations/{UUID}/validate không nhận body hoặc nhận JSON null. Body có dữ liệu, kể cả profile/reference_date/flags/approved/artifact do client khai, trả 400 INVALID_REQUEST trước mở transaction. Quyền read và validate được kiểm tra hiện tại trước đọc record; reader không có validate trả 403 kể cả ID không tồn tại. Operator có đủ hai quyền. Không có quyền duyệt code/deploy trong grants app này.
+
+Service đọc record đã lưu qua transaction, rồi gọi [validate_quotation](../../backend/app/quotation_demo/business/quotation_validation.py), không sửa record hoặc lưu metadata retry/approval/test. Đây là phép tính đồng bộ chỉ đọc, không cần Idempotency-Key; gọi lại tính lại từ record/code đang chạy, không replay quyết định cũ. Lỗi quyền/storage và not-found giữ envelope/mã như các thao tác khác. Không có lịch sử validation bền vững hoặc trace nghiên cứu từ endpoint này.
+
+App gốc sau kiểm tra input contract chưa có quy tắc nghiệp vụ, nên flags = [] và evaluated_rules = []. Đây là kết quả của **tập quy tắc rỗng được công bố**, không phải fallback khi validator lỗi, không chứng minh ngày hợp lệ hoặc báo giá đã được duyệt. validation_config_ref = quotation-baseline-v1 chỉ định danh hành vi nền, không phải digest của code. reference_date = null vì baseline không so sánh ngày; active_artifact = null vì chưa có launcher/gate cung cấp evidence tin cậy. Không tự lấy ngày máy, mốc fixture hoặc hash tên file để điền hai trường này.
+
+Ví dụ response data nền:
+
+```json
+{
+  "quotation_id": "aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa",
+  "flags": [],
+  "evaluated_rules": [],
+  "validation_config_ref": "quotation-baseline-v1",
+  "reference_date": null,
+  "active_artifact": null
+}
+```
+
+UI có nút Kiểm tra báo giá trong chi tiết; kết quả nền ghi Chưa áp dụng quy tắc nghiệp vụ, không hiển thị Đạt/Ngày hợp lệ/Đã duyệt. Kết quả phải thuộc đúng quotation_id đang chọn; đổi record, refresh, tạo mới, 401 hoặc đổi/ngắt phiên xóa kết quả tương ứng, response đến trễ bị bỏ qua.
+
+#### Validation gắn artifact — thiết kế mục tiêu
+
+Response mục tiêu giữ quotation_id, flags (mảng code/field/message), evaluated_rules, reference_date, validation_config_ref và active_artifact (id/digest). Chỉ launcher/control tin cậy mới cung cấp reference_date/config và artifact binding; phải hoàn thiện contract/runtime này trước đóng băng baseline nghiên cứu. Cờ expiration_review chỉ xuất hiện khi code artifact đang chạy có rule và đầu vào không đạt điều kiện ngày; không phải request field hoặc approval state. Không có cờ này không có nghĩa mọi validation khác đều đạt. Response không chứa boolean acceptance_passed khi ngưỡng nghiên cứu chưa được chọn.
 
 Ví dụ riêng phần data sau khi artifact có rule được phê duyệt và kích hoạt; không phải output của backend hiện tại:
 
@@ -111,6 +137,7 @@ Ví dụ riêng phần data sau khi artifact có rule được phê duyệt và 
 {
   "quotation_id": "quotation-demo-01",
   "flags": [{"code": "expiration_review", "field": "expires_on", "message": "Cần xem xét ngày hết hạn"}],
+  "evaluated_rules": ["expiration_review"],
   "reference_date": "2026-11-07",
   "validation_config_ref": "validation-demo-v1",
   "active_artifact": {"id": "artifact-demo-02", "digest": "sha256:aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"}
@@ -216,7 +243,7 @@ Các path dưới đây nằm sau /api/v1 trên base URL tương ứng. Mọi ID
 | --- | --- | --- | --- |
 | App | POST /quotations | QuotationCreate | 201 QuotationRecord |
 | App | GET /quotations; GET /quotations/{id} | Cursor hoặc Id | 200 danh sách có next_cursor hoặc QuotationRecord |
-| App | POST /quotations/{id}/validate | Validation profile reference được phép, nếu contract runtime yêu cầu | 200 QuotationValidation từ artifact đang chạy |
+| App | POST /quotations/{id}/validate | Nền: không body/JSON null; profile runtime tin cậy còn là thiết kế | 200 QuotationValidation; baseline có active_artifact/reference_date null |
 | Control | GET /session | Không nhận role/tenant trong body | 200 Session |
 | Control | GET /repositories/{id}/snapshot | Source reference được phép | 200 RepositorySnapshot |
 | Control | GET /repositories/{id}/snapshots/{snapshot_id}/files/{file_id} | Opaque file reference do backend cấp | 200 nội dung/path tương đối/digest được phép; không nhận absolute path tùy ý |
@@ -348,4 +375,4 @@ Ví dụ lỗi, không có code/source bí mật trong details:
 | Developer có/không có Reviewer; Agent do Reviewer khởi tạo | Chỉ human có Reviewer được duyệt tường minh; Agent không được ủy quyền review/deploy |
 | Test/model/cache/verifier/activation lỗi hoặc timeout | Không giả pass/Hit/deployed; có linked error/outcome/usage coverage, kiểm tra side effects trước retry |
 
-Đầu ra thiết kế T02 v0.2 có types, quyền, state transitions, retry/lỗi và bảng ca đối chiếu. Sau bước thiết kế, đã triển khai OpenAPI/Pydantic/SQL và kiểm thử ba thao tác báo giá như phần đầu tài liệu; mapping/freshness/limits của app đã chốt riêng. Mapping/grants, integrity, storage và sandbox/activation/deadline/cancellation cho control/cache vẫn cần T03–T04, có thể yêu cầu version contract mới. Chưa có SDK, workflow endpoints hoặc fixture nghiên cứu; không chọn thay quyết định bảo mật/nghiệm thu còn mở.
+Đầu ra thiết kế T02 v0.2 có types, quyền, state transitions, retry/lỗi và bảng ca đối chiếu. Sau bước thiết kế, đã triển khai OpenAPI/Pydantic/SQL và kiểm thử bốn thao tác báo giá như phần đầu tài liệu; mapping/freshness/limits của app đã chốt riêng. Mapping/grants, integrity, storage và sandbox/activation/deadline/cancellation cho control/cache vẫn cần T03–T04, có thể yêu cầu version contract mới. Chưa có SDK, workflow endpoints hoặc fixture nghiên cứu; không chọn thay quyết định bảo mật/nghiệm thu còn mở.

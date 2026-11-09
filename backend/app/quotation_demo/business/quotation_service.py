@@ -10,6 +10,7 @@ from app.quotation_demo.business.quotation_repository_interface import (
     QuotationCreationIdentity,
     QuotationRepositoryTransactions,
 )
+from app.quotation_demo.business.quotation_validation import QuotationValidation, validate_quotation
 
 
 class QuotationNotFound(LookupError):
@@ -55,6 +56,14 @@ class QuotationService:
 
     def get(self, quotation_id: UUID) -> QuotationRecord:
         self._access.require(QuotationCapability.READ)
+        return self._read_record(quotation_id)
+
+    def validate(self, quotation_id: UUID) -> QuotationValidation:
+        self._access.require(QuotationCapability.READ)
+        self._access.require(QuotationCapability.VALIDATE)
+        return validate_quotation(self._read_record(quotation_id))
+
+    def _read_record(self, quotation_id: UUID) -> QuotationRecord:
         with self._transactions.open() as repository:
             record = repository.get(quotation_id)
         if record is None:

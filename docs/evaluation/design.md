@@ -79,6 +79,8 @@ Trước tạo/đóng băng fixture: review từng đầu vào/nhãn; chốt cá
 
 Đề xuất ca báo giá: thiếu field, null, rỗng, sai định dạng, ngày không tồn tại, ngày hợp lệ và các ca biên theo nghĩa ngày đã chốt. Expected flag của ca phụ thuộc định nghĩa chưa được tự chốt. App gốc phải pass test hành vi cũ nhưng **chưa đáp ứng** acceptance rule mới; test tái hiện thiếu rule không được tính như failure của workflow đã hoàn thành. Khi đánh giá kết quả patch mới phải chạy đầy đủ fixture bắt buộc và hồi quy.
 
+Kiểm chứng source nền hiện có dùng marker pytest **baseline_only** cho các ca khẳng định app gốc chưa có rule mới, gồm kết quả validator rỗng và browser smoke nền. Các ca này chỉ kiểm tra trạng thái xuất phát, không là yêu cầu hồi quy sau khi thêm đúng rule. Hồi quy chung chạy với `-m "not baseline_only"` vẫn kiểm quyền, lỗi, giữ dữ liệu và contract; không yêu cầu flags luôn rỗng. Marker này phân loại test kỹ thuật, không tạo fixture nghiên cứu thứ hai hoặc thay acceptance. Runner nghiên cứu sau này phải chạy hồi quy chung cùng fixture/rule suite đã được khóa; chưa có fixture đó thì chưa thể kết luận bản sửa đạt yêu cầu chỉ từ test nền.
+
 Nếu cần hiệu chỉnh similarity threshold, khóa trước phân vùng calibration/evaluation trong cùng manifest, không lấy nhãn evaluation để chọn threshold. Cách phân vùng phải nằm trong protocol được xác nhận, không phá ràng buộc một fixture. Chưa đủ dữ liệu để phân vùng thì công bố giới hạn và không tuyên bố tổng quát hóa.
 
 ## Năm chiều đo chính

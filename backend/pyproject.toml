@@ -8,3 +8,6 @@ select = ["E", "F", "I"]
 [tool.pytest.ini_options]
 testpaths = ["tests"]
 pythonpath = ["."]
+markers = [
+    "baseline_only: checks the original app without the experiment's expiration rule; exclude from post-change regression",
+]

@@ -8,7 +8,7 @@ from pydantic import SecretStr
 from app.quotation_demo.api.quotation_http_app import create_quotation_http_app
 from app.quotation_demo.api.quotation_service_factory import FixtureQuotationServiceFactory
 from app.quotation_demo.auth.fixture_identity import FixtureIdentityRegistry
-from app.quotation_demo.business.quotation_models import QuotationPage
+from app.quotation_demo.business.quotation_models import QuotationPage, QuotationRecord
 from app.quotation_demo.business.quotation_repository_interface import QuotationPersistenceError
 
 READER = "unit-test-reader-credential-0000000000"
@@ -221,3 +221,64 @@ def test_duplicate_authorization_headers_are_not_accepted(runtime):
     )
     assert response.status_code == 401
     assert sessions.opens == 0
+
+
+@pytest.mark.parametrize("token,status", [(None, 401), ("wrong", 401), (READER, 403)])
+def test_validation_rejects_missing_identity_and_reader_before_storage(runtime, token, status):
+    client, _, sessions = runtime
+    response = client.post(
+        f"/api/v1/quotations/{uuid4()}/validate",
+        headers={"Authorization": f"Bearer {token}", "X-Role": "operator"} if token else {},
+    )
+    assert response.status_code == status
+    assert sessions.opens == 0
+
+
+def test_validation_checks_revocation_and_reports_not_found(runtime):
+    client, registry, sessions = runtime
+    path = f"/api/v1/quotations/{uuid4()}/validate"
+    headers = {"Authorization": f"Bearer {OPERATOR}"}
+    response = client.post(path, headers=headers)
+    assert response.status_code == 404
+    assert response.json()["error"]["code"] == "QUOTATION_NOT_FOUND"
+    assert sessions.opens == 1
+    registry.revoke("quotation-operator")
+    assert client.post(path, headers=headers).status_code == 401
+    assert sessions.opens == 1
+
+
+@pytest.mark.parametrize(
+    "payload", [{"reference_date": "2000-01-01"}, {"flags": []}, {"approved": True}]
+)
+def test_validation_does_not_accept_client_configuration_or_results(runtime, payload):
+    client, _, sessions = runtime
+    response = client.post(
+        f"/api/v1/quotations/{uuid4()}/validate",
+        headers={"Authorization": f"Bearer {OPERATOR}"},
+        json=payload,
+    )
+    assert response.status_code == 400
+    assert sessions.opens == 0
+
+
+def test_validator_failure_is_not_reported_as_an_empty_success(runtime, monkeypatch):
+    from app.quotation_demo.business import quotation_service
+
+    client, _, sessions = runtime
+    record = QuotationRecord(id=uuid4(), **BODY)
+    monkeypatch.setattr(sessions, "get", lambda _quotation_id: record)
+
+    def broken_validator(_record):
+        raise RuntimeError("do-not-echo-validator-internals")
+
+    monkeypatch.setattr(quotation_service, "validate_quotation", broken_validator)
+    # Allow the configured application exception handler to produce the real HTTP response.
+    with TestClient(client.app, raise_server_exceptions=False) as errors:
+        response = errors.post(
+            f"/api/v1/quotations/{record.id}/validate",
+            headers={"Authorization": f"Bearer {OPERATOR}"},
+        )
+    assert response.status_code == 500
+    assert response.json()["error"]["code"] == "INTERNAL_ERROR"
+    assert "data" not in response.json()
+    assert "validator-internals" not in response.text
