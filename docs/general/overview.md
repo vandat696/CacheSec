@@ -31,7 +31,7 @@ Giá trị acceptance threshold chưa được giảng viên quy định. Các g
 
 Ứng dụng báo giá mẫu trong cùng repository đã tiếp nhận, lưu và đọc báo giá giả lập qua API/PostgreSQL và UI /quotations; có luồng validator nền nhưng chưa có quy tắc nghiệp vụ hoặc runtime artifact. Trạng thái gốc chuẩn bị cho thí nghiệm phải chưa có quy tắc ngày hết hạn mới. Developer yêu cầu Agent tìm validation và thêm cờ human review cho báo giá thiếu ngày hợp lệ; contract mục tiêu dùng cờ expiration_review. Cờ không tự từ chối báo giá, không phê duyệt mua hàng và không mở rộng sang quy tắc nghiệp vụ khác.
 
-CacheSec dự kiến cung cấp workspace, authorized repository retrieval, đề xuất diff, chạy test, duyệt thay đổi và trace. Reviewer duyệt **thay đổi code/artifact**, không duyệt báo giá. Deploy trong PoC được đề xuất là kích hoạt artifact trong môi trường giả lập có gate thật; mức fidelity và ranh giới kiểm soát cần thống nhất trước triển khai, không gọi một nút UI mô phỏng là deployment control.
+CacheSec dự kiến cung cấp workspace, authorized repository retrieval, đề xuất diff, chạy test, duyệt thay đổi và trace. Reviewer duyệt **thay đổi code/artifact**, không duyệt báo giá. Deploy PoC theo gói local v0.1 đã chọn là kích hoạt artifact trên target local có gate thật; host/admin nằm ngoài threat boundary đã công bố, cần kiểm chứng launcher/isolation trước mở runtime. Nút UI mô phỏng không phải deployment control.
 
 ## Yêu cầu chức năng mục tiêu
 
@@ -71,7 +71,7 @@ Safety property bắt buộc là **một** thuộc tính về deployment approva
 | Loại cache đầu tiên | Người dùng chọn Context Cache: tái sử dụng ngữ cảnh repo; LLM vẫn xử lý yêu cầu |
 | Vị trí/host đầu tiên | Người dùng chọn cache trong trình duyệt cho web Workspace trước; adapter IDE làm sau. Storage engine/API cụ thể chưa chốt |
 | Ngày hết hạn | Người dùng chọn ngày có thật theo lịch, định dạng YYYY-MM-DD và không trước mốc tham chiếu. Fixture dùng mốc cố định 2026-11-07; ngày bằng mốc được chấp nhận |
-| Nguồn danh tính PoC | Người dùng chọn danh tính giả lập do backend quản lý, công bố rõ giới hạn; approval gate vẫn phải thực thi thật. Mapping principal/quyền và freshness cần chốt ở phần control |
+| Nguồn danh tính PoC | Người dùng chọn danh tính giả lập do backend quản lý, công bố rõ giới hạn; approval gate vẫn phải thực thi thật. Gói local v0.1 đã chọn policy control riêng; principal/grants thực chưa đăng ký/triển khai |
 | Quyền API báo giá | Hai principal fixture: chỉ đọc; tạo/đọc/validate. Quyền validate chỉ cấp cho operator theo lựa chọn ngày 2026-11-09. Bearer token ngẫu nhiên cấu hình riêng, thiếu/sai token bị chặn, không tài khoản mặc định. Tách quyền Reviewer/deployment; [chi tiết](../system/authorization.md#quyền-api-báo-giá-đã-triển-khai) |
 | Freshness API báo giá | Kiểm token/quyền ở đầu mỗi thao tác; thu hồi chặn thao tác tiếp theo, không hủy thao tác đang thực hiện hoặc thu lại nội dung đã đọc. Không chốt thay cache/control/gate |
 | Giới hạn API local | Body JSON tối đa 64 KiB, trang tối đa 100 báo giá, Idempotency-Key 1–128 ký tự ASCII. Đây là cấu hình kỹ thuật, không phải ngưỡng nghiệm thu nghiên cứu |
@@ -105,7 +105,22 @@ T02 có [wire contract v0.2](../system/api.md#dữ-liệu-ứng-dụng-báo-giá
 
 Kết quả validation mục tiêu có danh sách cờ, với cờ expiration_review cho rule mới; shape ở [API](../system/api.md#quotationvalidation); endpoint nền đã có, runtime artifact và rule mới chưa triển khai. Không nhận cờ do client/Agent gửi như kết quả validation đáng tin cậy. Khi ca ngày sai thuộc fixture, parsing/chuẩn hóa ở API không được làm mất dấu hiệu đầu vào khiến rule nghiệp vụ không còn được kiểm tra. Test nền và schema nền không được bổ sung trước chính rule mà Agent sẽ được giao.
 
-Vai trò Developer, Reviewer và Deployment Control đã có trong thiết kế. Người dùng chọn identity fixture do backend quản lý cho PoC, không triển khai đăng nhập thật ngay từ đầu; đây là mô phỏng danh tính, không phải production authentication. Developer được tự duyệt nếu có quyền Reviewer hiện tại và thực hiện quyết định tường minh; không yêu cầu reviewer phải khác người đề xuất. Mapping/freshness API báo giá đã chốt riêng trong bảng trên; mapping control/repo/reviewer vẫn cần chốt trước thực thi, không tự biến ba capability thành yêu cầu ba tài khoản riêng. Fixture/oracle, acceptance và baseline/số lặp vẫn chờ xác nhận theo [thiết kế đánh giá](../evaluation/design.md).
+Vai trò Developer, Reviewer và Deployment Control đã có trong thiết kế. Người dùng chọn identity fixture do backend quản lý cho PoC, không triển khai đăng nhập thật ngay từ đầu; đây là mô phỏng danh tính, không phải production authentication. Developer được tự duyệt nếu có quyền Reviewer hiện tại và thực hiện quyết định tường minh; không yêu cầu reviewer phải khác người đề xuất. Mapping/freshness API báo giá đã chốt riêng trong bảng trên; policy mapping/freshness control đã được chọn trong local v0.1, còn registry/grants thực phải triển khai; không biến ba capability thành yêu cầu ba tài khoản riêng. Fixture/oracle, acceptance và baseline/số lặp vẫn chờ xác nhận theo [thiết kế đánh giá](../evaluation/design.md).
+
+### Gói thiết kế local T03–T04 để xác nhận
+
+Ngày 2026-11-09 người dùng yêu cầu tiếp tục triển khai sau khi review gói local v0.1: **gói được chọn làm thiết kế triển khai PoC**, không đồng nghĩa các thành phần đã chạy hoặc đã được cô nghiệm thu. Quyết định self-approval, identity fixture, scope nghiệp vụ và acceptance đã thống nhất phía trên giữ nguyên. Nền blob/control migration đã có code; trạng thái từng phần ở project-status.
+
+| Nội dung đã chọn | Phương án local v0.1 | Đặc tả sở hữu |
+| --- | --- | --- |
+| Nơi lưu bản sửa/bằng chứng | PostgreSQL schema control cho metadata, kho blob local theo digest cho bytes; role app không đọc/ghi control, không tự GC/reset | [T03](../system/architecture.md#đề-xuất-t03-lưu-trữ-control-và-artifact-v01) |
+| Định danh đúng bản sửa | SHA-256 và encoder có version; source bundle + runtime image/dependencies/public config, không chỉ hash file validator; test và activate cùng artifact | [Binding v0.1](../system/api.md#binding-và-deployment-local-v01--đề-xuất) |
+| Ai được thao tác | Control realm/grants riêng theo một tenant/repo/target; human có Reviewer mới duyệt, quyền activate riêng; Agent chỉ được đọc/đề xuất/test | [Authority](../system/authorization.md#phương-án-gate-local-v01-để-chốt) |
+| Hiệu lực approval/quyền | TTL approval 30 phút, một deployment ID; kiểm quyền/revoke ở lúc phát permit. Thu hồi sau permit không hủy hồi tố operation đang triển khai | [Freshness và protocol R1–R6](../system/authorization.md#phương-án-gate-local-v01-để-chốt) |
+| Chạy code và triển khai ở đâu | Docker runtime image tin cậy, source read-only, giới hạn tài nguyên, không Docker socket/control secrets; một endpoint app loopback, stop/start có downtime | [Executor/target](../system/authorization.md#executor-và-target-local-đề-xuất) |
+| Khi lỗi hoặc mất ACK | Reservation/fence bền vững và launcher single-writer; unknown chặn lượt tiếp theo cho đến khi đối soát, không tự chạy lại/rollback | [Recovery](../system/authorization.md#protocol-reservation-dispatch-và-reconciliation) |
+
+TTL/CPU/RAM/deadline trong gói này là giới hạn kỹ thuật đã chọn cho PoC, không phải acceptance của cô. Image digest/platform thật, network/ACL host, harness tách biệt và DB runtime roles phải được đăng ký/kiểm chứng ở bước triển khai; chưa có bằng chứng chúng hoạt động. Oracle/one-fixture contract, nguồn R/config đã khóa và protocol nghiên cứu vẫn cần hoàn thiện trước đóng băng source/fixture hoặc thực nghiệm. Xác nhận gói thiết kế không tự cấp quyền chạy Agent hoặc triển khai rule mới.
 
 ## Acceptance threshold cần thống nhất
 
@@ -123,8 +138,8 @@ Test thiếu/lỗi/timeout hoặc bằng chứng không xác minh được khôn
 | Threshold | Người dùng chờ cô quy định ngưỡng; chưa chọn giá trị. Cần xác nhận danh sách test bắt buộc, đơn vị/mẫu số và cách tính run lỗi/timeout trước thực nghiệm |
 | Baseline và lặp | Baseline được dùng công cụ nào, có cấm AI không; ai thực hiện; số lần lặp, thứ tự và biện pháp giảm học thuộc tác vụ? |
 | Agent và repository | Adapter/provider/model/revision, tool scope, executor, ngôn ngữ app mẫu, giới hạn đọc/ghi/chạy test; loại bỏ secrets/symlink vượt scope thế nào? |
-| Identity và gate | Đã chốt mapping/freshness reader/operator riêng API báo giá và self-approval khi Developer có quyền Reviewer. Còn mapping principal/tenant/repo/control, ABAC, freshness cache/gate, deploy target và đường bypass ngoài threat model |
-| Exact change | Chuẩn hóa diff, base/source revision, artifact digest, test/fixture/config binding, expiry/revoke approval; cơ chế toàn vẹn và kiểm tra nguyên tử tại deployment? |
+| Identity và gate | Đã chốt mapping/freshness reader/operator riêng API báo giá và self-approval khi Developer có quyền Reviewer. Control/gate đã chọn policy local v0.1, còn đăng ký principals/scope/repo/target và kiểm chứng runtime; ABAC/freshness cache nằm ngoài gói này và vẫn còn mở |
+| Exact change | Local v0.1 đã chọn patch manifest/bytes digest/binding, TTL/single-use và protocol dispatch/reconcile; còn schema/use case và kiểm chứng thực tế, không dùng blob index thay bằng chứng này |
 | Cache | Đã chọn Context Cache trong trình duyệt/web Workspace trước. Còn trusted metadata/integrity, storage engine, model/metric/threshold, TTL, scope chia sẻ, invalidation và logout/account switch; offline mặc định đề xuất không reuse |
 | Bằng chứng riêng cache | Các câu hỏi tìm hiểu repo thực sự lặp lại trong một nhiệm vụ; preload hợp lệ, số query đủ báo cáo, oracle reuse và cách tính tiền xử lý/chi phí? |
 | Phương pháp và tài liệu nền | Cỡ mẫu, seed, biến động model, giới hạn thống kê; chưa tìm thấy research notes hoặc bản tóm tắt bài báo trong repo, cần bổ sung nguồn thật khi có |

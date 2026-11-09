@@ -27,7 +27,7 @@ Hai endpoint vận hành dùng path trực tiếp, không thuộc /api/v1 và ch
 | --- | --- |
 | Id | Chuỗi opaque do backend cấp; client không phân tích ID thành path/role/quyền |
 | Revision | Số nguyên dương tăng khi tạo bản source/patch mới; không cho client ghi đè bản cũ |
-| Digest | Chuỗi có tên thuật toán và giá trị digest; thuật toán, canonicalization và trust mechanism khóa tại T04. Ví dụ sha256 không phải lựa chọn thuật toán đã chốt |
+| Digest | Chuỗi có tên thuật toán và giá trị digest; blob/control metadata local v0.1 dùng SHA-256 và encoder đã chọn bên dưới; integrity/keys của Context Cache vẫn thuộc T04 và chưa được lựa chọn này chốt thay |
 | DecimalString | Chuỗi khớp toàn bộ `[+-]?[0-9]+(\.[0-9]+)?`, không exponent/whitespace/JSON number/NaN/Infinity; giữ nguyên precision và không làm tròn. Không áp min/max/currency theo lựa chọn giữ contract nền ngày 2026-11-09 |
 | JsonValue | Giá trị JSON bất kỳ: null, boolean, number, string, array hoặc object; JSON lỗi cú pháp vẫn là request lỗi |
 | Timestamp | Thời điểm có offset, đề xuất biểu diễn UTC; tách khỏi ngày nghiệp vụ YYYY-MM-DD. Duration đo bằng đồng hồ đơn điệu, không suy từ hiệu hai máy |
@@ -282,6 +282,59 @@ ActivationRequest = {
 
 Các trường actor/tenant/grants/timestamps và actual digest do backend đọc hoặc tính, không lấy client echo làm bằng chứng. Với self-approval, quyền Reviewer phải thực sự được backend cấp; việc cùng proposer không được tự cho qua hoặc tự chặn. Agent chỉ có tập capability đọc/đề xuất/test được ủy quyền, không thể gọi quyết định/activation thay người dùng có nhiều vai trò.
 
+### Binding và deployment local v0.1 — đề xuất
+
+Phần này chỉ cụ thể hóa [phương án gate local](authorization.md#phương-án-gate-local-v01-để-chốt), **thuộc thiết kế đã được người dùng chọn; chưa phải HTTP API/control schema đầy đủ đã triển khai**. Không đổi contract của endpoint báo giá đã chạy, không tự cấp grants mới. Kiểu Id/Digest chung v0.2 vẫn dùng cho phần mục tiêu khác; gói v0.1 đã được chọn; encoder bên dưới đã có implementation cho metadata bytes, không tự kiểm schema/provenance/binding đầy đủ.
+
+[Encoder hiện có](../../backend/app/artifacts/metadata_encoding.py) nhận Python object đã được caller kiểm schema, không nhận JSON wire text và không phát hiện duplicate key đã bị decoder khác làm mất. Giới hạn encoding v1: metadata tối đa 64 KiB, nesting tối đa 32; ASCII string/keys, null/bool và integer 0..2^53−1 theo schema caller, không floats. Encoder giữ array order, không tự sort file/resource refs hoặc coi kind tùy ý là artifact hợp lệ. Root cần kind không rỗng và schema_version = 1; encoder-check vectors bên dưới khớp test. Chuẩn hóa/kiểm schema từng loại manifest, binding và trusted registry vẫn thuộc các use case tiếp theo.
+
+#### Quy tắc bytes để tính digest
+
+Đề xuất SHA-256 trên bytes source/blob nguyên trạng. Manifest/binding/evidence metadata dùng encoder profile cachesec-json-v1: JSON UTF-8 không BOM hoặc newline cuối, keys sắp thứ tự, không whitespace ngoài string; serializer tương đương Python json.dumps với sort_keys=True, separators=(",", ":"), ensure_ascii=True, allow_nan=False. Giới hạn schema này vào key ASCII cố định, UUID/digest/profile refs ASCII, chuỗi path allowlist không alias và integer không âm trong khoảng 0..2^53−1; cấm floats, duplicate key và giá trị không thuộc schema. Array file refs sắp theo path, resource refs theo ID khi là tập hợp; array có thứ tự nghiệp vụ như argv phải giữ thứ tự. Không chuẩn hóa hoặc băm lại source qua encoder JSON. Đây là **profile riêng có version**, không tuyên bố tương thích RFC 8785; cần golden byte/digest vectors trước triển khai. Các tùy chọn serializer được mô tả ở [Python json](https://docs.python.org/3.12/library/json.html).
+
+Ví dụ công thức đặc tả, chưa phải digest thật:
+
+```text
+blob_digest     = SHA256(raw_bytes)
+artifact_digest = SHA256(encode(manifest_without_its_own_digest))
+binding_digest  = SHA256(encode(binding_without_its_own_digest))
+```
+
+Mỗi root có kind/schema_version để phân biệt namespace nội dung. Digest tự thân không chứng minh quyền hoặc nguồn tin cậy: chỉ server đọc blob/snapshot/evidence đã đăng ký mới tạo binding ready. Mọi hash tự khai từ client là giá trị để đối chiếu, không được dùng để đăng ký artifact/evidence được tin cậy. Bytes metadata có thể tái tạo từ object đã kiểm schema, không băm chuỗi JSON tùy cách format của browser.
+
+Patch identity đề xuất dùng manifest kind = patch-manifest, schema_version = 1 và files sắp theo path; mỗi item có path, operation, base_blob_digest và candidate_blob_digest. Scope ban đầu chỉ cho modify file thường đã allowlist; thêm/xóa/rename phải có profile mới được review. patch_digest là hash bytes manifest này, không phải ảnh chụp UI hoặc diff đã prettify/chuẩn hóa newline. Unified diff hiển thị được control dựng từ đúng hai blob refs; trước approve phải bảo đảm diff đang xem và binding cùng base/candidate. ID/digest/timestamps của bản ghi wrapper không nằm trong canonical body tự tham chiếu; các resource refs cần thiết bên trong body vẫn được băm theo schema.
+
+Vectors encoder dưới đây đã tính bằng Python cho tài liệu; không phải artifact/fixture digest hoặc bằng chứng nghiên cứu. Bytes ở cột đầu không có newline cuối; đảo thứ tự object keys phải cho cùng bytes/digest, đổi thứ tự array thì khác trừ khi schema quy định sort trước encode.
+
+| Bytes encoder kiểm chứng | SHA-256 |
+| --- | --- |
+| `{"ids":[],"kind":"encoder-check","schema_version":1}` | `c4711975fa2e10dbb0f3f03789b6b9d292aa6441fef0c653c3af9e483dddede8` |
+| `{"ids":["a","b"],"kind":"encoder-check","schema_version":1}` | `f7f26fcfb7e7e7ec36c7b2aee9c79f08b106ed9b7bd5100446312f87bbbf9d2a` |
+
+#### Nội dung binding và request
+
+Binding v0.1 đề xuất có kind/schema_version; tenant_id/repo_id; proposal_id/revision; base và candidate snapshot IDs/digests; patch blob digest; artifact ID/manifest digest; runtime image/platform, public config và launcher profile digests; test_run_id/evidence_digest; suite/harness/config/fixture refs và digests; target_id/target_policy_digest. Các dependency này không null khi binding ready; policy/authority refs của quyết định còn lưu ở approval/permit, không được cập nhật bytes binding cũ. Khi fixture/harness/config cần thiết chưa đăng ký thì ready không được tạo, không dùng nhãn demo thay digest thật.
+
+Shape ApproveRequest và ActivationRequest ở trên giữ nguyên. Acknowledged digest phải bằng binding server đã hiển thị; các resource phải thuộc cùng scope và còn đúng proposal revision. Server không tự lấy revision mới nhất để sửa request cũ. expected_target_version là token opaque do GET target trả, kiểm dưới lock, không suy từ timestamp hoặc client counter. Mỗi lần target được đối soát ổn định sau operation có side effect phải có version mới kể cả quay về cùng artifact, để tránh ABA; binding và approval không được tự chuyển sang một target khác.
+
+| Resource bổ sung trong đề xuất | Trường cần có và ngữ nghĩa |
+| --- | --- |
+| Approval effectiveness | approved_at/expires_at, revoked/superseded refs, policy/authority refs và reserved_deployment_id; GET tính hiệu lực hiện tại, không sửa decision lịch sử hoặc lặp lại chữ Approved như quyền còn hiệu lực |
+| Deployment | status queued/preparing/dispatching/reconciling/succeeded/blocked/failed/unknown; phase, reason_code, binding/approval/target/expected version, attempt refs và observed target state |
+| Dispatch permit nội bộ | deployment/attempt/target/fence, binding/artifact/config digests, authority epoch/policy và issued_at; chỉ control/launcher dùng, không trả như bearer credential hoặc nhận từ client |
+| Target observation | launcher operation/container ref, image/mount/config/artifact refs, observed endpoint/health và observation ID/time; control xác minh, không lấy duy nhất self-report của app |
+
+UNKNOWN là trạng thái nghiệp vụ khi không xác định side effect, không được map thành failed-no-effect hoặc rollback. GET deployment/target trả 200 với state đã biết và reason phù hợp; HTTP 200 không có nghĩa deployed. queued/preparing/dispatching chỉ thành succeeded khi có observation đúng artifact và commit target/event; timeout sau dispatch chuyển reconciling/unknown. Workflow đang deploying khi đó giữ waiting + phase reconciling_deployment; chỉ kết luận terminal sau đối soát hoặc ghi terminal unresolved theo protocol đã khóa, không báo code mới chưa chạy hay đã chạy khi thiếu bằng chứng.
+
+| Lỗi bổ sung đề xuất | HTTP/outcome và phản ứng |
+| --- | --- |
+| APPROVAL_REQUIRED / APPROVAL_INEFFECTIVE / EVIDENCE_NOT_READY | 409 khi cùng scope nhưng chưa đủ điều kiện; thiếu capability vẫn 403, authority unavailable 503; không đưa vào queue để worker tự duyệt |
+| TARGET_BUSY / TARGET_STATE_UNKNOWN / TARGET_VERSION_CONFLICT | 409, đọc status được phép; không đổi target hoặc key để vượt reservation |
+| ARTIFACT_MISMATCH / CONFIG_MISMATCH / BINDING_MISMATCH | 409 trước side effect; nếu phát hiện sau dispatch thì resource unknown/failed theo observation, không tự gán chưa chạy |
+| ACK_UNKNOWN / COMMIT_UNKNOWN | Resource reconciling/unknown khi đã có operation ID; nếu response nhận operation cũng mất thì client tra lại cùng Idempotency-Key. Không cấp key/approval mới để gọi lại mù |
+
+Idempotency replay luôn kiểm current identity/scope, trả cùng deployment hiện tại, không phát permit mới hoặc làm approval hết hiệu lực sống lại. Key được giữ cùng retention metadata; key trùng nội dung khác conflict. Một approval có thể đang reserved/expired trong GET khi operation đã được cấp permit trước đó; trạng thái operation phải báo theo observation thật, không ghi ngược rằng activation lúc đó chưa được duyệt. Thời điểm kiểm quyền/expiry và ảnh hưởng revoke được định nghĩa tại R3 của authorization.
+
 ## Ma trận capability theo thao tác
 
 Đây là yêu cầu quyền ở mức thao tác; **chưa phải mapping user/role/tenant hoặc chính sách grants mới đã được chốt**. T04 quyết định mapping, delegation và freshness. Quyền đọc app báo giá độc lập với quyền sửa code trong control.
@@ -320,7 +373,8 @@ WorkflowRun dùng status = queued/running/waiting/completed/blocked/failed/timed
 | awaiting_tests, awaiting_revision hoặc awaiting_approval | Reviewer request_changes đúng revision | awaiting_revision / waiting; không tạo approval, không yêu cầu có artifact/test chỉ để từ chối |
 | awaiting_deployment | Nhận activation có đủ quyền/binding | deploying / running; worker còn phải kiểm tra lại |
 | deploying | Xác nhận đúng artifact đã được kích hoạt | completed; lưu Deployment succeeded và digest thực tế |
-| deploying | Activation bị block/lỗi/timeout | blocked/failed/timed_out; không hiển thị code mới như đã chạy |
+| deploying | Activation bị block/lỗi, chứng minh chưa có side effect | blocked/failed/timed_out theo reason; không hiển thị code mới như đã chạy |
+| deploying | ACK/side effect chưa rõ | waiting + reconciling_deployment theo đề xuất local v0.1; lưu Deployment reconciling/unknown, không giả outcome terminal |
 
 Source/patch/artifact/evidence liên quan thay đổi tạo binding/revision thích hợp mới, không sửa bytes/evidence trong approval cũ. Các quyết định hoặc test từ revision cũ không chuyển state bản mới. Một run có nhiều turn vẫn là cùng task; retry/turn failures và thời gian sửa phải giữ trong báo cáo workflow, không biến thành các mẫu độc lập.
 

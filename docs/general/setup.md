@@ -91,6 +91,22 @@ Frontend mặc định gọi http://127.0.0.1:8001. Nếu đổi địa chỉ, �
 
 Mở http://127.0.0.1:3000/quotations (hoặc Báo giá trong sidebar/toolbar Workspace), nhập giá trị token local vào ô password rồi Kết nối. Reader xem danh sách/chi tiết; operator tạo và dùng nút Kiểm tra báo giá trong chi tiết. Kết quả nền ghi Chưa áp dụng quy tắc nghiệp vụ, không xác nhận ngày hợp lệ hoặc approval; không có chọn role hoặc token tự động. Token chỉ ở bộ nhớ trang; reload/rời trang cần nhập lại, dữ liệu báo giá đã commit vẫn ở PostgreSQL. Với lỗi chưa rõ kết quả sau khi gửi, dùng Thử lại lần gửi để giữ nguyên body/key; rời trang/reload sẽ mất key đang chờ nên phải xem lại dữ liệu trước tạo lại. Đây là dữ liệu giả lập, chưa có rule kiểm tra ngày hoặc approval báo giá.
 
+## 2c. Migration và blob storage control
+
+Control dùng DATABASE_URL hiện có, không fallback QUOTATION_DATABASE_URL. Từ backend chạy:
+
+```powershell
+.\.venv\Scripts\python.exe -m app.control.migrate_control
+```
+
+Migration 001_artifact_blobs.sql tạo control.schema_migrations và control.artifact_blobs; CLI trả scope = control, applied có tên migration mới hoặc [] khi replay. History/lock riêng với báo giá, giữ nguyên SQL/checksum 001/002 quotation_demo. CLI chỉ báo ok sau commit, lỗi trả mã ngắn/exit 1 không DSN; không tự chạy khi mở API. Đã áp dụng DB local và đối chiếu app/retry counts/history giữ nguyên, index blob 0 row; không seed dữ liệu nghiên cứu.
+
+Storage nội bộ lắp ghép qua app.control.control_storage.create_artifact_blob_storage. Cần DATABASE_URL và **CONTROL_ARTIFACT_ROOT là path tuyệt đối tường minh** trong backend/.env; ví dụ vị trí backend/.local/control-store sau khi người quản trị xác định ACL và bảo đảm ngoài path Agent được sửa. Kho bị Git bỏ qua, chỉ tạo thư mục khi publish; không fallback cwd/home hoặc đọc token từ config client. CONTROL_ARTIFACT_MAX_BLOB_BYTES mặc định/cap 1.048.576 byte, chỉ được hạ, không tự áp cap này vào cache. Không cần root để chạy migration/health/readiness; /ready vẫn chỉ kiểm PostgreSQL.
+
+Chưa có API/UI upload/read blob, authority scoped hoặc artifact-ready. Hash/index row không cấp quyền hoặc xác nhận bytes là source/test/artifact hợp lệ. Dev DSN owner/superuser vẫn có thể truy cập bảng; runtime roles/host ACL/sandbox cần được provisioning trước chạy code không tin cậy. Cơ chế publish/commit/orphan và giới hạn power-loss/host race ở [kiến trúc storage](../system/architecture.md#nền-blob-control-đã-triển-khai).
+
+Kiểm tra `.\.venv\Scripts\python.exe -m pytest tests/artifacts tests/control -q` và đặt CACHESEC_TEST_DATABASE_URL nếu muốn phần DB thật. DB test dùng prefix cachesec_test_control_<UUID>, báo giá vẫn cachesec_test_quotations_<UUID>; helper chỉ dọn DB nó tạo thành công, không reset DB từ URL. Filesystem tests dùng thư mục tạm; sandbox Windows có thể từ chối thư mục private của pytest, cần lượt ngoài sandbox để kiểm chứng. Không sửa ACL máy hoặc coi lượt lỗi quyền/skip là đã pass. Không có GC/reset tự động cho kho app.
+
 ## 3. Frontend (terminal khác)
 
 ```powershell

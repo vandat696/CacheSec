@@ -10,11 +10,11 @@ Hồ sơ thiết kế và trạng thái hệ thống. Nội dung dự kiến kh�
 | General | [Trạng thái](general/project-status.md) | Đã làm, quyết định, còn mở, bước tiếp theo |
 | General | [Kế hoạch PoC](general/implementation-plan.md) | T01–T17 tuần tự: thiết kế, database/backend, app/cache/Agent/gate, UI, runner và đánh giá; mở rộng X01–X03 riêng |
 | General | [Cài đặt](general/setup.md) | Môi trường, lệnh chạy và kiểm tra |
-| System | [Kiến trúc](system/architecture.md) | As-Is, ba ranh giới ứng dụng/Agent-IDE/cache, schema/storage báo giá đã triển khai và workflow mục tiêu |
+| System | [Kiến trúc](system/architecture.md) | As-Is, ba ranh giới, storage báo giá/blob control đã triển khai và thiết kế T03 v0.1 cho artifact |
 | System | [Tổ chức source](system/code-organization.md) | Đặt tên/module frontend/backend, UI kit/catalog, template source và bundle |
 | System | [Contract backend và cache](system/api.md) | T02 v0.2; API tạo/đọc/validate nền báo giá và health/readiness đã triển khai, phần control/cache còn là thiết kế |
 | System | [Cache](system/cache.md) | Answer/Context Cache, Hit/Miss/Rejected, verification, metadata và lifecycle |
-| System | [Phân quyền](system/authorization.md) | RBAC/ABAC, verifier, exact-change approval gate, deployment binding và threat model |
+| System | [Phân quyền](system/authorization.md) | Quyền app đã triển khai; gate local v0.1 đã chọn nhưng chưa triển khai, authority/dispatch/recovery và threat model |
 | Frontend | [Thiết kế](frontend/design.md) | Báo giá nối API thật, Workspace/review/approval mô phỏng và các màn cũ |
 | Evaluation | [Thiết kế đánh giá](evaluation/design.md) | So sánh chính năm chiều, phép thử cache phụ, mẫu số/nguồn đo, fixture và threshold |
 

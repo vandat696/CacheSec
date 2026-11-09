@@ -1,3 +1,5 @@
+from pathlib import Path
+
 from pydantic import Field, SecretStr, field_validator
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
@@ -9,6 +11,8 @@ class Settings(BaseSettings):
     database_url: SecretStr | None = Field(default=None, repr=False)
     database_connect_timeout_seconds: int = Field(default=3, ge=2)
     database_statement_timeout_ms: int = Field(default=1000, ge=1)
+    control_artifact_root: Path | None = Field(default=None, repr=False)
+    control_artifact_max_blob_bytes: int = Field(default=1048576, ge=1, le=1048576)
 
     @field_validator("database_url", mode="before")
     @classmethod

@@ -126,6 +126,102 @@ Metadata migration nằm riêng ở quotation_demo.schema_migrations (name PK, c
 
 Phần dữ liệu/API/quyền app này là lát cắt T03–T07 được triển khai theo yêu cầu; ERD/control/artifact lifecycle, identity/scope repo/control và gate toàn hệ thống vẫn chờ T03–T04. Không có rule expiration_review, artifact mới được kích hoạt hoặc fixture nghiên cứu được đóng băng trong lát cắt này.
 
+### Nền blob control đã triển khai
+
+Theo gói local v0.1 đã chọn, bước đầu chỉ triển khai **storage bytes và index nội bộ**, không scaffold trước các bảng authority/snapshot/approval/deployment chưa có use case. Migration control 001_artifact_blobs.sql tạo:
+
+| Bảng/cột | Vai trò đã chạy |
+| --- | --- |
+| control.schema_migrations | History/checksum/transaction lock riêng, độc lập quotation_demo |
+| control.artifact_blobs.digest | PK, sha256: + 64 chữ hex thường, CHECK chiều dài và biểu diễn |
+| byte_size | bigint từ 0 đến 1.048.576 byte; không lưu payload trong SQL |
+| created_at | Thời điểm index row được ghi, không phải thời điểm artifact được test/duyệt |
+
+[ArtifactBlobStorage](../../backend/app/artifacts/blob_storage_service.py) nhận port nhỏ cho bytes và metadata transaction; [FileSystemBlobStore](../../backend/app/artifacts/filesystem_blob_store.py) và [PostgresBlobMetadataTransactions](../../backend/app/artifacts/postgres_blob_metadata.py) là adapter. Control factory lắp ghép từ DATABASE_URL và CONTROL_ARTIFACT_ROOT tường minh; không fallback sang DSN app báo giá hoặc tự chọn thư mục. Không khởi tạo kho khi import API, gọi health hoặc ready; readiness vẫn chỉ probe PostgreSQL, không chứng minh control storage/gate sẵn sàng.
+
+Publish bytes nguyên trạng: tính digest/size, ghi staging riêng, flush/fsync file rồi hard-link vào digest path trên cùng filesystem để không overwrite. Nếu filesystem không hỗ trợ thì lỗi, không copy trực tiếp vào tên đích như fallback. Gặp object có sẵn phải đọc/xác minh hash/size; bytes sai không bị sửa đè thành hợp lệ. Tên staging ngẫu nhiên do adapter tạo và chỉ dọn chính tên đó. Read kiểm digest syntax trước tạo path, từ chối reparse/symlink hoặc object không phải file thường, so identity khi mở và kiểm hash/size trên bytes đã đọc, không trả bytes vượt cap.
+
+Service chỉ register metadata sau publish bytes và chỉ trả reference sau metadata commit. Lỗi/ACK commit chưa rõ không giả thành công; có thể tồn tại orphan bytes hoặc index đã commit nhưng client chưa biết. Retry cùng content đối chiếu object/index hiện tại, không update size hoặc tạo row mới. Đọc cần index đã đăng ký rồi xác minh bytes/size; mất/sửa file hoặc metadata không khớp đều lỗi. Không có cross-store transaction, tự GC hoặc repair. Chuỗi LF/CRLF, null bytes và binary khác nhau giữ nguyên digest theo bytes thực.
+
+Index blob là hạ tầng **không có scope/quyền/provenance/artifact-ready**, chưa phải resource để browser/Agent đọc bằng hash. Nó có thể dedup vật lý nội bộ; cấp quyền sử dụng về sau phải qua quan hệ scoped của snapshot/artifact và authority. Chưa có HTTP endpoint upload/read blob, chưa lưu context cache hoặc kết quả test/approval; chưa nối UI cho primitive này vì contract quyền truy cập resource chưa triển khai. Từ chối PUBLIC trên schema/bảng không tách được dev DSN owner/superuser hiện tại: runtime DB roles, ACL riêng của host/kho và sandbox vẫn phải được provisioning/kiểm chứng trước chạy code không tin cậy. Adapter kiểm reparse ở trạng thái quan sát được, không chống privileged host race. Fsync file + hard-link đã kiểm chứng luồng bình thường trên host, chưa có test power-loss/ACL; index tồn tại vẫn phải fail closed khi bytes không xác minh được.
+
+Migration mechanics được dùng chung ở [postgres_migrations.py](../../backend/app/shared/postgres_migrations.py); wrapper control và quotation giữ schema/history/lock riêng. Hai SQL migration báo giá và checksum/định danh cũ không đổi. Đã áp dụng control 001 vào DB local, replay no-op, index 0 row; đối chiếu số dòng app/retry và history báo giá trước/sau giữ nguyên. Test PostgreSQL tạo DB control/quotation ngẫu nhiên riêng và kiểm cả rollback tại COMMIT thật; không seed fixture nghiên cứu hoặc áp dụng các bảng control còn lại. Lệnh và cap ở [setup](../general/setup.md#2c-migration-và-blob-storage-control).
+
+### Đề xuất T03: lưu trữ control và artifact v0.1
+
+Đây là **thiết kế local v0.1 được người dùng chọn để triển khai ngày 2026-11-09**. Đã có nền raw blob và migration control ở mục trước; snapshot/artifact-ready/authority/gate/launcher còn chưa triển khai. Nó cụ thể hóa bản nháp T04, không thay phần app báo giá đã chạy. Quyền, activation và recovery do [thiết kế gate](authorization.md#phương-án-gate-local-v01-để-chốt) sở hữu; wire/binding bytes do [contract](api.md#binding-và-deployment-local-v01--đề-xuất) sở hữu. Triển khai từng năng lực theo gói đã chọn và chỉ mở runtime sau khi đủ kiểm chứng an toàn tương ứng.
+
+#### Nơi lưu và quyền sở hữu
+
+| Thành phần đề xuất | Nội dung | Chủ thể được ghi/đọc |
+| --- | --- | --- |
+| PostgreSQL, schema control riêng | Identity/grants theo scope, source/evidence refs, binding/approval/deployment/events và idempotency | Control dùng credential riêng qua DATABASE_URL hiện có; app báo giá không được quyền schema này |
+| Kho local cấu hình CONTROL_ARTIFACT_ROOT | Blob theo SHA-256, manifest/source/artifact/test evidence đã lọc và staging riêng | Chỉ adapter storage của control/launcher ghi; Agent, browser, app và container test không mount kho này |
+| Thư mục triển khai riêng của mỗi artifact | Bản vật hóa từ blob đã xác minh, manifest và public runtime config | Launcher chuẩn bị rồi đóng ghi theo ACL host; container chỉ mount read-only, không dùng working tree đang sửa |
+| PostgreSQL, schema quotation_demo hiện có | Sáu trường báo giá và retry metadata | App dùng DB role chỉ đủ đọc/ghi bảng app, không CREATEDB/superuser hoặc control; không dùng credential quản trị dev làm credential runtime |
+| DB test tạm do trusted harness quản lý | Dữ liệu kỹ thuật riêng của một lượt test | Harness tạo/dọn đúng DB nó tạo; code đang test chỉ nhận credential của DB test đó, không nhận credential quản trị/control |
+
+Không thêm object-storage service hoặc sao chép payload Context Cache vào schema control trong lát cắt này. Đường dẫn kho phải ở ngoài các path Agent được sửa và bị Git bỏ qua khi triển khai; ví dụ backend/.local/control-store là **vị trí đề xuất**, chưa tạo thư mục hoặc sửa môi trường. Secret không được đưa vào manifest/blob source hoặc log: cấu hình chỉ ghi secret-set ID/version, launcher lấy giá trị từ cấu hình tin cậy. Bảng báo giá và SQL migration/checksum đã áp dụng giữ nguyên.
+
+#### Artifact là gì trong phương án này
+
+Một artifact là manifest có version tham chiếu **toàn bộ bytes source/phụ thuộc và cấu hình ảnh hưởng hành vi**, không phải riêng quotation_validation.py hoặc tên Git branch. Đề xuất chạy source bundle read-only trên một Docker runtime image tin cậy đã ghim digest/image ID và platform, có dependencies khóa; không build Dockerfile hoặc chạy lệnh cài package do Agent đưa vào khi test/activate. Đổi runtime image, lockfile, public config hoặc source tạo artifact digest khác và phải test/duyệt lại.
+
+Manifest gồm: repo/snapshot refs; danh sách file sắp theo path tương đối với size và blob digest; entrypoint/argv do launcher profile cho phép; runtime image ID/platform và lockfile digest; public validation config digest; launcher profile digest và secret-set version refs. Source bytes băm nguyên trạng, **không chuẩn hóa newline**; quy ước checksum migration cũ không được áp vào hash source. Quy tắc serialize manifest/binding ở API. Patch được control dựng từ base/candidate snapshot; bản diff dùng để review phải truy được hai snapshot đó.
+
+Scope sửa đề xuất ban đầu chỉ gồm module validation của app sau khi hoàn thiện trusted R/config; backend app/shared và lockfile cần chạy vẫn nằm trong source/dependency manifest nhưng không được Agent sửa. Test harness, fixture/oracle, control/cache/gate/launcher và cấu hình quyền nằm ngoài phạm vi ghi. Chỉ nhận file thường thuộc allowlist; từ chối symlink/junction/reparse point, traversal, path trùng do case hoặc alias trên host. Đọc/lấy hash phải từ cùng snapshot bytes; sửa source sau snapshot không được thay nội dung artifact đã công bố. Chốt profile allowlist cụ thể trước T08/T12, không mặc định cho đọc cả repo hoặc home directory.
+
+Test và activation dùng **cùng source bundle, runtime image và public validation config**. Test DB/credential/transport là tài nguyên harness riêng, được ghi rõ test environment và không biến thành deployed DB. Control lấy runtime metadata từ launcher và kiểm tra image/mount/config thực tế; self-report active_artifact của app chỉ hỗ trợ chẩn đoán, không được dùng một mình làm bằng chứng gate. App vẫn không import control/cache để chạy validation.
+
+#### Bảng và ràng buộc logic đề xuất
+
+Các tên dưới đây là data dictionary, **không phải SQL đã áp dụng**. Resource ID đề xuất là UUID do server cấp; repo/tenant là refs do registry quản lý. Mỗi tài nguyên scoped có tenant_id/repo_id; liên kết scoped dùng khóa duy nhất và FK ghép tương ứng để chặn liên kết khác scope, không chỉ dựa middleware. Bytes lớn nằm ở blob store, PostgreSQL lưu digest/ref/size/trạng thái.
+
+| Bảng logic trong control | Trường/khóa chính ngoài scope | Ràng buộc và vòng đời |
+| --- | --- | --- |
+| principals, scope_authorities, principal_grants | principal ID; authority epoch; principal/capability/resource scope | Credential fixture cấu hình phía server ánh xạ principal; grant/revoke tăng epoch trong transaction, không nhận role từ request |
+| repositories, snapshots, snapshot_files | repo ID; snapshot ID/source manifest digest; snapshot/path/blob digest/size | Snapshot/file manifest bất biến sau ready; UNIQUE(snapshot,path), repository identity đăng ký trước |
+| proposal_revisions | proposal ID, revision, base/candidate snapshot refs, patch digest, proposer | UNIQUE(proposal,revision); revision cũ không sửa bytes; run/turn có ref khi workflow được triển khai |
+| artifacts | artifact ID, manifest digest, source snapshot, runtime/config/profile refs, ready status | UNIQUE(scope,manifest digest); ready chỉ sau blob được publish và xác minh, không từ client hash |
+| test_runs | test ID, proposal/revision/artifact, suite/fixture/config refs, outcome, evidence digest | Evidence chỉ trusted harness ghi; không sửa kết quả đã hoàn tất, lần test mới có ID mới |
+| change_bindings | binding ID/digest, proposal/revision/source/patch/artifact/test/fixture/config/target-policy refs | Đầy đủ và cùng scope trước ready; bytes canonical bất biến, UNIQUE(scope,binding digest) |
+| review_decisions, approvals | decision/approval ID, binding, actor, acknowledged digest, authority/policy version, approved/expires/revoked refs | Approval chỉ sinh từ approve tường minh; request_changes không sinh approval; append decision, không cập nhật decision cũ thành approve |
+| deployment_targets | target ID, version, active deployment/artifact/source refs, state, pending deployment, fence | Version/fence tăng dưới lock; một pending operation mỗi target; stable/activating/unknown, không tự mở sau timeout |
+| deployments, deployment_attempts | deployment/attempt ID, binding/approval/target, expected version, requester, dispatch permit, launcher operation ID, observed refs/outcome | Approval gắn tối đa một deployment trong policy đề xuất; attempt log append; retry giữ deployment ID |
+| events | event ID, resource sequence, actor/request/run/deployment refs, type/outcome/reason, observed time và payload allowlist | Ghi cùng transaction thay đổi metadata khi có thể; append-only với role ứng dụng; hash không bảo vệ trước DB admin |
+| idempotency_requests | principal/operation/scope/key digest, payload digest, resource ref | UNIQUE(principal,operation,scope,key digest); cùng payload trả resource hiện tại, khác payload conflict; không cache hiệu lực approval |
+
+Quan hệ chính cần kiểm tra xuyên schema logic:
+
+```mermaid
+flowchart LR
+    S[Base và candidate snapshots] --> P[Proposal revision]
+    P --> A[Artifact manifest]
+    A --> T[Test run và evidence]
+    P --> B[Change binding]
+    T --> B
+    B --> R[Explicit review decision]
+    R --> V[Approval]
+    V --> D[Deployment và attempts]
+    B --> D
+    D --> G[Target state và launcher observation]
+    E[Events] -. resource refs .-> D
+```
+
+Artifacts/test evidence không phụ thuộc vào run AI để gate hoạt động: baseline Developer-guided cũng tạo proposal/test/binding qua cùng use case. Khi có WorkflowRun, liên kết run không được làm thay đổi điều kiện approve/activate hoặc tạo gate thứ hai. Không thêm bảng cache/model ở bước migration control đầu tiên nếu chưa cần.
+
+#### Transaction, publish và retention
+
+Publish blob: ghi staging private, đếm size/hash bytes, đóng/flush file theo cơ chế đã kiểm chứng trên host, rồi publish vào địa chỉ digest không overwrite. Nếu đích đã có thì đối chiếu bytes/hash thay vì coi tên là đủ. Metadata artifact chỉ chuyển ready sau khi mọi blob tồn tại và kiểm tra được; lỗi DB sau publish có thể để orphan nhưng không tạo ready giả. Khi dùng phải kiểm tra lại blob/manifest; rename hoặc filesystem ACL không được suy thành bảo đảm trước host admin. Cơ chế durable file publish/ACL trên Windows cần test thật trước công bố.
+
+Mỗi quyết định/approval và event tương ứng commit cùng transaction control; mutation response chỉ báo thành công sau commit. Ghi deployment reservation, pending target và idempotency resource trong cùng transaction. **Transaction này không bao trùm Docker/process side effect**; protocol dispatch và recovery ở authorization. Các use case nhận port storage/authority/launcher nhỏ; business không import FastAPI/Psycopg/Docker SDK, adapter giữ ngữ nghĩa lỗi và transaction. Chưa scaffold các module/interface này.
+
+Trong critical section approve/reserve/permit, adapter authority và metadata phải dùng **cùng transaction context** do use case mở; không đọc grant trên connection riêng rồi coi lock authority của transaction khác bảo vệ quyết định đó. Port cấp transaction chỉ cung cấp những thao tác control đang cần, không tạo generic ORM/base repository. Gọi launcher chỉ sau commit permit và nằm ngoài transaction SQL; observation quay về một transaction mới, có kiểm tra operation/fence trước cập nhật target.
+
+Migration đề xuất chia ba batch control độc lập với quotation_demo: identity/scope/snapshot; proposal/artifact/test/binding/review; target/deployment/events/idempotency. Dùng history/checksum và transaction lock riêng của control, không sửa hoặc đổi định danh migration báo giá. Bổ sung constraint/FK trước cấp runtime role; migration owner khác app runtime/control runtime. Kiểm tra rollback và migration replay trong DB tạm trước áp dụng dev có dữ liệu.
+
+Retention v0.1 đề xuất không GC tự động trong PoC: giữ source/artifact/evidence/approval/attempts/events đến khi export và kiểm tra xong. Xóa orphan hoặc reset chỉ qua thao tác quản trị có scope được yêu cầu tường minh, không nằm trong Agent tools. Không xóa object đang được binding/test/approval/target tham chiếu hoặc target unknown. Reset tạo namespace/run mới và khôi phục baseline qua gate; không xóa log cũ, không dùng thao tác DROP/volume reset làm quy trình nghiên cứu. Thời hạn lưu sau nghiên cứu còn cần xác nhận; không gọi no-GC là chính sách production.
+
 ### Bản nháp T02: module và contract
 
 Soạn ngày 2026-11-07 từ đầu vào kỹ thuật T01; [API](api.md) ghi đặc tả T02 v0.2 và phần đã triển khai. Các module/control mục tiêu dưới đây không phải implementation đang chạy. Bộ sáu trường báo giá, rule ngày, Context Cache/browser, identity fixture và self-approval có quyền Reviewer theo [overview](../general/overview.md#hồ-sơ-đầu-vào-t01--đang-thực-hiện). Acceptance nghiên cứu chờ cô quy định; không đưa giá trị mặc định 100% vào API hoặc dùng nó để quyết định một run đã đạt nghiệm thu.

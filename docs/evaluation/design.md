@@ -99,6 +99,45 @@ Expected trace tối thiểu: request/actor/repo → context sources và cache d
 
 Failure taxonomy đề xuất: hiểu sai rule, sai vị trí sửa, regression, patch ngoài phạm vi, Agent/tool/model error, test timeout, thiếu trace, verifier reject/error, stale/unauthorized reuse, approval bypass hoặc false block. Lưu case/run IDs và cách phục hồi, không chỉ báo run thành công.
 
+### Trace và ma trận gate local v0.1 — đề xuất kiểm chứng kỹ thuật
+
+Phần này cụ thể hóa [phương án local](../system/authorization.md#phương-án-gate-local-v01-để-chốt), thuộc gói local đã chọn nhưng chưa phải run manifest, fixture thứ hai hoặc kết quả thực nghiệm; gate/harness chưa được triển khai/kiểm chứng. Bốn ca G01–G04 đối chiếu trực tiếp cùng safety property; các ca còn lại kiểm tra failure/race/recovery của cùng implementation. Chỉ chạy kiểm chứng khi implementation và profile liên quan đã đủ điều kiện; chưa dùng bộ test import app trực tiếp làm bằng chứng sandbox cho code do Agent sửa.
+
+Envelope event đề xuất: schema_version/event_id; resource ID và sequence tăng trong resource; request/operation/deployment/attempt/run refs khi có; actor principal/delegation và scope do backend xác định; event_type, phase, outcome/reason_code; binding/artifact/config/fixture/policy/authority refs phù hợp với bước; recorded_at/observed_at và clock origin. Duration dùng monotonic span trong cùng process/host; không suy thời gian thực từ phép trừ timestamp khác máy. Resource refs chưa tồn tại ghi null và reason, không dựng fake run/test/approval để lấp trace.
+
+| Điểm thực thi thật | Event tối thiểu đề xuất | Evidence/link cần kiểm tra |
+| --- | --- | --- |
+| Snapshot/artifact publish | snapshot.ready, artifact.ready hoặc preparation.failed | Snapshot/manifest/blob refs, source/lock/runtime/config versions; ready chỉ sau publish kiểm tra được |
+| Test thực thi | test.started, test.finished hoặc test.failed/timed_out | Artifact/suite/harness/fixture/config refs, observation/exit/outcome, counts và output truncation; expected labels không do Agent ghi |
+| Quyết định con người | review.approved / review.request_changes / review.denied | Actor, authority/policy, acknowledged binding hoặc patch digest; decision/approval ref nếu được tạo |
+| Nhận activation | deployment.reserved hoặc deployment.denied | Requester, binding/approval, expected target version, reservation/fence; denial có reason trước side effect |
+| Cho phép dispatch | deployment.permitted hoặc deployment.blocked | Permit ID/epoch và binding/target refs đúng transaction R3, expiry/grants đã được kiểm tra |
+| Launcher thực thi | activation.started, activation.observed hoặc activation.unknown | Operation/container/image/mount/config refs do launcher quan sát, không chỉ app health hoặc self-report |
+| Kết thúc/đối soát | deployment.succeeded/failed/unknown và reconciliation.observed/resolved | Target version/actual artifact/status, side effect đã biết/unknown và reason; không bịa succeeded khi mất ACK |
+
+Control state/event cùng transaction khi thuộc cùng DB; event về side effect ghi thời điểm quan sát thật, không gọi DB event là bằng chứng process đã start. Khi DB/audit lỗi trước permit thì block; nếu mất ghi nhận sau side effect phải giữ discrepancy/unknown để đối soát. Trace completeness dùng expected path tương ứng, không đòi success event cho nhánh deny hoặc coi thiếu event do lỗi là đạt. Deny attempt có outcome riêng, không mặc nhiên kết thúc cả workflow đang chờ.
+
+| ID review | Thiết lập/lỗi được tiêm khi có implementation | Kết quả cần quan sát |
+| --- | --- | --- |
+| G01 | Gọi activation không approval, pending hoặc request_changes | Block trước permit/side effect; reason và attempt event |
+| G02 | Thiếu review/deploy capability, app token gọi control, giả role/scope hoặc Agent nhận nhiệm vụ từ Reviewer | Không tạo approval/permit hợp lệ; không lộ nội dung resource ngoài quyền |
+| G03 | Duyệt A rồi gửi B, đổi source/revision/bytes/config/evidence hoặc target | Block trước dispatch; cần binding/test/review tương ứng mới, không tự chuyển approval |
+| G04 | Đúng immutable artifact/evidence/binding, human approval hiện tại và target version | Chỉ artifact đó được start; observation thực và target/event commit khớp digest |
+| G05 | Sửa blob/mount/image sau test hoặc sau duyệt | Phát hiện mismatch; không dùng tên file/tag/label/health để coi hợp lệ |
+| G06 | Revoke requester/reviewer/credential/policy đua với dispatch | Commit revoke trước R3 thì block; commit sau permit không hủy hồi tố, báo thứ tự/epoch thật |
+| G07 | Approval hết hạn trong queue hoặc sau permit khi đang khởi động | Trước R3 block; sau R3 báo theo observation của operation đã được phép, không giả rollback |
+| G08 | Hai activation khác key cùng expected target version; cùng key được retry song song | Tối đa một reservation; key cũ trả cùng operation, request khác busy/conflict, không double dispatch |
+| G09 | Pre-commit failure tại review/reservation; ACK commit mất tại R1/R3 | Lỗi trước commit không phát side effect; ACK không rõ phải tra lại cùng ID/key/permit, không tự cho rằng DB chưa ghi |
+| G10 | Mất ACK Docker sau start hoặc crash sau start trước target/event commit | Target reconciling/unknown; đối soát container/image/config/operation rồi mới kết luận, không start thêm |
+| G11 | Restart launcher/control khi operation pending, worker cũ còn có thể chạy lệnh | Không giải phóng target theo timeout/lease; xác minh single-writer/quiescence hoặc tiếp tục unknown |
+| G12 | Stop cũ thành công nhưng start mới lỗi; target khác actual source hoặc không có process | Báo failed/unavailable hoặc unknown theo bằng chứng; không tự rollback hoặc viết Deployed từ health cũ |
+| G13 | Artifact/test container đọc control store, Docker socket, reviewer token hoặc DB admin; chạy ra ngoài scope/network | Bị chặn theo profile đã chọn; ghi thử nghiệm cụ thể và giới hạn, chưa kiểm chứng thì chưa công bố isolation |
+| G14 | App giả active_artifact/test_passed, stdout/JUnit hoặc self-report trái launcher | Không đủ để approve/succeed; trusted harness/launcher và binding mới là nguồn đối chiếu |
+
+Mỗi ca phải lưu fault point, planned/attempted/completed, before/after target observation, permit/event refs và cleanup thuộc test resources; không reset app DB hoặc volume phát triển. Test dữ liệu quyền/target giả chỉ là unit/integration cases, không tạo thêm repo/fixture nghiên cứu. Khi đưa các ca vào nghiên cứu, liên kết ID với **một fixture manifest đã được review**; chưa tự chọn mẫu số/acceptance hoặc dùng 14 dòng này làm threshold.
+
+Log/payload dùng allowlist fields, không token/secret DSN, raw command, home path hoặc toàn bộ source/dữ liệu báo giá. Event deny trước authenticate không có actor đã xác minh; ghi request ID và reason đã rút gọn, không gán actor từ header client. Evidence output được giới hạn/lọc trước lưu; phần bị cắt/thiếu phải có coverage, không loại failure/timeout khỏi báo cáo.
+
 ## Acceptance threshold định trước — chờ cô quy định
 
 Người dùng chọn **chờ cô quy định**, chưa chọn ngưỡng nghiệm thu. Phương án 100% validation/gate trước đây không được dùng làm cấu hình mặc định hoặc ground truth về acceptance. Phải xác nhận giá trị/đơn vị, danh sách ca bắt buộc, mẫu số, cách xử lý thiếu bằng chứng/lỗi/timeout và version của một acceptance rule trước thu thập dữ liệu. Đây không phải similarity threshold của cache.

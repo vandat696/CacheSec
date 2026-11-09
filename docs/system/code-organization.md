@@ -48,7 +48,18 @@ backend/app/
     control_api.py                             khởi tạo API control: /health, /ready
     control_settings.py                        cấu hình control
     health_routes.py                           các endpoint health/readiness
+    control_storage.py                         lắp ghép blob service, filesystem và PostgreSQL
+    migrate_control.py                         CLI migration control
+    database/control_migrations.py              schema/history/lock control riêng
+    database/migrations/001_artifact_blobs.sql   index bytes thô, không artifact-ready/approval
   shared/postgres_connection.py                PostgresDatabase, vòng đời connection
+  shared/postgres_migrations.py                mechanics migration dùng chung, không sở hữu schema
+  artifacts/
+    blob_models.py                             digest/ref, cap và lỗi storage
+    blob_storage_service.py                    publish/register/read và các port do service dùng
+    filesystem_blob_store.py                   staging/publish no-overwrite, kiểm bytes/file path
+    postgres_blob_metadata.py                  index repository và transaction adapter
+    metadata_encoding.py                       cachesec-json-v1, không schema validator/attestation
   quotation_demo/
     quotation_api.py                           nối config, quyền, DB, HTTP/CORS (--factory)
     quotation_settings.py                      cấu hình QUOTATION_ riêng
@@ -83,6 +94,8 @@ business không nhập api/database/auth/control, FastAPI hoặc Psycopg. Nó s�
 Đây là cách áp dụng OOP/SOLID theo trách nhiệm thực tế: capability port nhỏ, thay authority/storage qua composition, không kế thừa base class chung. Test double và PostgreSQL cùng được kiểm tra commit/rollback/retry; fake không được giả thành công khi contract yêu cầu lỗi. Không tạo interface cho từng function hoặc tầng service/controller rỗng.
 
 OOP dùng cho đối tượng có trạng thái/phụ thuộc; logic thuần giữ function. Điểm khởi động đặt theo ứng dụng, không bắt buộc main.py. Từ refactor ngày 2026-11-09: control chạy uvicorn app.control.control_api:app, báo giá chạy uvicorn app.quotation_demo.quotation_api:create_app --factory, migration chạy python -m app.quotation_demo.migrate_quotations. Các path import/CLI cũ được thay bằng tên mới, không giữ module alias làm khó phân biệt. HTTP route, env QUOTATION_, schema và định danh/bytes/checksum SQL giữ nguyên; schema mới dùng migration forward.
+
+Blob storage không import HTTP, model báo giá, cache hoặc research; các adapter cùng thực hiện contract bytes/metadata và giữ lỗi thật. Wrapper quotation_migrations giữ các import Migration/MigrationError và load/apply_migrations hiện có, dùng shared mechanics cho đúng hai owner đã có; không thêm generic base repository hoặc layer trống. Migration control chạy python -m app.control.migrate_control. tests/artifacts kiểm bytes/service/encoder; tests/control kiểm wiring/migration/DB. tests/conftest.py cấp DB ngẫu nhiên qua helper dùng chung, mỗi feature giữ fixture tên/scope riêng; không dọn DB từ URL nguồn.
 
 ## UI template tham chiếu
 

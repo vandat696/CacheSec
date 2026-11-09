@@ -30,6 +30,9 @@ htmlcov/
 playwright-report/
 test-results/
 
+# Host-owned local control bytes, outside the future Agent write scope.
+/backend/.local/
+
 # Generated experiment artifacts
 /research/results/*
 !/research/results/.gitkeep
