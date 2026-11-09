@@ -30,7 +30,10 @@ def test_control_migration_replay_and_quotation_history_are_independent(control_
         history = connection.execute(
             "SELECT name,checksum FROM quotation_demo.schema_migrations ORDER BY name"
         ).fetchall()
-        assert apply_migrations(connection) == ("001_artifact_blobs.sql",)
+        assert apply_migrations(connection) == (
+            "001_artifact_blobs.sql",
+            "002_control_authority.sql",
+        )
     with control_database.connection() as connection:
         assert apply_migrations(connection) == ()
         assert migrate_quotations(connection) == ()
@@ -64,7 +67,10 @@ def test_failed_control_batch_rolls_back_schema_and_history(control_database, mo
                 apply_migrations(connection)
     with control_database.connection() as connection:
         assert connection.execute("SELECT to_regnamespace('control')").fetchone() == (None,)
-        assert apply_migrations(connection) == ("001_artifact_blobs.sql",)
+        assert apply_migrations(connection) == (
+            "001_artifact_blobs.sql",
+            "002_control_authority.sql",
+        )
 
 
 def test_parallel_control_migrators_install_one_batch(control_database):
@@ -77,7 +83,7 @@ def test_parallel_control_migrators_install_one_batch(control_database):
 
     with ThreadPoolExecutor(max_workers=2) as workers:
         results = list(workers.map(lambda _: migrate(), range(2)))
-    assert sorted(results, key=len) == [(), ("001_artifact_blobs.sql",)]
+    assert sorted(results, key=len) == [(), ("001_artifact_blobs.sql", "002_control_authority.sql")]
 
 
 def test_blob_publication_and_parallel_registration_commit_once(migrated, tmp_path):
@@ -91,9 +97,7 @@ def test_blob_publication_and_parallel_registration_commit_once(migrated, tmp_pa
     assert service.read(references[0].digest) == content
     with migrated.connection() as connection:
         assert connection.execute("SELECT count(*) FROM control.artifact_blobs").fetchone() == (1,)
-        assert connection.execute(
-            "SELECT count(*) FROM information_schema.tables WHERE table_schema='control'"
-        ).fetchone() == (2,)
+        assert connection.execute("SELECT count(*) FROM control.principals").fetchone() == (0,)
 
 
 def test_factory_wires_explicit_settings_to_filesystem_and_postgres(

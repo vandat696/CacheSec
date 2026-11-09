@@ -101,7 +101,17 @@ Ma trận kiểm chứng khi có implementation phải thêm ca tranh chấp hai
 
 ### Phương án gate local v0.1 để chốt
 
-**Trạng thái: người dùng đã chọn gói local v0.1 để triển khai ngày 2026-11-09; gate/authority/launcher chưa có code hoặc hiệu lực runtime.** Một repo đăng ký, một target báo giá local, cùng một implementation cho hai workflow. Đây là phương án PoC trên host phát triển tin cậy; không đưa ra bảo đảm trước host/Docker/DB administrator bị kiểm soát. T03 sở hữu [data dictionary và artifact store](architecture.md#đề-xuất-t03-lưu-trữ-control-và-artifact-v01); T02 sở hữu [binding bytes và status](api.md#binding-và-deployment-local-v01--đề-xuất).
+**Trạng thái: người dùng đã chọn gói local v0.1 để triển khai ngày 2026-11-09; registry quyền nội bộ đã có code, gate/launcher chưa triển khai.** Registry chưa được nối vào HTTP/UI hoặc cấp principals/grants local. Một repo đăng ký, một target báo giá local, cùng một implementation cho hai workflow. Đây là phương án PoC trên host phát triển tin cậy; không đưa ra bảo đảm trước host/Docker/DB administrator bị kiểm soát. T03 sở hữu [data dictionary và artifact store](architecture.md#đề-xuất-t03-lưu-trữ-control-và-artifact-v01); T02 sở hữu [binding bytes và status](api.md#binding-và-deployment-local-v01--đề-xuất).
+
+#### Registry control nội bộ đã triển khai
+
+[ControlAuthorizer](../../backend/app/identity/control_authority.py) dùng PostgreSQL làm nguồn identity/grants hiện tại. Token human fixture được thành phần backend tin cậy cung cấp; DB chỉ giữ SHA-256 của token. Token cần được sinh ngẫu nhiên độc lập với token báo giá; helper kiểm chuỗi ASCII in được, không khoảng trắng, dài 32–65.536 ký tự nhưng không chứng minh entropy. Không token mặc định, role dropdown, role từ request hoặc tự cấp quyền Reviewer. Các principal hiện tại đều là human fixture; chưa có Agent credential/delegation.
+
+Authenticate tra token digest, lấy scope từ record backend, khóa hàng scope_authorities rồi đọc lại principal/token/active để bắt credential đổi giữa lookup và lock. Require so tenant/repo trước đọc resource, khóa cùng hàng authority và kiểm lại credential version/digest/active cùng toàn bộ capability cần thiết. Không cache ALLOW hoặc capabilities trong caller. Caller là đối tượng nội bộ được xác thực, không nhận từ JSON/header. Scope khác trả ControlResourceUnavailable; identity hết hiệu lực trả ControlIdentityRequired; thiếu quyền trong scope trả ControlAccessDenied. Chưa ánh xạ các exception này thành endpoint HTTP.
+
+PostgresAuthorityAdministration chỉ dành cho backend tin cậy: đăng ký repository identity (opaque ASCII tối đa 128 ký tự, không phải path), cấu hình principal/grants hoặc disable principal. Mọi thay đổi principal/grants khóa cùng authority row, kiểm expected_epoch rồi ghi principal, grants và epoch trong transaction caller sở hữu. Cấu hình cũ conflict thay vì hồi sinh quyền sau revoke; token rotation cần version tăng. Không tự đồng bộ cấu hình từ worker vào DB lúc startup; phần tích hợp này vẫn phải thực hiện trước mở HTTP control. Không expose administration hoặc DB credentials cho Agent/browser.
+
+Đã kiểm thử cấp/thu hồi capability, disable/rotation, recheck caller cũ, scope/FK, cấu hình song song và lock giữ đến commit. Hai capability change.review/deployment.activate được biểu diễn để kiểm quyền, chưa có thao tác duyệt/triển khai. Chưa có policy epoch riêng, trace/audit bền vững, principal local được cấp thật hoặc gate; các nội dung bên dưới vẫn là thiết kế cho bước tiếp theo.
 
 #### Authority, scope và thời hạn đề xuất
 

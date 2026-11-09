@@ -14,7 +14,7 @@ Hồ sơ thiết kế và trạng thái hệ thống. Nội dung dự kiến kh�
 | System | [Tổ chức source](system/code-organization.md) | Đặt tên/module frontend/backend, UI kit/catalog, template source và bundle |
 | System | [Contract backend và cache](system/api.md) | T02 v0.2; API tạo/đọc/validate nền báo giá và health/readiness đã triển khai, phần control/cache còn là thiết kế |
 | System | [Cache](system/cache.md) | Answer/Context Cache, Hit/Miss/Rejected, verification, metadata và lifecycle |
-| System | [Phân quyền](system/authorization.md) | Quyền app đã triển khai; gate local v0.1 đã chọn nhưng chưa triển khai, authority/dispatch/recovery và threat model |
+| System | [Phân quyền](system/authorization.md) | Quyền app và registry control nội bộ đã có; gate local v0.1/dispatch/recovery chưa triển khai, threat model |
 | Frontend | [Thiết kế](frontend/design.md) | Báo giá nối API thật, Workspace/review/approval mô phỏng và các màn cũ |
 | Evaluation | [Thiết kế đánh giá](evaluation/design.md) | So sánh chính năm chiều, phép thử cache phụ, mẫu số/nguồn đo, fixture và threshold |
 

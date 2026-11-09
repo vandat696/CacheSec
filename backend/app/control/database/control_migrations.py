@@ -8,7 +8,9 @@ _LOCK_ID = 87520261109
 
 
 def load_migrations() -> tuple[Migration, ...]:
-    return load_sql_migrations("app.control.database", ("001_artifact_blobs.sql",))
+    return load_sql_migrations(
+        "app.control.database", ("001_artifact_blobs.sql", "002_control_authority.sql")
+    )
 
 
 def apply_migrations(connection: psycopg.Connection) -> tuple[str, ...]:

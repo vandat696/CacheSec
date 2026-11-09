@@ -27,11 +27,11 @@ Bối cảnh đã cập nhật ngày **2026-11-02**. Frontend có thêm **Develo
 | Chat `/` | Lịch sử, bản nháp, Không cache/Cache/Cả hai với prompt chung; modal thông số từng lượt | Phản hồi mô phỏng, chưa AI/RAG hoặc cache thật |
 | Số liệu `/metrics` | Ba tab, biểu đồ/bảng/chi tiết; mặc định 24 truy vấn giả, nguồn phiên riêng tại `/metrics?source=session` | Fixture xem UI, không phải kết quả thực nghiệm |
 | Tài liệu `/documents` | Chọn/thả, phân loại, tìm/lọc tệp trong phiên | Chờ tải lên; chưa đọc/ingest/upload hoặc authorized retrieval |
-| Backend control | FastAPI `GET /health`, `GET /ready`, adapter kết nối PostgreSQL/Psycopg, CORS local | Có nền blob storage/migration nội bộ; readiness chỉ kiểm tra PostgreSQL, chưa authority control/Agent/gate |
+| Backend control | FastAPI `GET /health`, `GET /ready`, adapter PostgreSQL, blob storage và registry quyền/repository nội bộ | Registry chưa nối HTTP/UI; readiness chỉ kiểm PostgreSQL, chưa Agent/gate |
 | Báo giá `/quotations` | Form nhập, danh sách/chi tiết và validation nền nối API/PostgreSQL thật; Bearer fixture reader/operator, retry idempotent | Một dataset dùng chung; validator nền chưa có quy tắc nghiệp vụ, chưa rule ngày hoặc artifact/gate |
 | Hạ tầng | PostgreSQL 17.11/pgvector 0.8.7 qua Compose; đã áp dụng migration báo giá và kiểm chứng DB thật | Control có index blob thô; chưa schema approval/deployment hoặc artifact-ready |
 
-App báo giá chạy HTTP độc lập với quyền fixture được backend kiểm tra; giao diện dùng API này tại /quotations, mở từ sidebar hoặc toolbar Workspace. Chưa có fixture báo giá đóng băng, Local Semantic Cache, embedding/matching/verification, phân quyền repo/control, model adapter, backend approval/deployment control, audit log hoặc runner thực nghiệm. Change Review/Phê duyệt/Nhật ký trong Workspace mới là bản mẫu; nút Triển khai luôn khóa. Dữ liệu demo không phải số đo hoặc bằng chứng quyền. Chat/tệp/cấu hình nháp mất khi tải lại; chọn RBAC/ABAC trong UI không cấp quyền.
+App báo giá chạy HTTP độc lập với quyền fixture được backend kiểm tra; giao diện dùng API này tại /quotations, mở từ sidebar hoặc toolbar Workspace. Registry control đã có code kiểm quyền hiện tại theo tenant/repo nhưng chưa cấu hình principals hoặc nối endpoint. Chưa có fixture báo giá đóng băng, Local Semantic Cache, embedding/matching/verification, model adapter, backend approval/deployment control, audit log hoặc runner thực nghiệm. Change Review/Phê duyệt/Nhật ký trong Workspace mới là bản mẫu; nút Triển khai luôn khóa. Dữ liệu demo không phải số đo hoặc bằng chứng quyền. Chat/tệp/cấu hình nháp mất khi tải lại; chọn RBAC/ABAC trong UI không cấp quyền.
 
 ## Công nghệ và tổ chức
 

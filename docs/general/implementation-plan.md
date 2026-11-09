@@ -51,7 +51,7 @@ Không tự chọn thay người dùng/giảng viên các giá trị ảnh hư�
 ### T04 — Thiết kế quyền, executor, gate và trace
 
 - [ ] Hoàn thành T04. **Phụ thuộc:** T01–T03.
-- **Trạng thái:** quyền/freshness API báo giá đã triển khai riêng. [Gói gate local v0.1](../system/authorization.md#phương-án-gate-local-v01-để-chốt) đã được người dùng chọn: authority/TTL/single-use, Docker executor/target, reservation/dispatch/reconciliation và failure boundary. Chưa có control authority/grants/gate/launcher hoặc kiểm chứng host isolation; chưa hoàn tất T04 cho cache/retrieval/delegation. Không dùng quyền app báo giá hoặc blob index làm quyền duyệt/deploy.
+- **Trạng thái:** quyền/freshness API báo giá đã triển khai riêng. [Gói gate local v0.1](../system/authorization.md#phương-án-gate-local-v01-để-chốt) đã được người dùng chọn: authority/TTL/single-use, Docker executor/target, reservation/dispatch/reconciliation và failure boundary. Registry quyền control nội bộ đã có scope lock/epoch và kiểm quyền hiện tại; chưa cấp principal/grants local hoặc nối HTTP/gate/launcher, chưa kiểm chứng host isolation. T04 cho cache/retrieval/delegation còn mở; không dùng quyền app báo giá hoặc blob index làm quyền duyệt/deploy.
 - **Làm:** chốt nguồn identity/authority (identity fixture do backend kiểm soát nếu được chọn phải ghi là mô phỏng), repo/path/tool scope, freshness/revoke, offline policy, trusted provenance/integrity; chọn cơ chế cô lập source/test và giới hạn lệnh/tài nguyên/timeout. Đặc tả exact-change approval, artifact bất biến, kiểm tra cùng digest tại activation và mọi đường bypass thuộc PoC. Định nghĩa event/ID/digest/error tối thiểu để instrument ngay từ đầu.
 - **Đầu ra:** control/threat boundary và test matrix trong authorization; event schema/nguồn đo trong evaluation; cập nhật contract/schema ở T02–T03 nếu cần.
 - **Nghiệm thu:** nêu được cách block chưa duyệt, sai quyền, mã/artifact/evidence đổi sau duyệt, verifier lỗi và source stale; gate không thuộc cache. Process riêng chưa được xem là đủ sandbox. Không chạy Agent hoặc kích hoạt artifact trước khi các điều kiện an toàn phụ thuộc đã được khóa.
@@ -59,7 +59,7 @@ Không tự chọn thay người dùng/giảng viên các giá trị ảnh hư�
 ### T05 — Nối database và nền lưu trữ backend
 
 - [ ] Hoàn thành T05. **Phụ thuộc:** T02–T04 đã đủ điều kiện triển khai.
-- **Trạng thái:** đã có PostgreSQL/metadata retry báo giá và nền blob control với migration 001 riêng, index digest/size, filesystem adapter, PostgreSQL transaction adapter và encoder. Áp dụng local/replay no-op, giữ counts/history báo giá; 216 test backend thật đạt gồm publish/registration song song và lỗi COMMIT thực. Nền storage hoàn thành lát cắt hiện tại; control scope/snapshot/artifact/test/approval/deployment persistence và toàn T04 còn tiếp tục.
+- **Trạng thái:** đã có PostgreSQL/metadata retry báo giá, nền blob control 001 và registry quyền/repository 002. Hai migration control đã áp dụng local/replay no-op, giữ dữ liệu/history báo giá và index blob; registry rỗng, không seed quyền. 244 test backend với PostgreSQL thật đạt. Snapshot/artifact/test/approval/deployment persistence và toàn T04 còn tiếp tục.
 - **Làm:** cấu hình kết nối, migration/constraints và adapter lưu trữ cần dùng ngay; kiểm chứng PostgreSQL/extension thực tế nếu được chọn. Tách liveness/readiness, transaction/error handling và cấu hình phiên bản. Chưa xây sẵn bảng, service hoặc dependency cho mọi biến thể mở rộng.
 - **Đầu ra:** migration tối thiểu, persistence adapters, hướng dẫn khởi động và reset dữ liệu phát triển trong phạm vi rõ ràng.
 - **Nghiệm thu:** migrate/read/write và lỗi kết nối được kiểm tra trên DB thật; migration rollback/forward hoặc khôi phục theo cách đã thiết kế. Không giả readiness thành công khi DB lỗi; không tự xóa volume/dữ liệu ngoài test được cho phép.
@@ -67,7 +67,7 @@ Không tự chọn thay người dùng/giảng viên các giá trị ảnh hư�
 ### T06 — Thực thi identity, scope và trace nền
 
 - [ ] Hoàn thành T06. **Phụ thuộc:** T04–T05.
-- **Trạng thái:** API báo giá có registry fixture, kiểm capability hiện tại trước thao tác/replay và request ID backend. Đã test deny/giả header/thu hồi/authority lỗi; hai identity đọc cùng dataset app, chưa có phân vùng tenant/repo, authority reviewer/control hoặc event persistence/audit nghiên cứu.
+- **Trạng thái:** API báo giá có registry fixture và request ID backend. Control có registry Python nội bộ, composite tenant/repo/FK, token version, grants tường minh, scope lock/epoch CAS và repository.read use case qua transaction port; đã test quyền/revoke/rotation/concurrency trên DB thật. Chưa nối identity HTTP control, cấu hình principal/scope thật, policy epoch riêng, delegation hoặc event persistence/audit nghiên cứu; chưa hoàn thành toàn T06.
 - **Làm:** middleware/dependency lấy identity đáng tin cậy, kiểm tra tenant/repo/action; lưu policy/config versions và tạo request/run/event IDs. Bổ sung thời gian thực tế, outcome/reason, lỗi/timeout và redaction cho các thao tác đã có; mỗi năng lực sau phải mở rộng trace của chính nó.
 - **Đầu ra:** authorization service nhỏ, bộ kiểm tra scope và event persistence theo contract; không tạo policy engine tổng quát.
 - **Nghiệm thu:** giả tenant/role/scope, thiếu quyền và authority unavailable bị chặn; trace success/deny/error không lộ secrets. Chưa có nghiệp vụ không được sinh event cache/test/deploy giả.
@@ -161,7 +161,7 @@ Không tự chọn thay người dùng/giảng viên các giá trị ảnh hư�
 
 ## Bước tiếp theo ngay lúc này
 
-Gói local v0.1 đã được chọn, nền blob/control migration đã triển khai và kiểm chứng. Tiếp theo nối registry authority/scope/repo và snapshot refs vào storage, rồi artifact/harness và launcher/gate theo dependency; không expose blob qua hash khi chưa có quyền resource. App báo giá giữ validator nền chưa có rule expiration_review. T07 vẫn cần review oracle/one-fixture contract; R/config và artifact phải được runtime tin cậy cấp trước đóng băng source gốc/fixture nghiên cứu. Acceptance/protocol nghiên cứu chưa khóa, không bắt đầu run so sánh. Chi tiết trạng thái ở project-status; câu hỏi còn mở ở [overview](overview.md#giả-định-và-câu-hỏi-mở).
+Gói local v0.1 đã được chọn, nền blob và registry authority/scope/repo nội bộ đã triển khai và kiểm chứng. Tiếp theo hoàn thiện repository path/allowlist profile và snapshot refs có quyền vào storage, rồi artifact/harness và launcher/gate theo dependency; chưa expose blob qua hash hoặc mở control endpoint khi cấu hình/scope chưa đủ. App báo giá giữ validator nền chưa có rule expiration_review. T07 vẫn cần review oracle/one-fixture contract; R/config và artifact phải được runtime tin cậy cấp trước đóng băng source gốc/fixture nghiên cứu. Acceptance/protocol nghiên cứu chưa khóa, không bắt đầu run so sánh. Chi tiết trạng thái ở project-status; câu hỏi còn mở ở [overview](overview.md#giả-định-và-câu-hỏi-mở).
 
 | Trước bước phụ thuộc | Cần khóa |
 | --- | --- |

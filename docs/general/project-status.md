@@ -1,5 +1,13 @@
 # Trạng thái dự án
 
+## 2026-11-09 — Registry quyền và repository control nội bộ
+
+- Theo yêu cầu tiếp tục, triển khai app.identity: ControlAuthorizer kiểm identity/grants hiện tại, RepositoryAccessService đọc metadata registry qua transaction port, PostgreSQL authority adapter và backend administration có expected_epoch. Token control độc lập app báo giá; registry không có principal/grant mặc định hoặc API đổi quyền cho browser/Agent. Chưa nối HTTP/UI hoặc startup sync cấu hình.
+- Migration control 002 thêm repositories/scope_authorities/principals/principal_grants, khóa/FK ghép tenant/repo, credential version/digest và capability tường minh. Grant/revoke/rotation dùng chung authority row lock với authorize; credential cũ bị chặn, cấu hình epoch cũ conflict thay vì ghi đè. Đây là identity fixture backend cho PoC, chưa phải IAM production hoặc gate.
+- **244 test backend với PostgreSQL thật đạt, không skip; Ruff lint/format đạt.** Có ca adapter thay thế, deny/sai scope, revoke/disable/rotation, caller cũ, quyền Reviewer tường minh cho cùng human, rollback, migration nâng từ blob-only, cấu hình song song và lock giữ đến commit. Bộ test toàn backend vẫn có cảnh báo TestClient/httpx sẵn có; không chạy frontend/browser vì không đổi HTTP/UI.
+- Đã áp dụng 002 lên DB dev loopback; replay no-op. So trước/sau: dữ liệu báo giá/retry, history/checksum migration cũ và blob index giữ nguyên. Bốn bảng registry đều 0 row; không seed token/quyền hoặc sửa .env. DB test ngẫu nhiên riêng được dọn; không thay SQL migration 001 control hoặc 001/002 quotation.
+- Cập nhật README, architecture/authorization/API, setup, source map và lộ trình. Tiếp theo repository path/allowlist profile và snapshot refs có quyền; sau đó artifact/harness/gate. Chưa có snapshot/source read/write, Agent delegation, policy epoch riêng, event audit bền vững hoặc runtime DB role isolation. T03–T06 toàn hệ thống chưa hoàn tất; chưa thêm rule ngày, kích hoạt artifact, khóa fixture/acceptance hoặc chạy thực nghiệm.
+
 ## 2026-11-09 — Chọn local v0.1 và triển khai nền blob/control storage
 
 - Người dùng yêu cầu tiếp tục sau khi review gói local v0.1; ghi nhận chọn thiết kế authority/freshness, approval 30 phút/single deployment, storage và Docker/target/recovery đã trình bày. Đây là quyết định triển khai PoC của người dùng, không phải acceptance của cô hoặc approval cho một artifact. Chưa chạy Agent hoặc kích hoạt code mới.

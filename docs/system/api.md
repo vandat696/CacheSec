@@ -146,6 +146,8 @@ Ví dụ riêng phần data sau khi artifact có rule được phê duyệt và 
 
 ## Resource của control
 
+Registry identity/repository đã có [use case Python nội bộ](authorization.md#registry-control-nội-bộ-đã-triển-khai) và migration 002; chưa có endpoint Session/repository hoặc token control được cấp local. RepositoryAccessService chỉ trả registry identity/authority epoch sau kiểm quyền hiện tại, không đọc source hoặc trả blob. Bảng resource bên dưới vẫn mô tả API mục tiêu; không thay đổi OpenAPI/HTTP ở bước registry này.
+
 | Resource | Trường chính dự kiến | Ràng buộc |
 | --- | --- | --- |
 | Session | principal_id, tenant_id, capability_refs, policy_ref, identity_mode = fixture | Chỉ backend xác định; capabilities phải còn hiệu lực ở mỗi thao tác |

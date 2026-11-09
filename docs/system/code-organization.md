@@ -52,8 +52,13 @@ backend/app/
     migrate_control.py                         CLI migration control
     database/control_migrations.py              schema/history/lock control riêng
     database/migrations/001_artifact_blobs.sql   index bytes thô, không artifact-ready/approval
+    database/migrations/002_control_authority.sql registry repository/authority/principal/grants
   shared/postgres_connection.py                PostgresDatabase, vòng đời connection
   shared/postgres_migrations.py                mechanics migration dùng chung, không sở hữu schema
+  identity/
+    control_authority.py                       types/ports, authenticate/require, repository read service
+    postgres_control_authority.py              authority repository và transaction adapter
+    postgres_authority_administration.py       cấu hình tin cậy, epoch CAS và scope lock
   artifacts/
     blob_models.py                             digest/ref, cap và lỗi storage
     blob_storage_service.py                    publish/register/read và các port do service dùng
@@ -95,7 +100,9 @@ business không nhập api/database/auth/control, FastAPI hoặc Psycopg. Nó s�
 
 OOP dùng cho đối tượng có trạng thái/phụ thuộc; logic thuần giữ function. Điểm khởi động đặt theo ứng dụng, không bắt buộc main.py. Từ refactor ngày 2026-11-09: control chạy uvicorn app.control.control_api:app, báo giá chạy uvicorn app.quotation_demo.quotation_api:create_app --factory, migration chạy python -m app.quotation_demo.migrate_quotations. Các path import/CLI cũ được thay bằng tên mới, không giữ module alias làm khó phân biệt. HTTP route, env QUOTATION_, schema và định danh/bytes/checksum SQL giữ nguyên; schema mới dùng migration forward.
 
-Blob storage không import HTTP, model báo giá, cache hoặc research; các adapter cùng thực hiện contract bytes/metadata và giữ lỗi thật. Wrapper quotation_migrations giữ các import Migration/MigrationError và load/apply_migrations hiện có, dùng shared mechanics cho đúng hai owner đã có; không thêm generic base repository hoặc layer trống. Migration control chạy python -m app.control.migrate_control. tests/artifacts kiểm bytes/service/encoder; tests/control kiểm wiring/migration/DB. tests/conftest.py cấp DB ngẫu nhiên qua helper dùng chung, mỗi feature giữ fixture tên/scope riêng; không dọn DB từ URL nguồn.
+Blob storage không import HTTP, model báo giá, cache hoặc research; các adapter cùng thực hiện contract bytes/metadata và giữ lỗi thật. Wrapper quotation_migrations giữ các import Migration/MigrationError và load/apply_migrations hiện có, dùng shared mechanics cho đúng hai owner đã có; không thêm generic base repository hoặc layer trống. Migration control chạy python -m app.control.migrate_control; 002_control_authority.sql thêm registry quyền/repository, không seed principal/grants. tests/artifacts kiểm bytes/service/encoder; tests/identity kiểm quyền qua adapter thay thế; tests/control kiểm wiring/migration/DB thật, scope/rotation/epoch/lock. tests/conftest.py cấp DB ngẫu nhiên qua helper dùng chung, mỗi feature giữ fixture tên/scope riêng; không dọn DB từ URL nguồn.
+
+Registry domain không import FastAPI/Psycopg; RepositoryAccessService nhận transaction port rồi xác thực/kiểm repository.read trước trả metadata đã commit. Authorizer có thể dùng ngay authority repository của transaction control hiện tại, không tự mở connection tách biệt. Administration là adapter backend tin cậy, caller chịu trách nhiệm commit/rollback; không phải Agent tool hoặc route public. Registry chưa đọc source, tạo snapshot hoặc nối HTTP/UI.
 
 ## UI template tham chiếu
 

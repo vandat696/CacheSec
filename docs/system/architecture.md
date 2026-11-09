@@ -128,7 +128,7 @@ Phần dữ liệu/API/quyền app này là lát cắt T03–T07 được triể
 
 ### Nền blob control đã triển khai
 
-Theo gói local v0.1 đã chọn, bước đầu chỉ triển khai **storage bytes và index nội bộ**, không scaffold trước các bảng authority/snapshot/approval/deployment chưa có use case. Migration control 001_artifact_blobs.sql tạo:
+Theo gói local v0.1 đã chọn, bước đầu triển khai **storage bytes và index nội bộ**; registry quyền được bổ sung riêng bên dưới. Migration control 001_artifact_blobs.sql tạo:
 
 | Bảng/cột | Vai trò đã chạy |
 | --- | --- |
@@ -145,11 +145,28 @@ Service chỉ register metadata sau publish bytes và chỉ trả reference sau 
 
 Index blob là hạ tầng **không có scope/quyền/provenance/artifact-ready**, chưa phải resource để browser/Agent đọc bằng hash. Nó có thể dedup vật lý nội bộ; cấp quyền sử dụng về sau phải qua quan hệ scoped của snapshot/artifact và authority. Chưa có HTTP endpoint upload/read blob, chưa lưu context cache hoặc kết quả test/approval; chưa nối UI cho primitive này vì contract quyền truy cập resource chưa triển khai. Từ chối PUBLIC trên schema/bảng không tách được dev DSN owner/superuser hiện tại: runtime DB roles, ACL riêng của host/kho và sandbox vẫn phải được provisioning/kiểm chứng trước chạy code không tin cậy. Adapter kiểm reparse ở trạng thái quan sát được, không chống privileged host race. Fsync file + hard-link đã kiểm chứng luồng bình thường trên host, chưa có test power-loss/ACL; index tồn tại vẫn phải fail closed khi bytes không xác minh được.
 
-Migration mechanics được dùng chung ở [postgres_migrations.py](../../backend/app/shared/postgres_migrations.py); wrapper control và quotation giữ schema/history/lock riêng. Hai SQL migration báo giá và checksum/định danh cũ không đổi. Đã áp dụng control 001 vào DB local, replay no-op, index 0 row; đối chiếu số dòng app/retry và history báo giá trước/sau giữ nguyên. Test PostgreSQL tạo DB control/quotation ngẫu nhiên riêng và kiểm cả rollback tại COMMIT thật; không seed fixture nghiên cứu hoặc áp dụng các bảng control còn lại. Lệnh và cap ở [setup](../general/setup.md#2c-migration-và-blob-storage-control).
+Migration mechanics được dùng chung ở [postgres_migrations.py](../../backend/app/shared/postgres_migrations.py); wrapper control và quotation giữ schema/history/lock riêng. Hai SQL migration báo giá và checksum/định danh cũ không đổi. Đã áp dụng control 001 vào DB local, replay no-op, index 0 row; đối chiếu số dòng app/retry và history báo giá trước/sau giữ nguyên. Test PostgreSQL tạo DB control/quotation ngẫu nhiên riêng và kiểm cả rollback tại COMMIT thật; không seed fixture nghiên cứu. Lệnh và cap ở [setup](../general/setup.md#2c-migration-và-blob-storage-control).
+
+### Registry control đã triển khai
+
+Migration 002_control_authority.sql bổ sung bốn bảng cho use case đọc thông tin repository có kiểm quyền nội bộ:
+
+| Bảng | Nội dung và ràng buộc |
+| --- | --- |
+| control.repositories | PK (tenant_id, repo_id) UUID; identity ổn định, UNIQUE trong tenant; chưa chứa host path hoặc allowlist file |
+| control.scope_authorities | Một epoch dương cho mỗi tenant/repo, FK ghép đến repository; hàng này là lock chung cho đọc quyền và thay cấu hình |
+| control.principals | Identity fixture human theo tenant/repo, principal UUID, credential_version, token_digest 32 bytes UNIQUE toàn registry, active; FK ghép đến authority |
+| control.principal_grants | Capability tường minh; PK/FK ghép tenant/repo/principal, không suy quyền theo role hoặc từ app báo giá |
+
+[RepositoryAccessService](../../backend/app/identity/control_authority.py) nhận transaction port nhỏ, xác thực và yêu cầu repository.read trước trả identity/epoch; chỉ trả sau commit. Domain không nhập FastAPI/Psycopg/app báo giá. Adapter PostgreSQL và backend administration ở app/identity; authorizer nhận repository port của transaction do use case mở để sau này kiểm quyền cùng transaction binding/approval/permit. Không được thay bằng connection authority riêng ở các critical section đó.
+
+Registry không tự đăng ký repo, tạo token hoặc cấp grant khi import/start API. Backend administration nhận cấu hình tin cậy, khóa authority và so expected_epoch trước thay principal/grants cùng tăng epoch. Replay cấu hình không đổi giữ epoch; credential đổi cần version mới, không cho lùi version. Repository identity không remap qua thao tác đăng ký lại. Đây là API Python nội bộ cho thành phần tin cậy, chưa có admin HTTP/CLI, event audit bền vững hoặc startup configuration synchronization; xem [quyền registry](authorization.md#registry-control-nội-bộ-đã-triển-khai).
+
+Chưa đăng ký identity/path thật của repository, chưa có snapshot/snapshot_files, read/write source, Agent delegation hoặc quan hệ scoped đến blob. Một identity registry không chứng minh source bytes đáng tin cậy. Bốn bảng có REVOKE PUBLIC, nhưng chưa provisioning runtime DB role hoặc kiểm chứng host isolation; không chạy code không tin cậy từ registry này.
 
 ### Đề xuất T03: lưu trữ control và artifact v0.1
 
-Đây là **thiết kế local v0.1 được người dùng chọn để triển khai ngày 2026-11-09**. Đã có nền raw blob và migration control ở mục trước; snapshot/artifact-ready/authority/gate/launcher còn chưa triển khai. Nó cụ thể hóa bản nháp T04, không thay phần app báo giá đã chạy. Quyền, activation và recovery do [thiết kế gate](authorization.md#phương-án-gate-local-v01-để-chốt) sở hữu; wire/binding bytes do [contract](api.md#binding-và-deployment-local-v01--đề-xuất) sở hữu. Triển khai từng năng lực theo gói đã chọn và chỉ mở runtime sau khi đủ kiểm chứng an toàn tương ứng.
+Đây là **thiết kế local v0.1 được người dùng chọn để triển khai ngày 2026-11-09**. Đã có nền raw blob, registry quyền/repository nội bộ và migration control; snapshot/artifact-ready/gate/launcher còn chưa triển khai. Nó cụ thể hóa bản nháp T04, không thay phần app báo giá đã chạy. Quyền, activation và recovery do [thiết kế gate](authorization.md#phương-án-gate-local-v01-để-chốt) sở hữu; wire/binding bytes do [contract](api.md#binding-và-deployment-local-v01--đề-xuất) sở hữu. Triển khai từng năng lực theo gói đã chọn và chỉ mở runtime sau khi đủ kiểm chứng an toàn tương ứng.
 
 #### Nơi lưu và quyền sở hữu
 
@@ -175,7 +192,7 @@ Test và activation dùng **cùng source bundle, runtime image và public valida
 
 #### Bảng và ràng buộc logic đề xuất
 
-Các tên dưới đây là data dictionary, **không phải SQL đã áp dụng**. Resource ID đề xuất là UUID do server cấp; repo/tenant là refs do registry quản lý. Mỗi tài nguyên scoped có tenant_id/repo_id; liên kết scoped dùng khóa duy nhất và FK ghép tương ứng để chặn liên kết khác scope, không chỉ dựa middleware. Bytes lớn nằm ở blob store, PostgreSQL lưu digest/ref/size/trạng thái.
+Các tên dưới đây là data dictionary đích; chỉ registry identity/repository và blob index có SQL đã triển khai như hai mục trên, **các bảng còn lại chưa được áp dụng**. Resource ID đề xuất là UUID do server cấp; repo/tenant là refs do registry quản lý. Mỗi tài nguyên scoped có tenant_id/repo_id; liên kết scoped dùng khóa duy nhất và FK ghép tương ứng để chặn liên kết khác scope, không chỉ dựa middleware. Bytes lớn nằm ở blob store, PostgreSQL lưu digest/ref/size/trạng thái.
 
 | Bảng logic trong control | Trường/khóa chính ngoài scope | Ràng buộc và vòng đời |
 | --- | --- | --- |
