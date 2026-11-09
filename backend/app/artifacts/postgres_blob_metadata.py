@@ -19,7 +19,7 @@ class PostgresBlobMetadataRepository:
     def register(self, reference: BlobReference) -> None:
         self._connection.execute(
             "INSERT INTO control.artifact_blobs (digest, byte_size) VALUES (%s, %s) "
-            "ON CONFLICT (digest) DO NOTHING",
+            "ON CONFLICT DO NOTHING",
             (reference.digest, reference.byte_size),
         )
         if self.get(reference.digest) != reference:

@@ -27,7 +27,7 @@ Bối cảnh đã cập nhật ngày **2026-11-02**. Frontend có thêm **Develo
 | Chat `/` | Lịch sử, bản nháp, Không cache/Cache/Cả hai với prompt chung; modal thông số từng lượt | Phản hồi mô phỏng, chưa AI/RAG hoặc cache thật |
 | Số liệu `/metrics` | Ba tab, biểu đồ/bảng/chi tiết; mặc định 24 truy vấn giả, nguồn phiên riêng tại `/metrics?source=session` | Fixture xem UI, không phải kết quả thực nghiệm |
 | Tài liệu `/documents` | Chọn/thả, phân loại, tìm/lọc tệp trong phiên | Chờ tải lên; chưa đọc/ingest/upload hoặc authorized retrieval |
-| Backend control | FastAPI `GET /health`, `GET /ready`, adapter PostgreSQL, blob storage và registry quyền/repository nội bộ | Registry chưa nối HTTP/UI; readiness chỉ kiểm PostgreSQL, chưa Agent/gate |
+| Backend control | FastAPI `GET /health`, `GET /ready`, adapter PostgreSQL, blob storage, registry quyền và snapshot repository nội bộ | Snapshot chưa nối HTTP/UI hoặc cấu hình nguồn thật; readiness chỉ kiểm PostgreSQL, chưa Agent/gate |
 | Báo giá `/quotations` | Form nhập, danh sách/chi tiết và validation nền nối API/PostgreSQL thật; Bearer fixture reader/operator, retry idempotent | Một dataset dùng chung; validator nền chưa có quy tắc nghiệp vụ, chưa rule ngày hoặc artifact/gate |
 | Hạ tầng | PostgreSQL 17.11/pgvector 0.8.7 qua Compose; đã áp dụng migration báo giá và kiểm chứng DB thật | Control có index blob thô; chưa schema approval/deployment hoặc artifact-ready |
 

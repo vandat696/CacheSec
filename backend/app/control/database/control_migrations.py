@@ -9,7 +9,8 @@ _LOCK_ID = 87520261109
 
 def load_migrations() -> tuple[Migration, ...]:
     return load_sql_migrations(
-        "app.control.database", ("001_artifact_blobs.sql", "002_control_authority.sql")
+        "app.control.database",
+        ("001_artifact_blobs.sql", "002_control_authority.sql", "003_repository_snapshots.sql"),
     )
 
 

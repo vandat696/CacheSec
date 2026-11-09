@@ -10,7 +10,7 @@ Hồ sơ thiết kế và trạng thái hệ thống. Nội dung dự kiến kh�
 | General | [Trạng thái](general/project-status.md) | Đã làm, quyết định, còn mở, bước tiếp theo |
 | General | [Kế hoạch PoC](general/implementation-plan.md) | T01–T17 tuần tự: thiết kế, database/backend, app/cache/Agent/gate, UI, runner và đánh giá; mở rộng X01–X03 riêng |
 | General | [Cài đặt](general/setup.md) | Môi trường, lệnh chạy và kiểm tra |
-| System | [Kiến trúc](system/architecture.md) | As-Is, ba ranh giới, storage báo giá/blob control đã triển khai và thiết kế T03 v0.1 cho artifact |
+| System | [Kiến trúc](system/architecture.md) | As-Is, ba ranh giới, storage báo giá/blob, registry và snapshot nội bộ; thiết kế T03 v0.1 cho artifact |
 | System | [Tổ chức source](system/code-organization.md) | Đặt tên/module frontend/backend, UI kit/catalog, template source và bundle |
 | System | [Contract backend và cache](system/api.md) | T02 v0.2; API tạo/đọc/validate nền báo giá và health/readiness đã triển khai, phần control/cache còn là thiết kế |
 | System | [Cache](system/cache.md) | Answer/Context Cache, Hit/Miss/Rejected, verification, metadata và lifecycle |

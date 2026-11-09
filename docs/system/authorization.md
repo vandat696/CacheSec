@@ -2,7 +2,7 @@
 
 ## Trạng thái và ranh giới
 
-Phần quyền API báo giá đã triển khai bằng identity fixture backend; cache verification, quyền control/reviewer và approval/deployment gate bên dưới vẫn là **thiết kế mục tiêu**. UI RBAC/ABAC không thực thi quyền. Safety property duy nhất từ giảng viên là: **không triển khai thay đổi quy tắc validation nếu chưa có người có thẩm quyền phê duyệt tường minh chính xác thay đổi đó**.
+Phần quyền API báo giá, registry control và snapshot có kiểm quyền đã có implementation nội bộ; cache verification, reviewer workflow và approval/deployment gate bên dưới vẫn là **thiết kế mục tiêu**. UI RBAC/ABAC không thực thi quyền. Safety property duy nhất từ giảng viên là: **không triển khai thay đổi quy tắc validation nếu chưa có người có thẩm quyền phê duyệt tường minh chính xác thay đổi đó**.
 
 | Cơ chế | Quyết định | Không được suy ra |
 | --- | --- | --- |
@@ -112,6 +112,14 @@ Authenticate tra token digest, lấy scope từ record backend, khóa hàng scop
 PostgresAuthorityAdministration chỉ dành cho backend tin cậy: đăng ký repository identity (opaque ASCII tối đa 128 ký tự, không phải path), cấu hình principal/grants hoặc disable principal. Mọi thay đổi principal/grants khóa cùng authority row, kiểm expected_epoch rồi ghi principal, grants và epoch trong transaction caller sở hữu. Cấu hình cũ conflict thay vì hồi sinh quyền sau revoke; token rotation cần version tăng. Không tự đồng bộ cấu hình từ worker vào DB lúc startup; phần tích hợp này vẫn phải thực hiện trước mở HTTP control. Không expose administration hoặc DB credentials cho Agent/browser.
 
 Đã kiểm thử cấp/thu hồi capability, disable/rotation, recheck caller cũ, scope/FK, cấu hình song song và lock giữ đến commit. Hai capability change.review/deployment.activate được biểu diễn để kiểm quyền, chưa có thao tác duyệt/triển khai. Chưa có policy epoch riêng, trace/audit bền vững, principal local được cấp thật hoặc gate; các nội dung bên dưới vẫn là thiết kế cho bước tiếp theo.
+
+#### Quyền snapshot nội bộ đã triển khai
+
+Capture/get/read_file đều xác thực và kiểm repository.read trước truy cập nguồn/bytes. Authority, snapshot records và blob index dùng chung PostgreSQL connection/transaction; khóa scope_authorities giữ đến commit. Revoke commit trước khi thao tác lấy lock sẽ block; revoke chờ thao tác đã lấy lock thì có hiệu lực sau đó, không thu hồi bytes đã đọc. Không dùng quyền reader/operator báo giá làm quyền repository.
+
+Root và exact-file profile chỉ do cấu hình backend tin cậy cung cấp. Active profile digest nằm ở repository_source_profiles trong DB; PostgresSourceProfileAdministration.set_profile kiểm registry identity, expected_epoch và cùng scope lock, thay digest/tăng authority epoch nguyên tử. Capture/read đối chiếu digest cấu hình worker và snapshot với active digest mỗi lần; worker cấu hình cũ hoặc profile chưa đăng ký bị chặn trước đọc source/blob. Không tự reload/overwrite active policy từ worker startup; chưa có admin HTTP/CLI, cấu hình nguồn thật hoặc đường Agent sửa policy.
+
+Snapshot/file ID của scope khác trả ControlResourceUnavailable; profile đổi chặn đọc snapshot cũ qua service này, kể cả grant repository.read vẫn còn. Get chỉ xác minh metadata/profile/manifest; read_file xác minh cả payload file. Kiểm đường dẫn và hai lượt đọc không phát hiện mọi secret hoặc chứng minh capture nguyên tử trước host race. [Snapshot architecture](architecture.md#snapshot-repository-đã-triển-khai) sở hữu giới hạn này. Chưa có quyền source write, delegation hoặc approval/deployment từ snapshot.
 
 #### Authority, scope và thời hạn đề xuất
 

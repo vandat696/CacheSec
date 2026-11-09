@@ -162,11 +162,34 @@ Migration 002_control_authority.sql bổ sung bốn bảng cho use case đọc t
 
 Registry không tự đăng ký repo, tạo token hoặc cấp grant khi import/start API. Backend administration nhận cấu hình tin cậy, khóa authority và so expected_epoch trước thay principal/grants cùng tăng epoch. Replay cấu hình không đổi giữ epoch; credential đổi cần version mới, không cho lùi version. Repository identity không remap qua thao tác đăng ký lại. Đây là API Python nội bộ cho thành phần tin cậy, chưa có admin HTTP/CLI, event audit bền vững hoặc startup configuration synchronization; xem [quyền registry](authorization.md#registry-control-nội-bộ-đã-triển-khai).
 
-Chưa đăng ký identity/path thật của repository, chưa có snapshot/snapshot_files, read/write source, Agent delegation hoặc quan hệ scoped đến blob. Một identity registry không chứng minh source bytes đáng tin cậy. Bốn bảng có REVOKE PUBLIC, nhưng chưa provisioning runtime DB role hoặc kiểm chứng host isolation; không chạy code không tin cậy từ registry này.
+Chưa đăng ký identity/path thật của repository. Snapshot nội bộ được bổ sung ở mục sau; chưa có source write hoặc Agent delegation. Một identity registry không chứng minh source bytes đáng tin cậy. Bốn bảng có REVOKE PUBLIC, nhưng chưa provisioning runtime DB role hoặc kiểm chứng host isolation; không chạy code không tin cậy từ registry này.
+
+### Snapshot repository đã triển khai
+
+[RepositorySnapshotService](../../backend/app/repositories/repository_snapshots.py) có capture/get/read_file nội bộ. Backend cấu hình RepositorySourceBinding gồm root tuyệt đối và SourceProfile cho đúng tenant/repo/registry identity. Profile chỉ gồm file cụ thể, không glob/walk hoặc path client chọn. Không có profile mặc định cho repo thật, không tự capture hoặc seed principal khi mở API. Profile đọc chưa phải profile cho phép Agent sửa/chạy code.
+
+Profile v1 dùng path ASCII tương đối với dấu /, sắp theo path; chặn traversal, đường dẫn tuyệt đối/drive/ADS, backslash, dotfile (gồm .env/.git), đoạn rỗng/dấu chấm cuối, tên Windows reserved/short alias, path trùng theo case và file đồng thời là thư mục. Chặn thêm node_modules, __pycache__, test-results, các tên secrets/credentials và đuôi key/certificate đã quy định trong [source_profiles.py](../../backend/app/repositories/source_profiles.py). Đây là kiểm path và allowlist tin cậy, **không phải bộ phát hiện secret trong nội dung**; người cấu hình vẫn phải review từng file. Caps chỉ được hạ: 256 file, 1 MiB/file, 20 MiB tổng; profile/manifest canonical tối đa 64 KiB. Root riêng của host không nằm trong metadata xuất ra.
+
+Migration control 003_repository_snapshots.sql bổ sung:
+
+| Bảng/ràng buộc | Vai trò |
+| --- | --- |
+| repository_source_profiles | Active profile digest theo tenant/repo, FK ghép đến scope_authorities; chỉ backend administration đổi |
+| snapshots | PK tenant/repo/snapshot UUID; registry identity, actor/authority epoch, profile/manifest digest và size, created_at; actor FK trong cùng scope |
+| snapshot_files | File UUID/path/blob digest/size; FK ghép đến snapshot, UNIQUE path không phân biệt case trong cùng snapshot |
+| artifact_blob_digest_size | UNIQUE digest/size trên index cũ; FK metadata snapshot chặn ref đúng digest nhưng sai size |
+
+PostgresSourceProfileAdministration.set_profile khóa hàng authority, kiểm expected_epoch và identity trước đổi active digest/tăng epoch trong transaction caller. Không tự áp profile của worker lúc startup. Capture và mọi read đều so digest profile trong cấu hình worker với active digest từ DB dưới cùng lock; worker giữ profile cũ bị chặn. Profile đổi cũng chặn đọc snapshot cũ qua service này. Đây là policy đọc source hiện tại; chưa phải policy engine/cache policy chung.
+
+Capture xác thực và yêu cầu repository.read **trước source I/O**, giữ scope lock trong cùng connection với snapshot và blob index. Adapter filesystem kiểm từng ancestor/segment, từ chối symlink/junction/reparse, file không thường hoặc hard link; kiểm tên đúng case và không alias. Đọc có giới hạn, so identity/size/time của handle và đọc lại toàn bộ allowlist lần hai; bytes/fingerprint khác thì SourceChanged, không tự retry hoặc trả snapshot thiếu file. Lstat/fstat ctime có thể khác trên Windows nên ctime chỉ so giữa các quan sát handle. Hai lượt đọc phát hiện thay đổi quan sát được, **không chứng minh snapshot nguyên tử tại một thời điểm** hoặc chống host đặc quyền sửa/race. Host/root/config vẫn thuộc trust boundary.
+
+Sau capture ổn định, service tính refs và encode profile/manifest trước publish; source bytes giữ binary/LF/CRLF nguyên trạng. Publish rồi đọc lại xác minh từng blob trước đăng ký index; insert snapshot/files/index cùng transaction authority. Chỉ trả snapshot sau commit. Lỗi commit có thể để orphan bytes nhưng không có snapshot sẵn sàng được trả; retry tạo ID mới, dedup bytes, chưa có request idempotency. Không có update/delete trong API Python; DB owner vẫn có thể sửa bảng/kho, không tuyên bố chống quản trị viên. Get xác minh profile/manifest canonical với records; read_file còn xác minh file bytes theo opaque file ID và snapshot/scope, không nhận raw digest/path để đọc. Get metadata không xác minh lại tất cả file payload và không xác nhận artifact-ready.
+
+Manifest kind = repository-snapshot/schema_version = 1 gồm tenant_id/repo_id, registry identity, source_profile_digest và files (path/digest/byte_size) theo thứ tự path. Snapshot/file UUID, actor/epoch/time ở wrapper DB; không đưa vào manifest content digest nên cùng bytes/profile có cùng manifest dù capture có ID khác. Chưa có Git adapter/base revision, chứng minh dependency đầy đủ hoặc runtime/config/image/harness refs: đây là snapshot của đúng tập file được cấu hình, chưa phải artifact để test/deploy. Factory và cách cấu hình ở [setup](../general/setup.md#2c-migration-và-blob-storage-control).
 
 ### Đề xuất T03: lưu trữ control và artifact v0.1
 
-Đây là **thiết kế local v0.1 được người dùng chọn để triển khai ngày 2026-11-09**. Đã có nền raw blob, registry quyền/repository nội bộ và migration control; snapshot/artifact-ready/gate/launcher còn chưa triển khai. Nó cụ thể hóa bản nháp T04, không thay phần app báo giá đã chạy. Quyền, activation và recovery do [thiết kế gate](authorization.md#phương-án-gate-local-v01-để-chốt) sở hữu; wire/binding bytes do [contract](api.md#binding-và-deployment-local-v01--đề-xuất) sở hữu. Triển khai từng năng lực theo gói đã chọn và chỉ mở runtime sau khi đủ kiểm chứng an toàn tương ứng.
+Đây là **thiết kế local v0.1 được người dùng chọn để triển khai ngày 2026-11-09**. Đã có raw blob, registry quyền/repository, snapshot nội bộ và migration control; artifact-ready/gate/launcher còn chưa triển khai. Nó cụ thể hóa bản nháp T04, không thay phần app báo giá đã chạy. Quyền, activation và recovery do [thiết kế gate](authorization.md#phương-án-gate-local-v01-để-chốt) sở hữu; wire/binding bytes do [contract](api.md#binding-và-deployment-local-v01--đề-xuất) sở hữu. Triển khai từng năng lực theo gói đã chọn và chỉ mở runtime sau khi đủ kiểm chứng an toàn tương ứng.
 
 #### Nơi lưu và quyền sở hữu
 
@@ -192,7 +215,7 @@ Test và activation dùng **cùng source bundle, runtime image và public valida
 
 #### Bảng và ràng buộc logic đề xuất
 
-Các tên dưới đây là data dictionary đích; chỉ registry identity/repository và blob index có SQL đã triển khai như hai mục trên, **các bảng còn lại chưa được áp dụng**. Resource ID đề xuất là UUID do server cấp; repo/tenant là refs do registry quản lý. Mỗi tài nguyên scoped có tenant_id/repo_id; liên kết scoped dùng khóa duy nhất và FK ghép tương ứng để chặn liên kết khác scope, không chỉ dựa middleware. Bytes lớn nằm ở blob store, PostgreSQL lưu digest/ref/size/trạng thái.
+Các tên dưới đây là data dictionary đích; registry identity/repository, snapshot/source profile và blob index có SQL đã triển khai ở trên, **các bảng còn lại chưa được áp dụng**. Resource ID đề xuất là UUID do server cấp; repo/tenant là refs do registry quản lý. Mỗi tài nguyên scoped có tenant_id/repo_id; liên kết scoped dùng khóa duy nhất và FK ghép tương ứng để chặn liên kết khác scope, không chỉ dựa middleware. Bytes lớn nằm ở blob store, PostgreSQL lưu digest/ref/size/trạng thái.
 
 | Bảng logic trong control | Trường/khóa chính ngoài scope | Ràng buộc và vòng đời |
 | --- | --- | --- |

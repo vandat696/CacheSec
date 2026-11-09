@@ -33,6 +33,7 @@ def test_control_migration_replay_and_quotation_history_are_independent(control_
         assert apply_migrations(connection) == (
             "001_artifact_blobs.sql",
             "002_control_authority.sql",
+            "003_repository_snapshots.sql",
         )
     with control_database.connection() as connection:
         assert apply_migrations(connection) == ()
@@ -70,6 +71,7 @@ def test_failed_control_batch_rolls_back_schema_and_history(control_database, mo
         assert apply_migrations(connection) == (
             "001_artifact_blobs.sql",
             "002_control_authority.sql",
+            "003_repository_snapshots.sql",
         )
 
 
@@ -83,7 +85,10 @@ def test_parallel_control_migrators_install_one_batch(control_database):
 
     with ThreadPoolExecutor(max_workers=2) as workers:
         results = list(workers.map(lambda _: migrate(), range(2)))
-    assert sorted(results, key=len) == [(), ("001_artifact_blobs.sql", "002_control_authority.sql")]
+    assert sorted(results, key=len) == [
+        (),
+        tuple(migration.name for migration in control_migrations.load_migrations()),
+    ]
 
 
 def test_blob_publication_and_parallel_registration_commit_once(migrated, tmp_path):

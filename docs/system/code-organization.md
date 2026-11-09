@@ -49,12 +49,21 @@ backend/app/
     control_settings.py                        cấu hình control
     health_routes.py                           các endpoint health/readiness
     control_storage.py                         lắp ghép blob service, filesystem và PostgreSQL
+    control_snapshots.py                       lắp ghép snapshot với binding/root tường minh
     migrate_control.py                         CLI migration control
     database/control_migrations.py              schema/history/lock control riêng
     database/migrations/001_artifact_blobs.sql   index bytes thô, không artifact-ready/approval
     database/migrations/002_control_authority.sql registry repository/authority/principal/grants
+    database/migrations/003_repository_snapshots.sql active source profile, snapshot và file refs
   shared/postgres_connection.py                PostgresDatabase, vòng đời connection
   shared/postgres_migrations.py                mechanics migration dùng chung, không sở hữu schema
+  repositories/
+    source_profiles.py                        exact-file path policy, caps và canonical profile
+    snapshot_models.py                        snapshot/file refs và manifest content
+    filesystem_repository_source.py           đọc giới hạn, kiểm path/alias, hai lượt capture
+    repository_snapshots.py                    ports/use case capture/get/read_file có quyền
+    postgres_repository_snapshots.py           snapshot/index/authority chung connection
+    postgres_source_profiles.py                active profile digest/epoch CAS cho backend tin cậy
   identity/
     control_authority.py                       types/ports, authenticate/require, repository read service
     postgres_control_authority.py              authority repository và transaction adapter
@@ -102,7 +111,9 @@ OOP dùng cho đối tượng có trạng thái/phụ thuộc; logic thuần gi�
 
 Blob storage không import HTTP, model báo giá, cache hoặc research; các adapter cùng thực hiện contract bytes/metadata và giữ lỗi thật. Wrapper quotation_migrations giữ các import Migration/MigrationError và load/apply_migrations hiện có, dùng shared mechanics cho đúng hai owner đã có; không thêm generic base repository hoặc layer trống. Migration control chạy python -m app.control.migrate_control; 002_control_authority.sql thêm registry quyền/repository, không seed principal/grants. tests/artifacts kiểm bytes/service/encoder; tests/identity kiểm quyền qua adapter thay thế; tests/control kiểm wiring/migration/DB thật, scope/rotation/epoch/lock. tests/conftest.py cấp DB ngẫu nhiên qua helper dùng chung, mỗi feature giữ fixture tên/scope riêng; không dọn DB từ URL nguồn.
 
-Registry domain không import FastAPI/Psycopg; RepositoryAccessService nhận transaction port rồi xác thực/kiểm repository.read trước trả metadata đã commit. Authorizer có thể dùng ngay authority repository của transaction control hiện tại, không tự mở connection tách biệt. Administration là adapter backend tin cậy, caller chịu trách nhiệm commit/rollback; không phải Agent tool hoặc route public. Registry chưa đọc source, tạo snapshot hoặc nối HTTP/UI.
+Registry domain không import FastAPI/Psycopg; RepositoryAccessService nhận transaction port rồi xác thực/kiểm repository.read trước trả metadata đã commit. Authorizer có thể dùng ngay authority repository của transaction control hiện tại, không tự mở connection tách biệt. Administration là adapter backend tin cậy, caller chịu trách nhiệm commit/rollback; không phải Agent tool hoặc route public. Registry metadata vẫn tách khỏi đọc source; snapshot use case do repositories sở hữu, chưa nối HTTP/UI.
+
+RepositorySnapshotService nhận source, bytes store và SnapshotTransactions. Session chứa authority/blob index/snapshot ports cùng connection; không gọi ArtifactBlobStorage mở transaction riêng trong capture. PostgresSourceProfileAdministration đổi active profile cùng lock/epoch authority; worker chỉ đọc policy, không tự provision từ config. tests/repositories kiểm path/capture và adapter thay thế; tests/control/test_repository_snapshots_integration.py kiểm DB/commit/constraint/profile freshness. Không có shell/Git/test executor trong adapter đọc source.
 
 ## UI template tham chiếu
 

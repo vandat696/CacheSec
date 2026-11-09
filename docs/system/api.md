@@ -146,7 +146,15 @@ Ví dụ riêng phần data sau khi artifact có rule được phê duyệt và 
 
 ## Resource của control
 
-Registry identity/repository đã có [use case Python nội bộ](authorization.md#registry-control-nội-bộ-đã-triển-khai) và migration 002; chưa có endpoint Session/repository hoặc token control được cấp local. RepositoryAccessService chỉ trả registry identity/authority epoch sau kiểm quyền hiện tại, không đọc source hoặc trả blob. Bảng resource bên dưới vẫn mô tả API mục tiêu; không thay đổi OpenAPI/HTTP ở bước registry này.
+Registry identity/repository đã có [use case Python nội bộ](authorization.md#registry-control-nội-bộ-đã-triển-khai) và migration 002; snapshot có service nội bộ/migration 003 như mục sau. Chưa có endpoint Session/repository/snapshot hoặc token control được cấp local. RepositoryAccessService chỉ trả registry identity/authority epoch; RepositorySnapshotService chụp/đọc source có quyền. Bảng resource bên dưới vẫn mô tả API mục tiêu; chưa thay đổi OpenAPI/HTTP.
+
+### Contract snapshot nội bộ đã triển khai
+
+RepositorySnapshotService nhận token/scope, capture tạo snapshot ID và file IDs UUID; get cần snapshot ID, read_file cần snapshot ID + file ID. Không nhận path/root/digest tùy ý từ người gọi. Cả ba cần repository.read hiện tại và active profile digest trong DB khớp cấu hình backend; ID/digest không cấp quyền. Các lỗi domain/adapter chưa có HTTP mapping. Chi tiết path/limits, storage/transaction và trust boundary ở [snapshot architecture](architecture.md#snapshot-repository-đã-triển-khai).
+
+SourceProfile canonical có kind = repository-source-profile/schema_version = 1, tenant_id/repo_id, repository_identity, paths sắp tăng dần và max_file_bytes/max_files/max_total_bytes. Manifest canonical có kind = repository-snapshot/schema_version = 1, tenant_id/repo_id, repository_identity, source_profile_digest và files sắp theo path; mỗi item gồm path/digest/byte_size. Dùng encoder cachesec-json-v1; raw source bytes giữ nguyên. Không đưa root tuyệt đối, token, clock hoặc snapshot/file IDs ngẫu nhiên vào content digest. Wrapper DB giữ snapshot/file ID, actor/authority epoch và thời điểm tạo. Đây chưa phải artifact manifest hoặc ChangeBinding, không có runtime/test/deploy evidence.
+
+Get kiểm profile và manifest blob với metadata; read_file kiểm thêm hash/size payload của file. Snapshot được lưu vẫn giữ bytes cũ khi working tree sửa; không tự nhận diện source hiện tại còn khớp để cho phép patch. Chưa có latest pointer/list/pagination, capture idempotency, Git base revision hoặc HTTP routes.
 
 | Resource | Trường chính dự kiến | Ràng buộc |
 | --- | --- | --- |
