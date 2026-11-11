@@ -12,10 +12,11 @@ Hồ sơ thiết kế và trạng thái hệ thống. Nội dung dự kiến kh�
 | General | [Cài đặt](general/setup.md) | Môi trường, lệnh chạy và kiểm tra |
 | System | [Kiến trúc](system/architecture.md) | As-Is, ba ranh giới, storage báo giá/blob, registry và HTTP snapshot; thiết kế T03 v0.1 cho artifact |
 | System | [Tổ chức source](system/code-organization.md) | Đặt tên/module frontend/backend, UI kit/catalog, template source và bundle |
-| System | [Contract backend và cache](system/api.md) | T02 v0.2; API tạo/đọc/validate nền báo giá và health/readiness đã triển khai, HTTP snapshot/file đã có, phần workflow/cache còn là thiết kế |
+| System | [Contract backend và cache](system/api.md) | T02 v0.2; API tạo/đọc/validate nền báo giá và health/readiness đã triển khai, HTTP snapshot/file và revision/test kỹ thuật đã có, Agent/cache/gate còn là thiết kế |
+| System | [Workflow sửa/test T12](system/change-workflow.md) | Revision/diff/evidence, quyền, profile image, worker Docker và sandbox kỹ thuật đã triển khai |
 | System | [Cache](system/cache.md) | Answer/Context Cache, Hit/Miss/Rejected, verification, metadata và lifecycle |
 | System | [Phân quyền](system/authorization.md) | Quyền app, registry control và HTTP repository đã có; gate local v0.1/dispatch/recovery chưa triển khai, threat model |
-| Frontend | [Thiết kế](frontend/design.md) | Báo giá nối API thật, Workspace đọc snapshot thật, review/approval mô phỏng và các màn cũ |
+| Frontend | [Thiết kế](frontend/design.md) | Báo giá nối API thật, Workspace snapshot/revision/diff/test Docker thật, review/approval mô phỏng và các màn cũ |
 | Evaluation | [Thiết kế đánh giá](evaluation/design.md) | So sánh chính năm chiều, phép thử cache phụ, mẫu số/nguồn đo, fixture và threshold |
 
 ## Cách đọc và cập nhật

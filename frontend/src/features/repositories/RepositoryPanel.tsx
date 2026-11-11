@@ -5,12 +5,14 @@ import { Button } from "@/components/ui/Button";
 import { TextInput } from "@/components/ui/forms/TextInput";
 import { RepositoryConnection } from "./RepositoryConnection";
 import { useRepository } from "./useRepository";
+import { CodeChangesPanel } from "../code-changes/CodeChangesPanel";
+import { editablePath } from "../code-changes/changeWorkflowApi";
 
 export function RepositoryPanel() {
   const repo = useRepository();
   const [snapshotId, setSnapshotId] = useState("");
   return <div className="repository-panel" data-connected={!!repo.repository} aria-busy={repo.busy}>
-    <div className="dev-file-bar"><strong>Repository</strong><span>Chỉ đọc snapshot</span></div>
+    <div className="dev-file-bar"><strong>Repository</strong><span>Snapshot và bản sửa</span></div>
     {!repo.repository ? <RepositoryConnection busy={repo.busy} onConnect={repo.connect} /> : <>
       <div className="repository-actions">
         <span>{repo.repository.repository_identity}</span>
@@ -44,7 +46,10 @@ export function RepositoryPanel() {
           {repo.selected ? <>
             <div className="repository-file-heading">{repo.selected.path}</div>
             {repo.binary ? <p className="repository-notice">Tệp nhị phân hoặc không phải UTF-8; không hiển thị dạng văn bản.</p>
-              : <pre aria-label="Nội dung tệp snapshot"><code>{repo.content}</code></pre>}
+              : repo.changes && repo.repository && repo.selected.path === editablePath && repo.rawContent !== null
+                ? <CodeChangesPanel key={repo.selected.file_id} api={repo.changes} snapshotId={repo.snapshot.snapshot_id}
+                  original={repo.rawContent} repositoryIdentity={repo.repository.repository_identity} accessLost={repo.disconnect} />
+                : <pre aria-label="Nội dung tệp snapshot"><code>{repo.content}</code></pre>}
           </> : <p className="repository-notice">Chọn tệp để đọc.</p>}
         </div>
       </div>

@@ -377,7 +377,10 @@ def test_upgrade_from_registry_preserves_registry_and_migration_history(
                 "SELECT name,checksum FROM control.schema_migrations ORDER BY name"
             ).fetchall()
     with control_database.connection() as connection:
-        assert apply_migrations(connection) == ("003_repository_snapshots.sql",)
+        assert apply_migrations(connection) == (
+            "003_repository_snapshots.sql",
+            "004_change_workflow.sql",
+        )
         assert connection.execute("SELECT identity FROM control.repositories").fetchall() == [
             ("test-repository",)
         ]

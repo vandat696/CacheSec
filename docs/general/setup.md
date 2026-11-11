@@ -2,7 +2,7 @@
 
 ## Phạm vi hướng dẫn
 
-Các lệnh dưới đây chạy frontend, control health/readiness, **HTTP snapshot/Workspace và API/UI báo giá thật**, cùng Prisma Studio để xem database local; chưa chạy AI Coding Agent, Local Semantic Cache hoặc approval/deployment control. Bối cảnh nghiên cứu đã đổi sang AI-assisted software development ngày 2026-11-02; UI chatbot nội bộ vẫn được giữ để tái sử dụng. Xem [hiện trạng](project-status.md) và [lộ trình PoC](implementation-plan.md).
+Các lệnh dưới đây chạy frontend, control health/readiness, **HTTP snapshot/Workspace, bản sửa/test Docker T12 và API/UI báo giá thật**, cùng Prisma Studio để xem database local; chưa chạy AI Coding Agent, Local Semantic Cache hoặc approval/deployment control. Bối cảnh nghiên cứu đã đổi sang AI-assisted software development ngày 2026-11-02; UI chatbot nội bộ vẫn được giữ để tái sử dụng. Xem [hiện trạng](project-status.md) và [lộ trình PoC](implementation-plan.md).
 
 Chỉ xem UI mô phỏng cần frontend; không cần backend, Docker/database hoặc API key. Backend health có thể chạy độc lập database. Chỉ cần khởi động Docker khi muốn kiểm tra hạ tầng PostgreSQL/pgvector; hướng dẫn này không yêu cầu cài thêm dịch vụ/model SDK.
 
@@ -164,6 +164,25 @@ docker compose -f infra/control.compose.yaml stop control
 Nếu port 8000 đang có API khác, kiểm tra và dừng đúng process sở hữu trước; không để hai control worker cấu hình khác nhau tranh port. Compose không tự provision quyền hoặc chạy migration; `/health` chỉ liveness, `/ready` chỉ PostgreSQL. Khởi động lại container không cấp lại quyền bị revoke. Cách publish loopback theo [Docker](https://docs.docker.com/engine/network/port-publishing/).
 
 Đã kiểm chứng bytes/hash/size ba file HTTP khớp host, no-store/CORS/401; revoke đúng principal mới làm describe/get/file trả 403 không data rồi restore bằng epoch CAS trả 200. App/retry checksums và migration histories giữ nguyên. Browser dev smoke khác harness test tạm ở mục 2d: `$env:APP_URL='http://127.0.0.1:3000'` rồi `node scripts/browser-smoke.mjs --repository-dev` từ frontend; lệnh đọc riêng control-access.env, tạo một snapshot thật trong DB dev, không sửa source/quyền. Nó kiểm đúng ba file và ba bố cục 390/820/1440. Không dùng kết quả này làm fixture, acceptance hoặc run nghiên cứu.
+
+## 2f. Bản sửa và test Docker T12
+
+Mốc local đã provisioning: migration 004, profile image/inventory cố định và principal dev có đúng `repository.read`, `proposal.create`, `test.run`. Profile nguồn ba file giữ nguyên; chưa reviewer/deploy. Không chạy lại CLI read-only cho cùng principal vì nó thay tập grants. Cách tạo profile/đăng ký ở [workflow T12](../system/change-workflow.md); API startup không thực hiện các thao tác này.
+
+Từ root, dùng thêm override khi `CONTROL_TEST_PROFILE_CONFIG` đã cấu hình:
+
+```powershell
+$env:CACHESEC_ROOT = (Get-Location).Path
+docker compose -f infra/control.compose.yaml -f infra/test-workflow.compose.yaml up -d --build --wait control
+$env:PYTHONPATH = "$env:CACHESEC_ROOT/backend"
+.\backend\.venv\Scripts\python.exe -m app.testing.test_worker backend/.local/test-worker.json
+```
+
+Worker chạy foreground trong terminal riêng, giữ file lock; không chạy thêm worker cùng root. Python host không import psycopg/OpenSSL, không cần tắt App Control. Cấu hình private `test-worker.json` gồm `api_url` loopback, UUID `worker_id`, `credential_file` và `workspace_root` tuyệt đối. Credential file chỉ chứa secret worker; secret tương ứng nằm ở `CONTROL_TEST_WORKER_TOKEN` trong runtime env control. Không dùng token human cho worker, không đưa secret vào argv, browser hoặc image. `.local` cần ACL private như môi trường dev đã kiểm tra.
+
+Mở `/workspace`, kết nối bằng token dev trong `control-access.env`, tạo snapshot và chọn `quotation_validation.py` → **Sửa bản riêng → Lưu revision → Chạy test Docker**. Lưu Proposal ID trong phần tham chiếu để mở lại sau khi reconnect/reload. Token chỉ trong bộ nhớ, bản sửa/evidence lưu backend. Kết quả cũ hiện nhãn Bản cũ khi revision tăng. Đây là technical smoke, chưa nghiên cứu hoặc triển khai.
+
+Trong frontend: `$env:APP_URL='http://127.0.0.1:3000'; node scripts/browser-smoke.mjs --code-changes` chạy browser dev thật, tạo snapshot/proposal/job kỹ thuật. Worker và Docker phải đang chạy. Không xóa staging/test credential tự động; private root giữ lại để đối soát, chưa có GC.
 
 ## 3. Frontend (terminal khác)
 

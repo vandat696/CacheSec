@@ -2,6 +2,8 @@
 
 ## Trạng thái và ranh giới
 
+Mốc hoàn tất 2026-11-12 đã thêm kiểm quyền hiện tại cho lưu proposal/chạy test, kiểm lại credential/grants/source/artifact tại dispatch và private worker report. Dev chỉ có read/propose/test; [workflow T12](change-workflow.md) sở hữu chi tiết sandbox/recovery. Permit test không phải permit deployment; chưa có reviewer hoặc approval gate thực thi.
+
 Phần quyền API báo giá, registry control và snapshot có kiểm quyền đã có implementation nội bộ; cache verification, reviewer workflow và approval/deployment gate bên dưới vẫn là **thiết kế mục tiêu**. UI RBAC/ABAC không thực thi quyền. Safety property duy nhất từ giảng viên là: **không triển khai thay đổi quy tắc validation nếu chưa có người có thẩm quyền phê duyệt tường minh chính xác thay đổi đó**.
 
 | Cơ chế | Quyết định | Không được suy ra |

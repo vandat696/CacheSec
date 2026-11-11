@@ -12,9 +12,11 @@ import { checkUiTemplates } from "./ui-template-browser-check.mjs";
 import { checkQuotations } from "./quotation-browser-check.mjs";
 import { checkRepository } from "./repository-browser-check.mjs";
 import { checkRepositoryDev } from "./repository-dev-browser-check.mjs";
+import { checkCodeChanges } from "./code-changes-browser-check.mjs";
 
 const frontend = fileURLToPath(new URL("..", import.meta.url));
-const repositoryDev = process.argv.includes("--repository-dev");
+const codeChanges = process.argv.includes("--code-changes");
+const repositoryDev = process.argv.includes("--repository-dev") || codeChanges;
 const repositoryOnly = process.argv.includes("--repository-only") || repositoryDev;
 if (repositoryDev) {
   // This private file contains only the dedicated read credential, never the backend DSN.
@@ -255,7 +257,8 @@ try {
     console.log("Repository browser checks passed (real control HTTP/PostgreSQL).");
   }
   if (repositoryDev) {
-    await checkRepositoryDev({ cdp, navigate, evaluate, waitFor, click, fill, screenshot });
+    if (codeChanges) await checkCodeChanges({ cdp, navigate, evaluate, waitFor, click, fill, screenshot });
+    else await checkRepositoryDev({ cdp, navigate, evaluate, waitFor, click, fill, screenshot });
   }
   if (!repositoryOnly && !process.argv.includes("--developer-only") && !process.argv.includes("--quotations-only")) {
   await navigate("/ui");
@@ -1140,7 +1143,8 @@ try {
   }
   assert.deepEqual(errors, [], "Lỗi runtime/React trên trình duyệt");
   console.log(
-    repositoryDev
+    codeChanges ? "Đạt: editor/diff/revision thật, Docker pass/fail/timeout, không reuse verdict cũ và ba bố cục."
+      : repositoryDev
       ? "Đạt: Workspace/dev API/PostgreSQL thật, đúng ba file host, tạo/mở snapshot, token trong bộ nhớ và ba bố cục."
       : process.argv.includes("--repository-only")
       ? "Đạt: Repository qua HTTP/PostgreSQL thật, token/quyền, snapshot/file, binary, response đến trễ, xóa dữ liệu khi bị từ chối và ba bố cục."

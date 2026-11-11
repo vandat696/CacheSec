@@ -1,5 +1,11 @@
 # Thiết kế frontend
 
+## Workspace — bản sửa và test thật ngày 2026-11-12
+
+Chế độ Repository dùng snapshot có quyền, editor riêng cho file validation, lưu revision/diff và test Docker thật. Status/evidence gắn revision/artifact; sửa tiếp giữ lịch sử với nhãn Bản cũ. Proposal ID giúp mở lại bản đã lưu, token chỉ giữ trong bộ nhớ và nội dung bị xóa khỏi view khi mất quyền/disconnect. Kết quả test ở cạnh vùng thao tác; hash/tham chiếu trong details. Xem [contract và giới hạn T12](../system/change-workflow.md).
+
+Agent, approval/deployment chưa nối backend; workflow mẫu là chế độ riêng. Test ở toolbar mẫu vẫn khóa trong Repository; nút Chạy test Docker của editor dùng API thật. Không có thao tác triển khai từ mốc này.
+
 ## Báo giá — nối API thật ngày 2026-11-09
 
 Route /quotations mở từ sidebar hoặc liên kết Báo giá trên toolbar Workspace; IDE giữ hai vùng code/chat. Trang dùng UI kit hiện có: form tạo bên trái, danh sách và chi tiết bên phải, mobile xếp dọc. Không có dữ liệu/phản hồi thành công mẫu. Tạo, làm mới, tải thêm và chọn chi tiết gọi API báo giá độc lập, lưu/đọc PostgreSQL; mã do server cấp.

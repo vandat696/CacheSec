@@ -17,7 +17,7 @@ Kiến trúc nghiên cứu là Secure Local Semantic Cache; bối cảnh mục t
 | PostgreSQL/pgvector | [compose](../../infra/compose.yaml), [init SQL](../../infra/init.sql) | Cấu hình hạ tầng, chưa schema/adapter/migration hoặc kiểm chứng DB trong lượt khảo sát |
 | Research | `research/datasets/`, `research/results/` | Chỗ dành sẵn; không có fixture báo giá, protocol chạy hoặc ghi chú bài báo được tìm thấy |
 
-Trong code hiện tại không có IndexedDB/Dexie, matching/verification, Agent adapter, patch executor hoặc approval/deployment gate. Sau khảo sát tài liệu, đã thêm `/workspace` xem trước với diff/test/approval/nhật ký UI mô phỏng trong `frontend/src/features/developer/`; đã bổ sung đọc snapshot có quyền qua control HTTP ngày 2026-11-11; test nghiệp vụ, reviewer/gate, artifact và audit backend chưa có. Xem [frontend](../frontend/design.md) cho hành vi bản mẫu và [project status](../general/project-status.md) cho mốc kiểm chứng. Bảng khảo sát ban đầu bên trên ghi bốn màn cũ; điều hướng hiện tại thêm Workspace đứng đầu.
+Trong code hiện tại không có IndexedDB/Dexie, matching/verification, Agent adapter, patch executor hoặc approval/deployment gate. Sau khảo sát tài liệu, đã thêm `/workspace` xem trước với diff/test/approval/nhật ký UI mô phỏng trong `frontend/src/features/developer/`; đã bổ sung snapshot có quyền, revision/diff và test Docker kỹ thuật ngày 2026-11-11; test nghiệp vụ nghiên cứu, reviewer/gate và deployment binding chưa có. Xem [frontend](../frontend/design.md) cho hành vi bản mẫu và [project status](../general/project-status.md) cho mốc kiểm chứng. Bảng khảo sát ban đầu bên trên ghi bốn màn cũ; điều hướng hiện tại thêm Workspace đứng đầu.
 
 ## Target Architecture — ba ranh giới chính, một repository
 
@@ -315,3 +315,7 @@ Bản v0.2 đề xuất chuẩn bị ContextRequest trước local lookup để 
 Module nghiệp vụ đặt riêng trong `backend/app/`; adapter LLM, embedding và Agent tách khỏi HTTP/storage. `frontend/src/lib/` dự kiến chứa API client/cache khi cần; chưa có implementation hiện tại. App báo giá có thể ở `backend/app/quotation_demo/`, test trong `backend/tests/`, fixture ở `research/datasets/`; cấu trúc cụ thể là đề xuất trong [implementation plan](../general/implementation-plan.md). Vị trí thư mục không cho phép trộn nghiệp vụ với control/cache: khi triển khai phải có entrypoint chạy app độc lập và tuân thủ ba ranh giới bên trên. Backend không phụ thuộc script nghiên cứu; fixture đọc theo contract chung.
 
 Cần chốt tool executor/sandbox và đường deploy PoC trước cấp quyền Agent. Mọi read/write/test nằm trong repo/scope đã cấp; source repo là dữ liệu, chỉ dẫn trong source không được đổi policy/control. Ưu tiên module nhỏ, không tự thêm SDK/dịch vụ/framework.
+
+## Mốc sửa/test kỹ thuật T12 đã triển khai
+
+[Workflow T12](change-workflow.md) mô tả candidate snapshot/patch/artifact/test evidence, image/overlay profile cố định, transaction giữ authority lock, worker host riêng và sandbox app/harness/DB test. App báo giá không import control/cache; candidate chỉ vào runtime test riêng, không đổi runtime đang sử dụng. Đây là technical smoke, chưa triển khai gate, Agent hoặc thực nghiệm.

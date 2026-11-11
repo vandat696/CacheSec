@@ -111,12 +111,29 @@ Không tự chọn thay người dùng/giảng viên các giá trị ảnh hư�
 
 ### T12 — Quản lý bản sửa và chạy test tách biệt
 
-- **Tiến độ lát cắt:** đã có read_bundle xác minh mọi bytes snapshot dưới một authority transaction và filesystem prepare/verify bản source riêng. Chưa tạo proposal/patch, artifact-ready hoặc chạy code. Cần source/dependency profile đầy đủ, runtime image/lock/config/launcher profile và harness/fixture được đăng ký tin cậy trước bước thực thi; profile đọc dev ba file không đủ điều kiện này.
+- **Mốc tích hợp local đã hoàn tất:** Workspace sửa bản riêng, revision/diff, profile image/inventory, worker Docker/DB test riêng và evidence thật. Chỉ file validation được sửa, không ghi working tree. [Workflow T12](../system/change-workflow.md) có contract và giới hạn; T12 toàn bộ vẫn phụ thuộc oracle/fixture/trusted R nghiên cứu chưa khóa.
 
 - [ ] Hoàn thành T12. **Phụ thuộc:** T02–T08 và cơ chế executor đã chốt tại T04.
 - **Làm:** tạo bản làm việc riêng từ đúng source snapshot; áp patch trong scope, sinh diff thật và proposal revision; chạy allowlist test/build có timeout/giới hạn trong môi trường tách khỏi control. Tạo artifact bất biến và test evidence gắn artifact/fixture/config hashes.
 - **Đầu ra:** executor và artifact/evidence store dùng chung cho Developer-guided và AI-assisted, API trạng thái/lỗi có trace.
 - **Nghiệm thu:** path ngoài app, patch không khớp base, lệnh không được phép và timeout bị chặn/báo đúng. Sửa code không đổi runtime đang dùng; code hiển thị lấy từ snapshot thật. Chỉ kiểm tra hạ tầng bằng ca kiểm soát phù hợp, không bổ sung sẵn rule mới vào baseline để thay phần việc của Agent.
+
+#### Mốc tích hợp T12 — gói đã được người dùng xác nhận
+
+Mục tiêu là hoàn thành một luồng dùng được trên Workspace: chọn snapshot → sửa bản riêng → lưu revision/diff → chạy kiểm thử kỹ thuật thật → xem kết quả gắn đúng revision. Không kết thúc mốc chỉ bằng việc thêm model/helper. Người dùng đã xác nhận trọn gói ngày 2026-11-11; mốc kỹ thuật local đã được triển khai và kiểm chứng, xem project-status. Các điều kiện nghiên cứu vẫn còn mở.
+
+| Phạm vi đã xác nhận | Cách triển khai |
+| --- | --- |
+| Source/runtime | Giữ profile đọc ba file và repository identity hiện có. Image nền riêng cho app báo giá dùng dependency lock đã có, ghim image ID/platform và source inventory; không chạy candidate bằng image control. Rà import tĩnh từ quotation_api hiện cho 23 file Python cùng requirements-dev.lock.txt; inventory image và import động vẫn phải đối chiếu trước đăng ký |
+| Scope sửa | Chỉ modify backend/app/quotation_demo/business/quotation_validation.py trong candidate riêng. Hai file model/service giữ nguyên từ snapshot; các source/dependency nền khác lấy từ image tin cậy. Không add/delete/rename hoặc ghi working tree/control/cache/harness/policy. Artifact tham chiếu cả image nền và overlay bytes/config; không coi ba file là toàn bộ dependencies |
+| Quyền dev | Cần repository.read, proposal.create và test.run; cấp tường minh bằng administration/epoch CAS. Không suy từ token read-only hoặc cấp change.review/deployment.activate; không tự sync grants lúc startup |
+| Test worker | Worker host tin cậy giữ quyền Docker và lấy job qua control; không mount Docker socket vào control/app test. API nhận resource/config refs, không raw command/image/path. Kiểm quyền hiện tại và binding trước dispatch; worker credential riêng không đưa browser hoặc candidate |
+| Cô lập | Mỗi test dùng network nội bộ, app/container và DB test riêng. App chỉ nhận role đủ schema báo giá của DB test, không DB owner/control/reviewer credential. Source read-only, non-root, drop ALL, no-new-privileges, rootfs read-only và tmpfs. Không publish candidate thành app dev hoặc route Internet/host; kiểm chứng đường truy cập thật trước chạy candidate |
+| Giới hạn | Gói local v0.1: 1 CPU, 512 MiB RAM, 128 process, tmpfs 64 MiB, output 1 MiB/stream, test deadline 120 giây. Lỗi/timeout/mất ACK phải có trạng thái thật, không tự kết luận chưa chạy hoặc retry bằng artifact khác |
+| Suite kỹ thuật | Harness tin cậy riêng kiểm HTTP app, round-trip/precision/missing-null, identity/capability app và retry; kết quả gắn job/artifact/revision. Không lấy stdout do candidate ghi làm verdict. Đây là smoke/regression kỹ thuật, chưa đánh giá correctness rule ngày hoặc acceptance nghiên cứu |
+| UI/evidence | Editor chỉ file được phép, diff thật, revision bất biến và test result gắn đúng artifact/revision. Sửa tiếp giữ kết quả trước làm lịch sử, không coi revision mới đã test. Approval/triển khai vẫn khóa; không kích hoạt rule mới trước gate |
+
+Kết thúc mốc khi demo được cả lưu/sửa/test thành công, sai quyền/path/base stale bị chặn, candidate lỗi/timeout trả kết quả thật và revision mới không nhận verdict cũ. Phải chứng minh không truy cập DB dev/control hoặc chạy source ngoài sandbox; kiểm API/DB/UI tích hợp và hướng dẫn chạy trong cùng mốc. Oracle/one-fixture contract, trusted R, acceptance và protocol nghiên cứu vẫn chờ xác nhận; không tự tạo nhãn hoặc chạy so sánh để hoàn thành mốc kỹ thuật.
 
 ### T13 — Approval gate và kích hoạt đúng artifact
 
@@ -135,7 +152,7 @@ Không tự chọn thay người dùng/giảng viên các giá trị ảnh hư�
 ### T15 — Nối giao diện IDE và màn báo giá với backend
 
 - [ ] Hoàn thành T15. **Phụ thuộc:** API ở T07 và workflow T14.
-- **Trạng thái:** đã nối phần app báo giá: form/danh sách/chi tiết qua API, token fixture trong bộ nhớ, lỗi/quyền/retry thật, liên kết từ Workspace. IDE đã đọc snapshot/file thật có quyền; Agent/review/test/deploy còn mô phỏng; T15 chưa hoàn thành toàn bộ.
+- **Trạng thái:** đã nối phần app báo giá: form/danh sách/chi tiết qua API, token fixture trong bộ nhớ, lỗi/quyền/retry thật, liên kết từ Workspace. IDE đọc snapshot/file, sửa revision/diff và chạy test Docker thật có quyền; Agent/review/deploy còn mô phỏng; T15 chưa hoàn thành toàn bộ.
 - **Làm:** tái sử dụng code/chat IDE, thay fixture bằng source/diff/message/status thật; nối hộp thoại test/approval. Thêm màn báo giá tối giản dùng API app để nhập/xem/validation và quan sát trước/sau activation; route cụ thể theo contract đã chốt, không dựng ERP hoặc IDE đầy đủ.
 - **Đầu ra:** demo sử dụng được từ trình duyệt: prompt → diff/test → reviewer duyệt → kích hoạt → báo giá phản ánh rule mới.
 - **Nghiệm thu:** UI không tự bịa hit/test/approval; loading/error/reconnect và stale revision rõ; thao tác chưa được phép không thành công qua API. Code/chat vẫn là hai vùng chính, giữ UI ít chữ, accessibility/responsive và các màn cũ.

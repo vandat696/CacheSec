@@ -1,0 +1,21 @@
+FROM python:3.12-slim@sha256:5e2bdb1b0d542d5039cffb8181c65930093949194a65c365dfb1b0fe13a4fa5b AS dependencies
+COPY requirements-dev.lock.txt /tmp/requirements-dev.lock.txt
+RUN pip install --disable-pip-version-check --no-cache-dir -r /tmp/requirements-dev.lock.txt
+
+FROM dependencies AS runtime
+WORKDIR /opt/quotation
+COPY app/__init__.py ./app/__init__.py
+COPY app/quotation_demo ./app/quotation_demo
+COPY app/shared ./app/shared
+COPY requirements-dev.lock.txt ./requirements-dev.lock.txt
+ENV PYTHONDONTWRITEBYTECODE=1 PYTHONUNBUFFERED=1
+USER 10001:10001
+CMD ["python", "-m", "uvicorn", "app.quotation_demo.quotation_api:create_app", "--factory", "--host", "0.0.0.0", "--port", "8001", "--no-access-log"]
+
+FROM dependencies AS harness
+WORKDIR /harness
+COPY app/testing/http_smoke_harness.py ./probe.py
+COPY app/quotation_demo/database/migrations ./migrations
+ENV PYTHONDONTWRITEBYTECODE=1 PYTHONUNBUFFERED=1
+USER 10001:10001
+CMD ["python", "/harness/probe.py"]

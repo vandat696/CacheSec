@@ -34,6 +34,7 @@ def test_control_migration_replay_and_quotation_history_are_independent(control_
             "001_artifact_blobs.sql",
             "002_control_authority.sql",
             "003_repository_snapshots.sql",
+            "004_change_workflow.sql",
         )
     with control_database.connection() as connection:
         assert apply_migrations(connection) == ()
@@ -72,6 +73,7 @@ def test_failed_control_batch_rolls_back_schema_and_history(control_database, mo
             "001_artifact_blobs.sql",
             "002_control_authority.sql",
             "003_repository_snapshots.sql",
+            "004_change_workflow.sql",
         )
 
 

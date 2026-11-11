@@ -206,3 +206,59 @@ class RepositorySnapshotService:
                 ),
             )
         return bundle
+
+    def read_in_transaction(
+        self, session: SnapshotSession, scope: RepositoryScope, snapshot_id: UUID, identity: str
+    ) -> SnapshotBundle:
+        """Trusted composition only: caller must authorize on session.authority first."""
+        snapshot = self._load(session, scope, snapshot_id, identity)
+        return SnapshotBundle(
+            snapshot,
+            self._read_blob(session, snapshot.profile_blob),
+            tuple(
+                CapturedSourceFile(item.path, self._read_blob(session, item.blob))
+                for item in snapshot.files
+            ),
+        )
+
+    def store_in_transaction(
+        self,
+        session: SnapshotSession,
+        base: SnapshotBundle,
+        captured: tuple[CapturedSourceFile, ...],
+        actor: UUID,
+        epoch: int,
+    ) -> RepositorySnapshot:
+        """Publish candidate bytes in caller's authorized transaction; never execute them."""
+        profile = decode_snapshot_profile(base.profile_content, base.snapshot)
+        refs = tuple(
+            SnapshotFile(
+                uuid4(), item.path, BlobReference(content_digest(item.content), len(item.content))
+            )
+            for item in captured
+        )
+        manifest = encode_metadata(
+            snapshot_manifest(profile.scope, profile.repository_identity, profile.digest, refs)
+        )
+        snapshot = RepositorySnapshot(
+            profile.scope,
+            uuid4(),
+            profile.repository_identity,
+            actor,
+            epoch,
+            base.snapshot.profile_blob,
+            BlobReference(content_digest(manifest), len(manifest)),
+            refs,
+        )
+        SnapshotBundle(snapshot, base.profile_content, captured)
+        for item in captured:
+            self._publish(session, item.content)
+        self._publish(session, manifest)
+        session.snapshots.add(snapshot)
+        return snapshot
+
+    def matches_working_tree(self, bundle: SnapshotBundle) -> bool:
+        """Observed two-pass freshness only; does not claim atomic host-race protection."""
+        profile = decode_snapshot_profile(bundle.profile_content, bundle.snapshot)
+        captured = self._source.capture(profile)
+        return captured == bundle.files

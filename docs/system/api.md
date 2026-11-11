@@ -2,7 +2,7 @@
 
 ## Trạng thái và phạm vi
 
-**Đặc tả T02 v0.2 ngày 2026-11-07; đã triển khai tạo/danh sách/chi tiết và validation nền báo giá, GET /health và GET /ready.** Validation nền chưa có rule ngày; HTTP snapshot/file đã triển khai; workflow/cache và validation gắn runtime artifact vẫn là thiết kế. API báo giá có entrypoint và quyền fixture riêng, được mô tả bên dưới; [domain/storage](architecture.md#lưu-trữ-báo-giá-đã-triển-khai) có migration riêng. Contract này cụ thể hóa [kiến trúc](architecture.md#bản-nháp-t02-module-và-contract), không phải SDK đã phát hành hoặc workflow Agent đang chạy. Các ví dụ JSON đều là dữ liệu giả minh họa, không phải fixture hoặc kết quả đo.
+**Đặc tả T02 v0.2 ngày 2026-11-07; đã triển khai tạo/danh sách/chi tiết và validation nền báo giá, GET /health và GET /ready.** Validation nền chưa có rule ngày; HTTP snapshot/file đã triển khai; revision/test kỹ thuật T12 đã có, các workflow Agent/cache và validation gắn runtime artifact vẫn là thiết kế. API báo giá có entrypoint và quyền fixture riêng, được mô tả bên dưới; [domain/storage](architecture.md#lưu-trữ-báo-giá-đã-triển-khai) có migration riêng. Contract này cụ thể hóa [kiến trúc](architecture.md#bản-nháp-t02-module-và-contract), không phải SDK đã phát hành hoặc workflow Agent đang chạy. Các ví dụ JSON đều là dữ liệu giả minh họa, không phải fixture hoặc kết quả đo.
 
 Đầu vào đã được người dùng chọn nằm tại [hồ sơ T01](../general/overview.md#hồ-sơ-đầu-vào-t01--đang-thực-hiện): sáu trường báo giá; ngày YYYY-MM-DD có thật và d >= 2026-11-07 trong fixture; Context Cache/browser trước; identity fixture backend quản lý; Developer được duyệt nếu có quyền Reviewer hiện tại. Acceptance vẫn chờ cô quy định, không mặc định 100%.
 
@@ -11,6 +11,8 @@ App báo giá và control có entrypoint/base URL riêng. Các route mới dư�
 Danh mục HTTP mô tả host web PoC; tích hợp lõi cache vào Agent/IDE khác không bắt buộc dựng ứng dụng báo giá hoặc toàn bộ WorkflowRun API. Host khác có thể dùng contract context/lookup/verify/admit/invalidate với adapter nguồn/quyền tin cậy tương ứng. Không đưa Quotation hoặc ReviewDecision vào kiểu dữ liệu lõi cache.
 
 ## Endpoint nền đã triển khai
+
+Luồng revision/test kỹ thuật mới dùng `/api/v1/changes` và private worker channel; route, payload, permission, idempotency và trạng thái thực tế được quản lý tại [workflow T12](change-workflow.md#http-đã-triển-khai). Các API Agent/cache/binding-ready/approval/deployment mục tiêu bên dưới chưa được triển khai bởi mốc này.
 
 Hai endpoint vận hành dùng path trực tiếp, không thuộc /api/v1 và chưa dùng envelope của workflow:
 

@@ -127,6 +127,12 @@ RepositorySnapshotService nhận source, bytes store và SnapshotTransactions. S
 
 read_bundle tái sử dụng transaction ports hiện có và giữ authority lock cho mọi payload đến commit. snapshot_bundles sở hữu decode profile/canonical validation dùng chung với get/read_file; filesystem_snapshot_workspace chỉ vật hóa/verify bytes trong root tường minh, không import HTTP/Psycopg/app báo giá. Test filesystem Windows không cần driver DB; test integration kiểm COMMIT failure thật, lock và revoke. Không thêm migration, factory tự provision hoặc lớp executor rỗng.
 
+## Workflow sửa và test kỹ thuật
+
+`backend/app/change_workflow/` sở hữu proposal revision, job/evidence, transaction ports và adapters PostgreSQL, strict HTTP inputs/routes/middleware. `app/testing/` sở hữu profile image inventory, trusted HTTP harness và worker Docker host; không import driver PostgreSQL. Worker dùng snapshot materializer của repositories, không chuyển nghiệp vụ báo giá vào control hoặc cache. Dockerfile.quotation-test tạo runtime app và harness riêng, không chạy candidate trong image control.
+
+`frontend/src/features/code-changes/` sở hữu API client/hook, editor/diff và TestRunPanel; RepositoryPanel lắp ghép, useRepository chỉ cấp client theo phiên hiện tại. Tests thuộc `backend/tests/control/test_change_workflow_integration.py`, `backend/tests/testing/` và `frontend/scripts/code-changes*`; script Docker thủ công tách khỏi pytest/research. [Workflow T12](change-workflow.md) sở hữu behavior và cấu hình.
+
 ## UI template tham chiếu
 
 React dùng components/ui; JS DOM độc lập dùng design-reference/templates/src. Hai implementation theo host, catalog/demo tách khỏi implementation.

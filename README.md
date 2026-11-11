@@ -22,18 +22,18 @@ Bối cảnh đã cập nhật ngày **2026-11-02**. Frontend có thêm **Develo
 
 | Thành phần | Hiện có | Giới hạn |
 | --- | --- | --- |
-| Workspace `/workspace` | Đọc snapshot repository qua control API có quyền; chế độ riêng cho diff/test/phê duyệt mẫu | Cần cấu hình nguồn và token control; chưa sửa source, Agent hoặc gate |
+| Workspace `/workspace` | Snapshot thật, editor bản riêng, revision/diff và test Docker có evidence | Chỉ sửa file validation được phép; chưa Agent hoặc gate; workflow mẫu vẫn là chế độ riêng |
 | Thiết lập `/setup` | Chín nhóm mode/dataset/embedding/threshold/eviction/quyền/training/logging/export; snapshot trong phiên, validation và xuất JSON cấu hình | Bản nháp; results null, chưa áp dụng vào Chat hoặc chạy benchmark/training/logging thật |
 | Chat `/` | Lịch sử, bản nháp, Không cache/Cache/Cả hai với prompt chung; modal thông số từng lượt | Phản hồi mô phỏng, chưa AI/RAG hoặc cache thật |
 | Số liệu `/metrics` | Ba tab, biểu đồ/bảng/chi tiết; mặc định 24 truy vấn giả, nguồn phiên riêng tại `/metrics?source=session` | Fixture xem UI, không phải kết quả thực nghiệm |
 | Tài liệu `/documents` | Chọn/thả, phân loại, tìm/lọc tệp trong phiên | Chờ tải lên; chưa đọc/ingest/upload hoặc authorized retrieval |
-| Backend control | Health/readiness, PostgreSQL/blob/registry và HTTP snapshot/file có Bearer; CLI cấu hình chỉ đọc với epoch CAS | Dev chạy qua Docker, đã có profile/token chỉ đọc; readiness chỉ kiểm PostgreSQL, chưa Agent/gate |
+| Backend control | Health/readiness, blob/registry/snapshot và API revision/test với quyền hiện tại; worker Docker riêng | Dev có read/propose/test; chưa review/deploy; readiness chỉ kiểm PostgreSQL |
 | Báo giá `/quotations` | Form nhập, danh sách/chi tiết và validation nền nối API/PostgreSQL thật; Bearer fixture reader/operator, retry idempotent | Một dataset dùng chung; validator nền chưa có quy tắc nghiệp vụ, chưa rule ngày hoặc artifact/gate |
 | Hạ tầng | PostgreSQL 17.11/pgvector 0.8.7 qua Compose; đã áp dụng migration báo giá và kiểm chứng DB thật | Control có index blob thô; chưa schema approval/deployment hoặc artifact-ready |
 
-App báo giá chạy HTTP độc lập với quyền fixture được backend kiểm tra; giao diện dùng API này tại /quotations, mở từ sidebar hoặc toolbar Workspace. Control HTTP lấy scope từ principal backend và kiểm quyền hiện tại theo tenant/repo; đã cấp principal/profile dev chỉ đọc ba file business, API chạy bằng Docker local vì DLL psycopg Windows bị chặn. [Setup snapshot và Docker dev](docs/general/setup.md#2e-control-dev-trong-docker-khi-python-windows-bị-chặn) có hướng dẫn. Chưa có fixture báo giá đóng băng, Local Semantic Cache, embedding/matching/verification, model adapter, backend approval/deployment control, audit log hoặc runner thực nghiệm. Change Review/Phê duyệt/Nhật ký trong Workspace mới là bản mẫu; nút Triển khai luôn khóa. Dữ liệu demo không phải số đo hoặc bằng chứng quyền. Chat/tệp/cấu hình nháp mất khi tải lại; chọn RBAC/ABAC trong UI không cấp quyền.
+App báo giá chạy HTTP độc lập với quyền fixture được backend kiểm tra; giao diện dùng API này tại /quotations, mở từ sidebar hoặc toolbar Workspace. Control HTTP lấy scope từ principal backend và kiểm quyền hiện tại theo tenant/repo; profile dev giữ ba file business; principal dev có read/propose/test, API chạy bằng Docker local vì DLL psycopg Windows bị chặn. [Setup snapshot và Docker dev](docs/general/setup.md#2e-control-dev-trong-docker-khi-python-windows-bị-chặn) có hướng dẫn. Chưa có fixture báo giá đóng băng, Local Semantic Cache, embedding/matching/verification, model adapter, backend approval/deployment control, audit nghiên cứu đầy đủ hoặc runner thực nghiệm. Change Review/Phê duyệt/Nhật ký trong Workspace mới là bản mẫu; nút Triển khai luôn khóa. Dữ liệu demo không phải số đo hoặc bằng chứng quyền. Chat/tệp/cấu hình nháp mất khi tải lại; chọn RBAC/ABAC trong UI không cấp quyền.
 
-Backend còn có [bundle snapshot và source staging nội bộ](docs/system/architecture.md#bundle-snapshot-và-staging-đã-triển-khai): xác minh mọi bytes và chuẩn bị bản source riêng cho bước artifact/harness; chưa có artifact-ready hoặc thực thi code.
+Đã có [luồng sửa/test kỹ thuật T12](docs/system/change-workflow.md) từ Workspace tới Docker/DB test cô lập. Test pass không cấp quyền triển khai hoặc chứng minh correctness của rule ngày; chưa có binding ready cho gate.
 
 ## Công nghệ và tổ chức
 

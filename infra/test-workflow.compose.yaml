@@ -1,0 +1,10 @@
+# Optional T12 configuration; the read-only control recipe remains independently usable.
+services:
+  control:
+    volumes:
+      - type: bind
+        source: ${CACHESEC_ROOT:?Set CACHESEC_ROOT}/backend/.local/test-profile.json
+        target: /run/control/test-profile.json
+        read_only: true
+        bind:
+          create_host_path: false

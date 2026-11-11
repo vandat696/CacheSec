@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
+import { ChangeWorkflowClient } from "../code-changes/changeWorkflowApi";
 import {
   RepositoryApiError, RepositoryHttpClient, sourceText,
   type Repository, type RepositorySnapshot, type SnapshotFile,
@@ -14,6 +15,8 @@ export function useRepository() {
   const [selected, setSelected] = useState<SnapshotFile | null>(null);
   const [content, setContent] = useState<string | null>(null);
   const [binary, setBinary] = useState(false);
+  const [rawContent, setRawContent] = useState<string | null>(null);
+  const [changes, setChanges] = useState<ChangeWorkflowClient | null>(null);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState("");
   const [requestId, setRequestId] = useState<string>();
@@ -21,10 +24,11 @@ export function useRepository() {
   const current = useRef<AbortController | null>(null);
   useEffect(() => () => { current.current?.abort(); client.current = null; }, []);
 
-  function clearFile() { setSelected(null); setContent(null); setBinary(false); }
+  function clearFile() { setSelected(null); setContent(null); setRawContent(null); setBinary(false); }
   function clearSource() { setSnapshot(null); clearFile(); }
   function disconnect() {
     current.current?.abort(); current.current = null; client.current = null;
+    setChanges(null);
     setRepository(null); clearSource(); setError(""); setRequestId(undefined); setBusy(false);
   }
   function begin() {
@@ -47,6 +51,7 @@ export function useRepository() {
       clearSource();
       if (failure instanceof RepositoryApiError && [401, 403, 404].includes(failure.status)) {
         client.current = null; setRepository(null);
+        setChanges(null);
       }
       setError(failure instanceof RepositoryApiError ? failure.message : "Không kết nối được API control.");
       setRequestId(failure instanceof RepositoryApiError ? failure.requestId : undefined);
@@ -54,10 +59,11 @@ export function useRepository() {
   }
   async function connect(token: string) {
     client.current = null; setRepository(null); clearSource();
+    setChanges(null);
     const api = new RepositoryHttpClient(apiUrl, token);
     await run(async (signal) => {
       const data = await api.describe(signal);
-      return () => { client.current = api; setRepository(data); };
+      return () => { client.current = api; setRepository(data); setChanges(new ChangeWorkflowClient(apiUrl, token)); };
     });
   }
   async function load(snapshotId?: string) {
@@ -77,9 +83,10 @@ export function useRepository() {
     await run(async (signal) => {
       const bytes = await api.readFile(saved.snapshot_id, file, signal);
       const text = sourceText(bytes);
-      return () => { setSelected(file); setContent(text); setBinary(text === null); };
+      return () => { setSelected(file); setContent(text); setBinary(text === null);
+        setRawContent(text === null ? null : new TextDecoder("utf-8", { fatal: true, ignoreBOM: true }).decode(bytes)); };
     });
   }
-  return { repository, snapshot, selected, content, binary, busy, error, requestId,
+  return { repository, snapshot, selected, content, rawContent, changes, binary, busy, error, requestId,
     connect, disconnect, load, select };
 }

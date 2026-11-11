@@ -6,6 +6,7 @@ app/**/__pycache__/
 app/**/*.pyc
 !requirements-dev.lock.txt
 !Dockerfile.control
+!Dockerfile.quotation-test
 **/.env
 **/.env.*
 **/secrets/

@@ -3,6 +3,12 @@
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
+from app.artifacts.filesystem_blob_store import FileSystemBlobStore
+from app.change_workflow.postgres_workflow_transactions import PostgresWorkflowTransactions
+from app.change_workflow.proposal_service import ProposalService
+from app.change_workflow.test_job_service import TestJobService
+from app.change_workflow.test_profiles import load_test_profile
+from app.change_workflow.workflow_http import configure_workflow_http
 from app.control.api.repository_http_app import configure_repository_http
 from app.control.control_settings import Settings, settings
 from app.control.control_snapshots import create_repository_snapshot_service
@@ -21,6 +27,7 @@ def create_app(configuration: Settings = settings) -> FastAPI:
         statement_timeout_ms=configuration.database_statement_timeout_ms,
     )
     snapshots = None
+    binding = None
     if configuration.control_repository_config is not None:
         binding = load_repository_binding(configuration.control_repository_config)
         snapshots = create_repository_snapshot_service(configuration, (binding,))
@@ -32,11 +39,25 @@ def create_app(configuration: Settings = settings) -> FastAPI:
         RepositoryAccessService(PostgresControlAuthorityTransactions(database)),
         snapshots,
     )
+    proposals = None
+    jobs = None
+    if configuration.control_test_profile_config is not None:
+        if snapshots is None or binding is None or configuration.control_artifact_root is None:
+            raise ValueError("Configure source storage before test workflow.")
+        profile = load_test_profile(configuration.control_test_profile_config)
+        proposals = ProposalService(
+            PostgresWorkflowTransactions(database),
+            snapshots,
+            FileSystemBlobStore(configuration.control_artifact_root),
+            profile,
+        )
+        jobs = TestJobService(proposals, binding.profile.scope)
+    configure_workflow_http(app, proposals, jobs, configuration.control_test_worker_token)
     app.add_middleware(
         CORSMiddleware,
         allow_origins=configuration.cors_origins,
         allow_methods=["GET", "POST"],
-        allow_headers=["Authorization", "Content-Type"],
+        allow_headers=["Authorization", "Content-Type", "Idempotency-Key"],
         expose_headers=["X-Request-ID"],
     )
     return app
