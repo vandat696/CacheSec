@@ -3,8 +3,9 @@
 import { useEffect, useRef, useState } from "react";
 import { ChangeApiError, ChangeWorkflowClient, editorContent, pendingTest,
   type ChangeConfig, type Revision, type TestJob } from "./changeWorkflowApi";
+import { saveRevision, submitCodeChange, type ChangeAttempts } from "./changeSubmission";
 
-export function useCodeChanges(api: ChangeWorkflowClient, snapshotId: string, original: string,
+export function useCodeChanges(api: ChangeWorkflowClient | null, snapshotId: string, original: string,
   repositoryIdentity: string, accessLost: () => void) {
   const [config, setConfig] = useState<ChangeConfig | null>(null);
   const [draft, setDraft] = useState(original.replace(/\r\n?/g, "\n"));
@@ -14,9 +15,10 @@ export function useCodeChanges(api: ChangeWorkflowClient, snapshotId: string, or
   const [error, setError] = useState("");
   const [requestId, setRequestId] = useState<string>();
   const [pollAttempt, setPollAttempt] = useState(0);
+  const [documentVersion, setDocumentVersion] = useState(0);
+  const [opening, setOpening] = useState(false);
   const current = useRef<AbortController | null>(null);
-  const saveAttempt = useRef<{ payload: string; key: string } | null>(null);
-  const testAttempt = useRef<{ revision: number; key: string } | null>(null);
+  const attempts = useRef<ChangeAttempts>({ save: null, test: null });
   const access = useRef(accessLost);
   useEffect(() => { access.current = accessLost; }, [accessLost]);
   function failure(value: unknown) {
@@ -25,6 +27,7 @@ export function useCodeChanges(api: ChangeWorkflowClient, snapshotId: string, or
     if (value instanceof ChangeApiError && [401, 403].includes(value.status)) access.current();
   }
   useEffect(() => {
+    if (!api) return;
     const controller = new AbortController();
     api.config(controller.signal).then(value => {
       if (controller.signal.aborted) return;
@@ -35,7 +38,7 @@ export function useCodeChanges(api: ChangeWorkflowClient, snapshotId: string, or
   }, [api, repositoryIdentity]);
 
   useEffect(() => {
-    if (!jobs.some(pendingTest)) return;
+    if (!api || !jobs.some(pendingTest)) return;
     const controller = new AbortController();
     const timer = setTimeout(async () => {
       try {
@@ -52,38 +55,39 @@ export function useCodeChanges(api: ChangeWorkflowClient, snapshotId: string, or
     setBusy(true); setError(""); setRequestId(undefined);
     try {
       const apply = await action(controller.signal);
-      if (!controller.signal.aborted) apply();
+      if (!controller.signal.aborted) { apply(); return true; }
     } catch (value) { if (!controller.signal.aborted) failure(value); }
     finally { if (!controller.signal.aborted) setBusy(false); }
+    return false;
   }
   const content = editorContent(draft, saved?.content ?? original);
   const dirty = content !== (saved?.content ?? original);
   function save() {
-    const payload = JSON.stringify([saved?.proposal_id, saved?.revision, content]);
-    if (saveAttempt.current?.payload !== payload) saveAttempt.current = { payload, key: crypto.randomUUID() };
-    const key = saveAttempt.current.key;
+    if (!api || !dirty || !config?.can_propose || busy) return Promise.resolve(false);
     return run(async signal => {
-      const value = await api.save(snapshotId, content, saved, key, signal);
-      return () => { setSaved(value); setJobs(value.tests); saveAttempt.current = null; };
+      const value = await saveRevision(api, snapshotId, content, saved, attempts.current, signal);
+      return () => { if (value) { setSaved(value); setJobs(value.tests); } };
     });
   }
   function open(proposalId: string) {
+    if (!api || busy) return Promise.resolve(false);
+    setOpening(true);
     return run(async signal => {
       const value = await api.open(proposalId, signal);
       return () => { setSaved(value); setDraft(value.content.replace(/\r\n?/g, "\n")); setJobs(value.tests);
-        saveAttempt.current = null; testAttempt.current = null; };
-    });
+        attempts.current = { save: null, test: null }; setDocumentVersion(v => v + 1); };
+    }).finally(() => setOpening(false));
   }
   function test() {
-    if (!saved || dirty) return;
-    if (testAttempt.current?.revision !== saved.revision)
-      testAttempt.current = { revision: saved.revision, key: crypto.randomUUID() };
-    const key = testAttempt.current.key;
+    if (!api || !config?.can_test || busy) return Promise.resolve(false);
     return run(async signal => {
-      const job = await api.test(saved, key, signal);
-      return () => { setJobs(previous => [job, ...previous.filter(j => j.job_id !== job.job_id)]);
-        testAttempt.current = null; };
+      const job = await submitCodeChange(api, snapshotId, content, saved, attempts.current, signal,
+        value => { setSaved(value); setJobs(value.tests); });
+      return () => { if (job) setJobs(previous => [job, ...previous.filter(j => j.job_id !== job.job_id)]); };
     });
   }
-  return { config, draft, setDraft, saved, jobs, busy, error, requestId, dirty, save, open, test };
+  function discard() { setDraft((saved?.content ?? original).replace(/\r\n?/g, "\n"));
+    attempts.current.save = null; setDocumentVersion(v => v + 1); }
+  return { config, draft, setDraft, saved, jobs, busy, opening, error, requestId, dirty, documentVersion,
+    save, open, test, discard };
 }

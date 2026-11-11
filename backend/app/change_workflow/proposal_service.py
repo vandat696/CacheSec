@@ -259,8 +259,6 @@ class ProposalService:
                 if not self.snapshots.matches_working_tree(base):
                     raise WorkflowError("STALE_SNAPSHOT")
                 original = next(f.content for f in base.files if f.path == EDITABLE_PATH)
-                if original == raw:
-                    raise WorkflowError("NO_CHANGE", 400)
                 captured = tuple(
                     CapturedSourceFile(f.path, raw if f.path == EDITABLE_PATH else f.content)
                     for f in base.files

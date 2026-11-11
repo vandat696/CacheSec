@@ -1,60 +1,44 @@
 "use client";
 
-import { useState } from "react";
+import { useImperativeHandle, useRef, useState, type Ref } from "react";
 import { Button } from "@/components/ui/Button";
 import { TextInput } from "@/components/ui/forms/TextInput";
 import { RepositoryConnection } from "./RepositoryConnection";
+import { RepositoryWorkspace, type RepositoryWorkspaceHandle } from "./RepositoryWorkspace";
 import { useRepository } from "./useRepository";
-import { CodeChangesPanel } from "../code-changes/CodeChangesPanel";
-import { editablePath } from "../code-changes/changeWorkflowApi";
 
-export function RepositoryPanel() {
+export function RepositoryPanel({ ref }: { ref?: Ref<RepositoryWorkspaceHandle> }) {
   const repo = useRepository();
   const [snapshotId, setSnapshotId] = useState("");
+  const workspace = useRef<RepositoryWorkspaceHandle>(null);
+  function requestLeave(action: () => void) { if (workspace.current) workspace.current.requestLeave(action); else action(); }
+  useImperativeHandle(ref, () => ({ requestLeave }));
   return <div className="repository-panel" data-connected={!!repo.repository} aria-busy={repo.busy}>
-    <div className="dev-file-bar"><strong>Repository</strong><span>Snapshot và bản sửa</span></div>
     {!repo.repository ? <RepositoryConnection busy={repo.busy} onConnect={repo.connect} /> : <>
-      <div className="repository-actions">
-        <span>{repo.repository.repository_identity}</span>
-        <Button id="repository-capture" onClick={() => repo.load()} disabled={repo.busy}>Tạo snapshot</Button>
-        <Button variant="tertiary" onClick={repo.disconnect}>Ngắt kết nối</Button>
+      <div className="repository-project-menu">
+        <details className="repository-open"><summary>Project</summary>
+          <div className="repository-project-options">
+            <Button variant="tertiary" id="repository-capture" onClick={event => { event.currentTarget.closest("details")?.removeAttribute("open"); requestLeave(() => { void repo.load(); }); }} disabled={repo.busy}>Mở lại mã nguồn</Button>
+            <form onSubmit={event => { event.preventDefault(); event.currentTarget.closest("details")?.removeAttribute("open"); requestLeave(() => { void repo.load(snapshotId); }); }}>
+              <TextInput id="repository-snapshot-id" label="Mở snapshot đã lưu" value={snapshotId}
+                required onChange={event => setSnapshotId(event.target.value)} />
+              <Button type="submit" variant="secondary" disabled={repo.busy || !snapshotId}>Mở</Button>
+            </form>
+          </div>
+        </details>
+        <details className="repository-reference"><summary>Thông tin project</summary>
+          <dl>{repo.snapshot && <><dt>ID</dt><dd>{repo.snapshot.snapshot_id}</dd></>}
+            <dt>Repository</dt><dd>{repo.repository.repository_identity}</dd>
+            {repo.snapshot && <><dt>Manifest</dt><dd>{repo.snapshot.manifest_digest}</dd>
+              <dt>Profile</dt><dd>{repo.snapshot.source_profile_digest}</dd></>}</dl>
+        </details>
+        <Button variant="tertiary" id="repository-disconnect" onClick={() => requestLeave(repo.disconnect)}>Ngắt kết nối</Button>
       </div>
-      <details className="repository-open"><summary>Mở snapshot đã lưu</summary>
-        <form onSubmit={(event) => { event.preventDefault(); void repo.load(snapshotId); }}>
-          <TextInput id="repository-snapshot-id" label="Snapshot ID" value={snapshotId}
-            required onChange={(event) => setSnapshotId(event.target.value)} />
-          <Button type="submit" disabled={repo.busy || !snapshotId}>Mở</Button>
-        </form>
-      </details>
     </>}
     {repo.error && <div className="repository-error" role="alert">{repo.error}
       {repo.requestId && <small>Mã yêu cầu: {repo.requestId}</small>}</div>}
-    {repo.busy && <p className="repository-notice" role="status">Đang tải…</p>}
-    {repo.snapshot && <>
-      <details className="repository-reference"><summary>Thông tin snapshot</summary>
-        <dl><dt>ID</dt><dd>{repo.snapshot.snapshot_id}</dd>
-          <dt>Manifest</dt><dd>{repo.snapshot.manifest_digest}</dd>
-          <dt>Profile</dt><dd>{repo.snapshot.source_profile_digest}</dd></dl>
-        <p>Bản lưu bất biến; source hiện tại có thể đã đổi. Chưa phải artifact đã kiểm thử.</p>
-      </details>
-      <div className="repository-source">
-        <nav aria-label="Tệp snapshot">{repo.snapshot.files.map((file) =>
-          <button key={file.file_id} type="button" disabled={repo.busy}
-            aria-current={repo.selected?.file_id === file.file_id ? "true" : undefined}
-            onClick={() => repo.select(file)}>{file.path}<small>{file.byte_size} B</small></button>)}</nav>
-        <div className="repository-file">
-          {repo.selected ? <>
-            <div className="repository-file-heading">{repo.selected.path}</div>
-            {repo.binary ? <p className="repository-notice">Tệp nhị phân hoặc không phải UTF-8; không hiển thị dạng văn bản.</p>
-              : repo.changes && repo.repository && repo.selected.path === editablePath && repo.rawContent !== null
-                ? <CodeChangesPanel key={repo.selected.file_id} api={repo.changes} snapshotId={repo.snapshot.snapshot_id}
-                  original={repo.rawContent} repositoryIdentity={repo.repository.repository_identity} accessLost={repo.disconnect} />
-                : <pre aria-label="Nội dung tệp snapshot"><code>{repo.content}</code></pre>}
-          </> : <p className="repository-notice">Chọn tệp để đọc.</p>}
-        </div>
-      </div>
-    </>}
-    {repo.repository && !repo.snapshot && !repo.busy && !repo.error &&
-      <p className="repository-notice">Tạo snapshot hoặc mở một bản đã lưu.</p>}
+    {repo.snapshot && repo.repository
+      ? <RepositoryWorkspace key={repo.snapshot.snapshot_id} repo={repo} ref={workspace} />
+      : repo.busy && <p className="repository-notice" role="status">Đang mở project…</p>}
   </div>;
 }

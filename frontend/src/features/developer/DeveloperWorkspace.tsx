@@ -5,6 +5,7 @@ import Link from "next/link";
 import { Button } from "@/components/ui/Button";
 import { Icon } from "@/components/ui/Icon";
 import { RepositoryPanel } from "@/features/repositories/RepositoryPanel";
+import type { RepositoryWorkspaceHandle } from "@/features/repositories/RepositoryWorkspace";
 import { DeveloperReviewDialog, DiffPanel } from "./DeveloperPanels";
 import { previewAnswer } from "./developerPreviewData";
 import { developerPreviewReducer, initialDeveloperPreview } from "./developerPreviewModel";
@@ -19,6 +20,7 @@ export function DeveloperWorkspace() {
   const [draft, setDraft] = useState("");
   const [inputError, setInputError] = useState("");
   const chatLog = useRef<HTMLDivElement>(null);
+  const repository = useRef<RepositoryWorkspaceHandle>(null);
   const testsShown = state.testRevision === state.revision;
   const approved = state.approval === "approved";
 
@@ -39,21 +41,24 @@ export function DeveloperWorkspace() {
       <header className="dev-ide-toolbar">
         <h1>Workspace</h1>
         <div className="dev-source-mode" aria-label="Chế độ Workspace">
-          <button type="button" aria-pressed={mode === "repository"} onClick={() => { setReview(null); setMode("repository"); }}>Repository</button>
-          <button type="button" id="workspace-preview" aria-pressed={mode === "preview"} onClick={() => setMode("preview")}>Mô phỏng workflow</button>
+          <button type="button" aria-pressed={mode === "repository"} onClick={() => { setReview(null); setMode("repository"); }}>Sửa mã</button>
+          <button type="button" id="workspace-preview" aria-pressed={mode === "preview"}
+            onClick={() => { if (repository.current) repository.current.requestLeave(() => setMode("preview")); else setMode("preview"); }}>Mô phỏng workflow</button>
         </div>
-        <span className="dev-demo-label">{mode === "preview" ? "Mô phỏng" : "Agent chưa kết nối"}</span>
+        {mode === "preview" && <span className="dev-demo-label">Mô phỏng</span>}
         <div className="dev-toolbar-actions">
           <Link href="/quotations" className="dev-quotation-link"><Icon name="file" />Báo giá</Link>
+          <div className="dev-preview-actions" hidden={mode !== "preview"}>
           <Button variant="tertiary" id="preview-open-tests" disabled={mode !== "preview"} aria-haspopup="dialog" aria-controls="developer-review-dialog" aria-expanded={review === "tests"} onClick={() => setReview("tests")} title={testsShown ? "Đã xem kết quả mẫu" : "Xem kiểm thử mẫu"}><Icon name="terminal" />Kiểm thử</Button>
           <Button variant="tertiary" id="preview-open-approval" disabled={mode !== "preview"} aria-haspopup="dialog" aria-controls="developer-review-dialog" aria-expanded={review === "approval"} onClick={() => setReview("approval")}><Icon name={approved ? "check" : "shield"} />Phê duyệt</Button>
           <Button variant="tertiary" onClick={reset} id="preview-reset" disabled={mode !== "preview"} aria-label="Bắt đầu lại" title="Bắt đầu lại"><Icon name="refresh" /></Button>
+          </div>
         </div>
       </header>
 
       <div className="dev-workbench">
         <section className="dev-editor" aria-label={mode === "repository" ? "Snapshot repository" : "Mã nguồn minh họa"}>
-          {mode === "repository" ? <RepositoryPanel /> : <DiffPanel state={state} dispatch={dispatch} />}
+          {mode === "repository" ? <RepositoryPanel ref={repository} /> : <DiffPanel state={state} dispatch={dispatch} />}
         </section>
         <section className="dev-assistant" aria-labelledby="dev-agent-title">
           <div className="dev-agent-heading"><Icon name="spark" /><h2 id="dev-agent-title">Agent</h2></div>

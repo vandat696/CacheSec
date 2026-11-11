@@ -1,6 +1,7 @@
 import assert from "node:assert/strict";
 import test from "node:test";
 import { ChangeWorkflowClient, editorContent, editablePath } from "../src/features/code-changes/changeWorkflowApi.ts";
+import { submitCodeChange } from "../src/features/code-changes/changeSubmission.ts";
 
 const proposal = "10000000-0000-4000-8000-000000000001";
 const snapshot = "10000000-0000-4000-8000-000000000002";
@@ -60,4 +61,43 @@ test("editor retains uniform original CRLF and BOM while keeping LF sources as L
   assert.equal(editorContent("a\nb\n", "a\r\nb\r\n"), "a\r\nb\r\n");
   assert.equal(editorContent("a\r\nb\r\n", "a\nb\n"), "a\nb\n");
   assert.equal(editorContent("\uFEFFa\nb", "\uFEFFa\r\nb"), "\uFEFFa\r\nb");
+});
+
+test("save-and-test retains the committed revision and test retry key after a lost test acknowledgement", async () => {
+  const attempts = { save: null, test: null }, keys = [];
+  let saved = null, saves = 0, tests = 0;
+  const api = {
+    async save() { saves++; return revision; },
+    async test(value, key) { keys.push(key); tests++; assert.equal(value, revision);
+      if (tests === 1) throw new Error("lost acknowledgement"); return queued; },
+  };
+  await assert.rejects(submitCodeChange(api, snapshot, revision.content, null, attempts, signal(),
+    value => { saved = value; }), /lost acknowledgement/);
+  assert.equal(saved, revision);
+  const job = await submitCodeChange(api, snapshot, revision.content, saved, attempts, signal(),
+    () => assert.fail("must not save a second revision"));
+  assert.equal(job, queued); assert.equal(saves, 1); assert.equal(keys[0], keys[1]);
+});
+
+test("save-and-test retries the exact save key and does not queue before a save acknowledgement", async () => {
+  const attempts = { save: null, test: null }, keys = [];
+  let saves = 0, tests = 0;
+  const api = {
+    async save(_snapshot, _content, _previous, key) { keys.push(key); saves++;
+      if (saves === 1) throw new Error("lost save acknowledgement"); return revision; },
+    async test() { tests++; return queued; },
+  };
+  await assert.rejects(submitCodeChange(api, snapshot, revision.content, null, attempts, signal(), () => {}));
+  assert.equal(tests, 0);
+  await submitCodeChange(api, snapshot, revision.content, null, attempts, signal(), () => {});
+  assert.equal(keys[0], keys[1]); assert.equal(tests, 1);
+});
+
+test("cancelled save-and-test never publishes the saved revision into a disconnected view", async () => {
+  const controller = new AbortController();
+  const api = { async save() { controller.abort(); return revision; },
+    async test() { assert.fail("cannot queue after cancellation"); } };
+  const result = await submitCodeChange(api, snapshot, revision.content, null,
+    { save: null, test: null }, controller.signal, () => assert.fail("cannot restore disconnected source"));
+  assert.equal(result, null);
 });

@@ -2,6 +2,7 @@ import assert from "node:assert/strict";
 import { createHash } from "node:crypto";
 import { test } from "node:test";
 import { RepositoryHttpClient, RepositoryApiError, sourceText } from "../src/features/repositories/repositoryApi.ts";
+import { repositoryTree } from "../src/features/repositories/navigation/repositoryTree.ts";
 
 const id = "aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa";
 const fid = "bbbbbbbb-bbbb-4bbb-8bbb-bbbbbbbbbbbb";
@@ -13,6 +14,17 @@ const file = { file_id: fid, path: "source/code.py", digest: hash(bytes), byte_s
 const snapshot = { snapshot_id: id, repository_identity: "test-repo", source_profile_digest: hash("profile"),
   manifest_digest: hash("manifest"), files: [file] };
 const contents = (content = bytes) => ({ snapshot_id: id, file_id: fid, encoding: "base64", content: content.toString("base64") });
+
+test("Explorer keeps full file identities in distinct directories and only lists authorized snapshot paths", () => {
+  const files = [{ ...file, path: "backend/app.py" }, { ...file, file_id: id, path: "frontend/app.py" }];
+  const before = structuredClone(files);
+  const root = repositoryTree(files);
+  assert.deepEqual(root.folders.map(folder => folder.path), ["backend", "frontend"]);
+  assert.equal(root.folders[0].files[0].file_id, fid);
+  assert.equal(root.folders[1].files[0].file_id, id);
+  assert.deepEqual(root.files, []);
+  assert.deepEqual(files, before);
+});
 const api = (data, status = 200) => new RepositoryHttpClient("http://local.test", "test-only-token", async () =>
   Response.json({ data, meta }, { status }));
 

@@ -2,9 +2,9 @@
 
 ## Workspace — bản sửa và test thật ngày 2026-11-12
 
-Chế độ Repository dùng snapshot có quyền, editor riêng cho file validation, lưu revision/diff và test Docker thật. Status/evidence gắn revision/artifact; sửa tiếp giữ lịch sử với nhãn Bản cũ. Proposal ID giúp mở lại bản đã lưu, token chỉ giữ trong bộ nhớ và nội dung bị xóa khỏi view khi mất quyền/disconnect. Kết quả test ở cạnh vùng thao tác; hash/tham chiếu trong details. Xem [contract và giới hạn T12](../system/change-workflow.md).
+Chế độ Sửa mã nhận token rồi tự chụp snapshot và mở file validation trong editor; người dùng sửa mã và bấm Lưu và kiểm thử. Hai request lưu revision rồi tạo job vẫn riêng biệt, tuần tự và có idempotency; nếu tạo job lỗi thì bản đã lưu vẫn được giữ để thử lại, không tự tạo thêm revision. Nút Chỉ lưu cho phép dừng trước bước test; Bắt đầu bản mới lấy source hiện tại, phần mở source cũ/Proposal ID vẫn ở details. Status/evidence gắn revision/artifact; sửa tiếp giữ lịch sử với nhãn Bản cũ, mã chưa lưu có thông báo không thuộc kết quả đã test. Kết quả mới nhất mở sẵn, lỗi hiển thị tiếng Việt; raw reason/ID/hash nằm trong Chi tiết kỹ thuật. Token chỉ giữ trong bộ nhớ và nội dung bị xóa khỏi view khi mất quyền/disconnect. Xem [contract và giới hạn T12](../system/change-workflow.md).
 
-Agent, approval/deployment chưa nối backend; workflow mẫu là chế độ riêng. Test ở toolbar mẫu vẫn khóa trong Repository; nút Chạy test Docker của editor dùng API thật. Không có thao tác triển khai từ mốc này.
+Agent, approval/deployment chưa nối backend; workflow mẫu là chế độ riêng. Các nút test/phê duyệt mẫu được ẩn và khóa trong Sửa mã, hiện lại ở Mô phỏng workflow. Nút Lưu và kiểm thử của editor dùng API thật. Không có thao tác triển khai từ mốc này. Token vẫn nhập mỗi phiên, không nhúng token vào bundle hoặc đọc file secret từ browser; form có mục Lấy token ở đâu? để hướng dẫn ngắn.
 
 ## Báo giá — nối API thật ngày 2026-11-09
 

@@ -1,13 +1,20 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
-import { ChangeWorkflowClient } from "../code-changes/changeWorkflowApi";
+import { ChangeWorkflowClient, editablePath } from "../code-changes/changeWorkflowApi";
 import {
   RepositoryApiError, RepositoryHttpClient, sourceText,
   type Repository, type RepositorySnapshot, type SnapshotFile,
 } from "./repositoryApi";
 
 const apiUrl = process.env.NEXT_PUBLIC_CONTROL_API_URL ?? "http://127.0.0.1:8000";
+export type RepositoryFileContent = { text: string | null; raw: string | null; binary: boolean };
+
+function decodeFile(bytes: Uint8Array): RepositoryFileContent {
+  const text = sourceText(bytes);
+  return { text, binary: text === null,
+    raw: text === null ? null : new TextDecoder("utf-8", { fatal: true, ignoreBOM: true }).decode(bytes) };
+}
 
 export function useRepository() {
   const [repository, setRepository] = useState<Repository | null>(null);
@@ -17,6 +24,7 @@ export function useRepository() {
   const [binary, setBinary] = useState(false);
   const [rawContent, setRawContent] = useState<string | null>(null);
   const [changes, setChanges] = useState<ChangeWorkflowClient | null>(null);
+  const [openedFiles, setOpenedFiles] = useState<Record<string, RepositoryFileContent>>({});
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState("");
   const [requestId, setRequestId] = useState<string>();
@@ -25,7 +33,7 @@ export function useRepository() {
   useEffect(() => () => { current.current?.abort(); client.current = null; }, []);
 
   function clearFile() { setSelected(null); setContent(null); setRawContent(null); setBinary(false); }
-  function clearSource() { setSnapshot(null); clearFile(); }
+  function clearSource() { setSnapshot(null); setOpenedFiles({}); clearFile(); }
   function disconnect() {
     current.current?.abort(); current.current = null; client.current = null;
     setChanges(null);
@@ -63,30 +71,38 @@ export function useRepository() {
     const api = new RepositoryHttpClient(apiUrl, token);
     await run(async (signal) => {
       const data = await api.describe(signal);
-      return () => { client.current = api; setRepository(data); setChanges(new ChangeWorkflowClient(apiUrl, token)); };
+      const opened = await prepareSnapshot(api, data.repository_identity, signal);
+      return () => { client.current = api; setRepository(data); setChanges(new ChangeWorkflowClient(apiUrl, token)); opened(); };
     });
+  }
+  async function prepareSnapshot(api: RepositoryHttpClient, identity: string, signal: AbortSignal, snapshotId?: string) {
+    const data = await (snapshotId ? api.get(snapshotId, signal) : api.capture(signal));
+    if (data.repository_identity !== identity) throw new RepositoryApiError(502);
+    const file = data.files.find(item => item.path === editablePath);
+    const bytes = file ? await api.readFile(data.snapshot_id, file, signal) : null;
+    const content = bytes ? decodeFile(bytes) : null;
+    return () => { setSnapshot(data);
+      if (file && content) { setSelected(file); setContent(content.text); setBinary(content.binary);
+        setRawContent(content.raw); setOpenedFiles({ [file.file_id]: content }); }
+    };
   }
   async function load(snapshotId?: string) {
     const api = client.current, identity = repository?.repository_identity;
     if (!api || !identity) return;
     clearSource();
-    await run(async (signal) => {
-      const data = await (snapshotId ? api.get(snapshotId, signal) : api.capture(signal));
-      if (data.repository_identity !== identity) throw new RepositoryApiError(502);
-      return () => setSnapshot(data);
-    });
+    await run(signal => prepareSnapshot(api, identity, signal, snapshotId));
   }
   async function select(file: SnapshotFile) {
     const api = client.current, saved = snapshot;
-    if (!api || !saved) return;
+    if (!api || !saved || selected?.file_id === file.file_id) return;
     clearFile();
     await run(async (signal) => {
       const bytes = await api.readFile(saved.snapshot_id, file, signal);
-      const text = sourceText(bytes);
-      return () => { setSelected(file); setContent(text); setBinary(text === null);
-        setRawContent(text === null ? null : new TextDecoder("utf-8", { fatal: true, ignoreBOM: true }).decode(bytes)); };
+      const content = decodeFile(bytes);
+      return () => { setSelected(file); setContent(content.text); setBinary(content.binary);
+        setRawContent(content.raw); setOpenedFiles(previous => ({ ...previous, [file.file_id]: content })); };
     });
   }
-  return { repository, snapshot, selected, content, rawContent, changes, binary, busy, error, requestId,
+  return { repository, snapshot, selected, content, rawContent, changes, openedFiles, binary, busy, error, requestId,
     connect, disconnect, load, select };
 }

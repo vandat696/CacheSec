@@ -39,6 +39,8 @@ Worker giữ file lock trên một root host; đây không phải distributed lo
 
 ## Chạy local và kiểm chứng
 
+Workspace hiện tự chụp snapshot và mở editor sau khi người dùng nhập token; nút Lưu và kiểm thử thực hiện hai POST tuần tự dưới các quyền hiện có. Save ACK được giữ ngay để lỗi test request không làm mất revision, retry giữ key đúng thao tác. Chỉ lưu và mở nguồn/bản sửa cũ vẫn có, ID/hash nằm trong details. Xem [thiết kế frontend](../frontend/design.md#workspace--bản-sửa-và-test-thật-ngày-2026-11-12) cho cách hiển thị; không thay contract/permission hoặc cấp quyền từ UI.
+
 Xem [setup](../general/setup.md#2f-bản-sửa-và-test-docker-t12) cho môi trường đã provisioning. Tạo profile từ image đã build:
 
 ```powershell

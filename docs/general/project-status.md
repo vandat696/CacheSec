@@ -1,5 +1,11 @@
 # Trạng thái dự án
 
+## 2026-11-12 — Rút gọn Workspace để thao tác sửa/test
+
+- Theo phản hồi giao diện khó dùng, rút luồng chính thành nhập token → Mở Workspace → editor file validation sẵn → Lưu và kiểm thử. Tự capture/read sau xác thực, vẫn kiểm identity/hash và abort response cũ; nguồn profile khác vẫn đọc thủ công. Thay path dài bằng nhãn file ngắn, mở sẵn kết quả mới nhất, lỗi tiếng Việt, ẩn ID/hash trong details và ẩn nút test/approval mô phỏng khỏi chế độ thật. Không rewrite frontend cũ hoặc thay backend/permission/token storage.
+- Tách coordinator save/test có retry key theo payload/artifact: giữ revision đã commit khi test request lỗi, retry save hoặc job dùng lại đúng key; hủy phiên không khôi phục source. Nút Chỉ lưu và mở nguồn/bản sửa cũ giữ lại. Token vẫn nhập theo phiên; không nhúng secret vào frontend hoặc thêm cơ chế tự cấp quyền.
+- **81 test frontend, ESLint, typecheck và production build đạt.** Edge thật đạt luồng mới, ba revision Docker pass/fail/timeout, verdict cũ đúng bản, đọc/mở lại snapshot, token không lưu browser storage và bố cục 390/820/1440. Thêm test mất ACK save/test và cancel; không chạy lại backend vì không đổi implementation/contract backend. Cập nhật thiết kế frontend, setup và workflow; source nghiệp vụ, Agent/cache/gate và điều kiện nghiên cứu giữ nguyên.
+
 ## 2026-11-12 — Mở stack local bằng một lệnh
 
 - Theo yêu cầu mở các thành phần cùng lúc để test, thêm `scripts/start-local.ps1`: bật DB, control + override T12, app báo giá baseline trên Docker, worker và frontend; `-Studio` bật Prisma Studio, mặc định mở browser Workspace. Reuse dịch vụ đang có và khóa launcher tránh hai lượt khởi động đồng thời; process mới chạy nền với log private. Không tự migrate/provision, tạo secret, đổi grants, build lại runtime app hoặc kích hoạt candidate.

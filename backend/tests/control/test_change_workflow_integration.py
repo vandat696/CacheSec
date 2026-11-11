@@ -150,6 +150,26 @@ def test_read_only_cannot_save_or_queue_and_denial_precedes_publication(workflow
     assert not e.proposals.config(TOKEN)["can_test"]
 
 
+def test_existing_revision_can_be_restored_to_base_without_altering_the_original(workflow):
+    e = workflow
+    first = save(e)
+    restored = e.proposals.save(TOKEN, None, "original\r\n", str(uuid4()), first["proposal_id"], 1)
+    assert restored["revision"] == 2 and restored["content"] == "original\r\n"
+    assert restored["diff"] == ""
+    assert restored["artifact_digest"] != first["artifact_digest"]
+    assert e.proposals.get(TOKEN, first["proposal_id"], 1)["content"] == "candidate\r\n"
+    assert (e.root / EDITABLE_PATH).read_bytes() == b"original\r\n"
+
+
+def test_current_source_can_be_tested_without_inventing_a_code_change(workflow):
+    e = workflow
+    current = save(e, "original\r\n")
+    assert current["content"] == "original\r\n" and current["diff"] == ""
+    job = e.proposals.request_test(TOKEN, current["proposal_id"], 1, str(uuid4()))
+    assert job["status"] == "queued" and job["artifact_digest"] == current["artifact_digest"]
+    assert (e.root / EDITABLE_PATH).read_bytes() == b"original\r\n"
+
+
 @pytest.mark.parametrize("stage", ["claim", "permit"])
 def test_revoke_before_dispatch_blocks_execution(workflow, stage):
     e = workflow
