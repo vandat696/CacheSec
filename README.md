@@ -18,6 +18,8 @@ Theo lựa chọn người dùng ngày **2026-11-07**, PoC bắt đầu bằng *
 
 ## Trạng thái thực tế
 
+Máy dev đã cấu hình có thể mở toàn bộ stack bằng `.\scripts\start-local.ps1 -Studio` sau khi bật Docker Desktop; xem [hướng dẫn chạy một lệnh](docs/general/setup.md#mở-toàn-bộ-stack-local-bằng-một-lệnh).
+
 Bối cảnh đã cập nhật ngày **2026-11-02**. Frontend có thêm **Developer Workspace tại `/workspace`** để xem thử workflow mới; các màn chatbot nội bộ cũ tiếp tục được giữ để tái sử dụng.
 
 | Thành phần | Hiện có | Giới hạn |

@@ -1,5 +1,12 @@
 # Trạng thái dự án
 
+## 2026-11-12 — Mở stack local bằng một lệnh
+
+- Theo yêu cầu mở các thành phần cùng lúc để test, thêm `scripts/start-local.ps1`: bật DB, control + override T12, app báo giá baseline trên Docker, worker và frontend; `-Studio` bật Prisma Studio, mặc định mở browser Workspace. Reuse dịch vụ đang có và khóa launcher tránh hai lượt khởi động đồng thời; process mới chạy nền với log private. Không tự migrate/provision, tạo secret, đổi grants, build lại runtime app hoặc kích hoạt candidate.
+- Quotation API dùng đúng runtime image ID/platform trong profile đã đăng ký, không bind working tree. Kiểm profile khớp control trước mở app, từ chối thay image baseline đã tồn tại. Helper kiểm DSN app thuộc Compose DB local trước khi đổi hostname/port, chỉ đưa DSN/two fixture tokens vào env app; giữ `.env` gốc và credential control/worker riêng. Base control và DB Compose không đổi, thêm project Compose báo giá riêng trên loopback 8001.
+- **Kiểm chứng:** ba unit test cấu hình đạt, Ruff lint/format và parse PowerShell đạt. Chạy launcher thật: lần đầu thêm app báo giá, lần sau reuse đủ DB/API/worker/frontend và khởi động Studio; kiểm lại bản cuối không thêm process. Control workflow GET và quotation GET với identity hiện có đạt, ba container healthy, Studio chỉ listen 127.0.0.1:5555. Chưa thử máy Windows khác hoặc cold-start lại frontend/worker hiện có; không dừng các phiên đang dùng chỉ để test launcher. Không chạy lại toàn bộ test ứng dụng vì không đổi domain/API/frontend.
+- Cập nhật README/setup/source map. Docker Desktop và môi trường đã provisioning vẫn là điều kiện đầu vào; frontend dùng build sẵn, worker lock không thay heartbeat, chưa có lệnh stop chung. T13/Agent/cache và điều kiện nghiên cứu giữ trạng thái trước đó.
+
 ## 2026-11-12 — Hoàn thành mốc tích hợp T12 local
 
 - Người dùng đã xác nhận trọn gói T12: chỉ sửa `quotation_validation.py` trong candidate riêng, giữ profile đọc ba file, cấp dev đúng read/propose/test, dùng worker Docker/DB test riêng và kết quả thật trên Workspace. Đã triển khai snapshot → editor → revision/diff → test → evidence, không dừng ở helper; working tree validation vẫn là baseline. Mốc tích hợp kỹ thuật hoàn tất; T12 toàn bộ theo điều kiện nghiên cứu còn phụ thuộc oracle/fixture/trusted R chưa khóa.

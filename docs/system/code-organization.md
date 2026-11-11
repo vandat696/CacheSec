@@ -2,6 +2,10 @@
 
 Áp dụng từ refactor 2026-11-07. [AGENTS.md](../../AGENTS.md) chứa luật; tài liệu này là bản đồ source hiện tại. Tổ chức theo feature/domain và trách nhiệm, không áp một cây OOP cố định cho cả React và Python.
 
+## Tooling local
+
+Launcher local ở `scripts/start-local.ps1`, helper cấu hình private ở `scripts/local_configuration.py`, unit test tại `scripts/tests/`. Đây là tooling phát triển, không phải dependency của backend hoặc runner nghiên cứu. `infra/quotation.compose.yaml` chỉ chạy runtime baseline đã đăng ký với DB local; không mount candidate hoặc source working tree.
+
 ## Frontend
 
 File component React dùng PascalCase khớp component chính (ChartFrame.tsx, AppShell.tsx); module nhóm component dùng tên nhóm PascalCase. File hook/helper/model/data TypeScript dùng camelCase (useField.ts, chartFormat.ts, chatState.ts), thư mục feature dùng kebab-case. Giữ tên entry/framework như index.ts, page.tsx và layout.tsx. TypeScript kiểm tra casing import nhất quán; tên JS DOM, bundle JS/CSS và Python giữ quy ước riêng, không đổi theo tên component React.

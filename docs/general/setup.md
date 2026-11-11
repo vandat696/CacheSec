@@ -2,6 +2,22 @@
 
 ## Phạm vi hướng dẫn
 
+### Mở toàn bộ stack local bằng một lệnh
+
+Với máy dev đã cấu hình ở các mục bên dưới, mở Docker Desktop rồi chạy từ root repository:
+
+```powershell
+.\scripts\start-local.ps1 -Studio
+```
+
+Lệnh khởi động database, control API 8000, API báo giá baseline 8001, test worker và frontend 3000; `-Studio` mở thêm Prisma Studio 5555. Trình duyệt mở Workspace; Báo giá ở `http://127.0.0.1:3000/quotations`, Studio ở `http://127.0.0.1:5555`. Bỏ `-Studio` khi không cần xem database; thêm `-NoBrowser` để chỉ bật dịch vụ. Chạy lại dùng các tiến trình đang có, không tự dừng app khác chiếm cổng.
+
+Workspace dùng `CONTROL_REPOSITORY_READ_TOKEN` trong `backend/.local/control-access.env`. Màn Báo giá dùng `QUOTATION_FIXTURE_OPERATOR_TOKEN` hoặc reader token trong `backend/.env`. Dán giá trị vào ô token tương ứng; launcher không in/copy token vào URL hoặc tự đăng nhập trình duyệt. Worker có credential riêng, không dùng token của các màn này.
+
+Các process mới chạy nền, log tại `backend/.local/launcher`; đóng terminal không dừng chúng. Các container giữ nguyên volume DB. Launcher cần private config T12, venv/dependencies và image đã đăng ký; không tự cài dependencies, tạo secret, migrate, cấp quyền hoặc rebuild runtime app. API báo giá dùng đúng image nền đã ghim, không mount source working tree/candidate; profile phải khớp control và launcher từ chối đổi image của app baseline đã tồn tại. Env riêng chỉ sao chép DSN và hai token báo giá, đổi host/port từ loopback sang service DB sau khi đối chiếu `infra/.env`; file gốc giữ nguyên. Đây là app baseline local, không kích hoạt bản sửa hoặc thay gate.
+
+Frontend dùng production build hiện có, build lần đầu nếu chưa có `.next/BUILD_ID`. Khi sửa UI cần build/restart frontend theo mục 3; chạy launcher lại không tự thay tiến trình đang hoạt động. Worker lock xác định root đang được sử dụng, chưa phải health/heartbeat của worker. Các HTTP probe chỉ đọc cấu hình workflow/dữ liệu báo giá, không tạo record hoặc chạy thí nghiệm. Máy chưa provisioning cần thực hiện các mục setup, không dùng launcher như installer.
+
 Các lệnh dưới đây chạy frontend, control health/readiness, **HTTP snapshot/Workspace, bản sửa/test Docker T12 và API/UI báo giá thật**, cùng Prisma Studio để xem database local; chưa chạy AI Coding Agent, Local Semantic Cache hoặc approval/deployment control. Bối cảnh nghiên cứu đã đổi sang AI-assisted software development ngày 2026-11-02; UI chatbot nội bộ vẫn được giữ để tái sử dụng. Xem [hiện trạng](project-status.md) và [lộ trình PoC](implementation-plan.md).
 
 Chỉ xem UI mô phỏng cần frontend; không cần backend, Docker/database hoặc API key. Backend health có thể chạy độc lập database. Chỉ cần khởi động Docker khi muốn kiểm tra hạ tầng PostgreSQL/pgvector; hướng dẫn này không yêu cầu cài thêm dịch vụ/model SDK.
