@@ -203,6 +203,8 @@ Nếu console báo hydration mismatch tại `RootLayout`/`<body>` hoặc `<div>`
 
 ## Kiểm tra
 
+Kiểm tra riêng bundle/materializer trên Windows mà không import driver DB đang bị App Control chặn: từ backend chạy `.\.venv\Scripts\python.exe -m pytest --noconftest tests/repositories/test_repository_snapshots.py tests/repositories/test_filesystem_snapshot_workspace.py -q -p no:cacheprovider`. Đây là unit/memory-authority và filesystem, không thay cho PostgreSQL integration. Nếu sandbox chặn thư mục tạm pytest hoặc tạo junction, dùng terminal local; không tắt policy máy. Full backend vẫn cần runtime Docker và CACHESEC_TEST_DATABASE_URL cho DB test riêng như bên dưới. Staging adapter chưa có HTTP/CLI cho người dùng; root phải được composition tin cậy cung cấp, không tự chọn thư mục app/home.
+
 Trong frontend: `npm run templates:build` sau khi s?a source template, `npm run templates:check` ?? ki?m tra bundle; sau ?? `npm run lint`, `npm run typecheck`, `npm test`, `npm run build`. Các test dùng Node test runner và đọc TypeScript trực tiếp; dùng Node 24 như môi trường đã kiểm tra. Node có thể cảnh báo tự nhận dạng ES module cho file TypeScript; cảnh báo này không làm test thất bại.
 
 Kiểm tra tương tác và responsive bằng Edge/Chrome headless (không thêm test framework):

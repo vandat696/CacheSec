@@ -68,6 +68,8 @@ backend/app/
   repositories/
     source_profiles.py                        exact-file path policy, caps và canonical profile
     snapshot_models.py                        snapshot/file refs và manifest content
+    snapshot_bundles.py                       canonical profile và complete snapshot bytes
+    filesystem_snapshot_workspace.py          prepare/verify source staging, không chạy code
     filesystem_repository_source.py           đọc giới hạn, kiểm path/alias, hai lượt capture
     repository_snapshots.py                    ports/use case capture/get/read_file có quyền
     postgres_repository_snapshots.py           snapshot/index/authority chung connection
@@ -122,6 +124,8 @@ Blob storage không import HTTP, model báo giá, cache hoặc research; các ad
 Registry domain không import FastAPI/Psycopg; RepositoryAccessService nhận transaction port rồi xác thực/kiểm repository.read trước trả metadata đã commit. Authorizer có thể dùng ngay authority repository của transaction control hiện tại, không tự mở connection tách biệt. Administration là adapter backend tin cậy, caller chịu trách nhiệm commit/rollback; không phải Agent tool hoặc route public. Registry metadata vẫn tách khỏi đọc source; snapshot use case do repositories sở hữu, control/api làm transport. describe_current lấy scope từ principal; snapshot service kiểm lại quyền trong transaction của thao tác. Frontend features/repositories dùng HTTP, không nhận source/token từ workflow mô phỏng.
 
 RepositorySnapshotService nhận source, bytes store và SnapshotTransactions. Session chứa authority/blob index/snapshot ports cùng connection; không gọi ArtifactBlobStorage mở transaction riêng trong capture. PostgresSourceProfileAdministration đổi active profile cùng lock/epoch authority; worker chỉ đọc policy, không tự provision từ config. tests/repositories kiểm path/capture và adapter thay thế; tests/control/test_repository_snapshots_integration.py kiểm DB/commit/constraint/profile freshness. Không có shell/Git/test executor trong adapter đọc source.
+
+read_bundle tái sử dụng transaction ports hiện có và giữ authority lock cho mọi payload đến commit. snapshot_bundles sở hữu decode profile/canonical validation dùng chung với get/read_file; filesystem_snapshot_workspace chỉ vật hóa/verify bytes trong root tường minh, không import HTTP/Psycopg/app báo giá. Test filesystem Windows không cần driver DB; test integration kiểm COMMIT failure thật, lock và revoke. Không thêm migration, factory tự provision hoặc lớp executor rỗng.
 
 ## UI template tham chiếu
 

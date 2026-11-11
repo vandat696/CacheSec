@@ -59,7 +59,7 @@ Không tự chọn thay người dùng/giảng viên các giá trị ảnh hư�
 ### T05 — Nối database và nền lưu trữ backend
 
 - [ ] Hoàn thành T05. **Phụ thuộc:** T02–T04 đã đủ điều kiện triển khai.
-- **Trạng thái:** đã có PostgreSQL/metadata retry báo giá, blob control 001, registry 002 và source profile/snapshot 003. Migration local/replay no-op giữ dữ liệu/history báo giá, registry và blob; không seed quyền/profile hoặc capture source thật. 312 test backend với PostgreSQL thật trong container Linux đạt; xem project-status cho giới hạn host. Artifact/test/approval/deployment persistence và toàn T04 còn tiếp tục.
+- **Trạng thái:** đã có PostgreSQL/metadata retry báo giá, blob control 001, registry 002 và source profile/snapshot 003. Migration local/replay no-op giữ dữ liệu/history báo giá, registry và blob; không seed quyền/profile hoặc capture source thật. 337 test backend với PostgreSQL thật trong container Linux đạt; xem project-status cho giới hạn host. Artifact/test/approval/deployment persistence và toàn T04 còn tiếp tục.
 - **Làm:** cấu hình kết nối, migration/constraints và adapter lưu trữ cần dùng ngay; kiểm chứng PostgreSQL/extension thực tế nếu được chọn. Tách liveness/readiness, transaction/error handling và cấu hình phiên bản. Chưa xây sẵn bảng, service hoặc dependency cho mọi biến thể mở rộng.
 - **Đầu ra:** migration tối thiểu, persistence adapters, hướng dẫn khởi động và reset dữ liệu phát triển trong phạm vi rõ ràng.
 - **Nghiệm thu:** migrate/read/write và lỗi kết nối được kiểm tra trên DB thật; migration rollback/forward hoặc khôi phục theo cách đã thiết kế. Không giả readiness thành công khi DB lỗi; không tự xóa volume/dữ liệu ngoài test được cho phép.
@@ -110,6 +110,8 @@ Không tự chọn thay người dùng/giảng viên các giá trị ảnh hư�
 - **Nghiệm thu:** paraphrase tương đương có thể hit; gần nghĩa nhưng sai intent hoặc stale/unauthorized phải reject. Đổi embedding phải re-embed hoặc namespace khác; bỏ lỡ invalidation vẫn bị verifier chặn. Có chi phí lookup/embedding/network/verification; chưa suy ra lợi ích workflow từ probe có chủ đích.
 
 ### T12 — Quản lý bản sửa và chạy test tách biệt
+
+- **Tiến độ lát cắt:** đã có read_bundle xác minh mọi bytes snapshot dưới một authority transaction và filesystem prepare/verify bản source riêng. Chưa tạo proposal/patch, artifact-ready hoặc chạy code. Cần source/dependency profile đầy đủ, runtime image/lock/config/launcher profile và harness/fixture được đăng ký tin cậy trước bước thực thi; profile đọc dev ba file không đủ điều kiện này.
 
 - [ ] Hoàn thành T12. **Phụ thuộc:** T02–T08 và cơ chế executor đã chốt tại T04.
 - **Làm:** tạo bản làm việc riêng từ đúng source snapshot; áp patch trong scope, sinh diff thật và proposal revision; chạy allowlist test/build có timeout/giới hạn trong môi trường tách khỏi control. Tạo artifact bất biến và test evidence gắn artifact/fixture/config hashes.
@@ -162,7 +164,7 @@ Không tự chọn thay người dùng/giảng viên các giá trị ảnh hư�
 
 ## Bước tiếp theo ngay lúc này
 
-Gói local v0.1 đã được chọn; blob, registry và snapshot có quyền đã triển khai nội bộ/kiểm chứng. Đã nối read-only snapshot vào HTTP/Workspace bằng Bearer control và CLI cấu hình host. Profile dev read-only đã đăng ký và kiểm chứng qua Docker/Workspace. Tiếp theo artifact/harness theo dependency; không có API nhận path tùy ý hoặc tự cấp quyền. Artifact/harness, patch scope/stale check và launcher/gate vẫn theo dependency, không dùng snapshot làm approval. App báo giá giữ validator nền chưa có rule expiration_review. T07 vẫn cần review oracle/one-fixture contract; R/config và artifact phải được runtime tin cậy cấp trước đóng băng source gốc/fixture nghiên cứu. Acceptance/protocol nghiên cứu chưa khóa, không bắt đầu run so sánh. Chi tiết trạng thái ở project-status; câu hỏi còn mở ở [overview](overview.md#giả-định-và-câu-hỏi-mở).
+Gói local v0.1 đã được chọn; blob, registry và snapshot có quyền đã triển khai nội bộ/kiểm chứng. Đã nối read-only snapshot vào HTTP/Workspace bằng Bearer control và CLI cấu hình host. Profile dev read-only đã đăng ký và kiểm chứng qua Docker/Workspace. Đã có bundle đầy đủ và source staging nội bộ. Tiếp theo khóa source/dependency và runtime/test profiles trước artifact-ready/harness theo dependency; không có API nhận path tùy ý hoặc tự cấp quyền. Artifact/harness, patch scope/stale check và launcher/gate vẫn theo dependency, không dùng snapshot làm approval. App báo giá giữ validator nền chưa có rule expiration_review. T07 vẫn cần review oracle/one-fixture contract; R/config và artifact phải được runtime tin cậy cấp trước đóng băng source gốc/fixture nghiên cứu. Acceptance/protocol nghiên cứu chưa khóa, không bắt đầu run so sánh. Chi tiết trạng thái ở project-status; câu hỏi còn mở ở [overview](overview.md#giả-định-và-câu-hỏi-mở).
 
 | Trước bước phụ thuộc | Cần khóa |
 | --- | --- |

@@ -132,6 +132,55 @@ def setup():
     return backend, source, service
 
 
+def test_complete_bundle_reads_only_saved_bytes_and_checks_every_file(setup):
+    backend, source, service = setup
+    source.config = replace(source.config, paths=("a.py", "nested/b.py"))
+    source.files = (
+        CapturedSourceFile("a.py", b"before\r\n\x00"),
+        CapturedSourceFile("nested/b.py", b"\xff\n"),
+    )
+    backend.snapshots.profile_digest = source.config.digest
+    snapshot = service.capture(TOKEN, backend.scope)
+    original = source.files
+    source.files = (CapturedSourceFile("a.py", b"working-tree-changed"),)
+    bundle = service.read_bundle(TOKEN, backend.scope, snapshot.snapshot_id)
+    assert bundle.snapshot == snapshot and bundle.files == original
+    assert "before" not in repr(bundle)
+    backend.blobs.content[snapshot.files[-1].blob.digest] = b"tampered"
+    # Metadata-only get remains metadata-only; it is not complete-payload evidence.
+    assert service.get(TOKEN, backend.scope, snapshot.snapshot_id) == snapshot
+    with pytest.raises(SnapshotIntegrityError):
+        service.read_bundle(TOKEN, backend.scope, snapshot.snapshot_id)
+
+
+def test_complete_bundle_denies_before_io_and_does_not_return_before_commit(setup):
+    backend, source, service = setup
+    snapshot = service.capture(TOKEN, backend.scope)
+    backend.blobs.reads = 0
+    backend.grants = frozenset()
+    with pytest.raises(ControlAccessDenied):
+        service.read_bundle(TOKEN, backend.scope, snapshot.snapshot_id)
+    with pytest.raises(ControlIdentityRequired):
+        service.read_bundle(None, backend.scope, snapshot.snapshot_id)
+    with pytest.raises(ControlResourceUnavailable):
+        service.read_bundle(TOKEN, RepositoryScope(uuid4(), uuid4()), snapshot.snapshot_id)
+    assert backend.blobs.reads == 0
+    backend.grants = frozenset({ControlCapability.REPOSITORY_READ})
+    backend.fail_commit = True
+    with pytest.raises(SnapshotStorageUnavailable):
+        service.read_bundle(TOKEN, backend.scope, snapshot.snapshot_id)
+
+
+def test_complete_bundle_blocks_old_active_profile_before_reading_bytes(setup):
+    backend, source, service = setup
+    snapshot = service.capture(TOKEN, backend.scope)
+    backend.snapshots.profile_digest = "sha256:" + "0" * 64
+    backend.blobs.reads = 0
+    with pytest.raises(ControlResourceUnavailable):
+        service.read_bundle(TOKEN, backend.scope, snapshot.snapshot_id)
+    assert backend.blobs.reads == 0
+
+
 def test_snapshot_retains_original_bytes_and_same_bytes_have_stable_manifest(setup):
     backend, source, service = setup
     first = service.capture(TOKEN, backend.scope)

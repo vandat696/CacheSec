@@ -91,6 +91,89 @@ def test_real_capture_reads_saved_bytes_after_working_tree_changes(snapshot_setu
         assert connection.execute("SELECT count(*) FROM control.artifact_blobs").fetchone() == (5,)
 
 
+def test_bundle_preparation_uses_saved_bytes_with_real_database(snapshot_setup, tmp_path):
+    from app.repositories.filesystem_snapshot_workspace import FileSystemSnapshotWorkspace
+
+    env = snapshot_setup
+    snapshot = env.service.capture(TOKEN, env.scope)
+    (env.root / "app.py").write_bytes(b"working tree changed\n")
+    bundle = env.service.read_bundle(TOKEN, env.scope, snapshot.snapshot_id)
+    workspaces = FileSystemSnapshotWorkspace(tmp_path / "prepared")
+    first = workspaces.prepare(bundle)
+    second = workspaces.prepare(bundle)
+    assert first.directory != second.directory
+    assert (first.source_root / "app.py").read_bytes() == b"before\r\n\x00"
+    workspaces.verify(first)
+    assert first.snapshot.manifest_blob == snapshot.manifest_blob
+    with env.database.connection() as connection:
+        assert connection.execute("SELECT count(*) FROM control.snapshots").fetchone() == (1,)
+
+
+def test_bundle_holds_authority_lock_for_all_bytes_and_rechecks_revoke(snapshot_setup, monkeypatch):
+    env = snapshot_setup
+    snapshot = env.service.capture(TOKEN, env.scope)
+    original = env.store.get
+    reads = []
+
+    def read(digest):
+        if not reads:
+            with pytest.raises(psycopg.errors.LockNotAvailable):
+                with env.database.connection() as competing:
+                    competing.execute("SET LOCAL lock_timeout = '100ms'")
+                    PostgresAuthorityAdministration(competing).configure_principal(
+                        env.principal,
+                        frozenset(),
+                        expected_epoch=3,
+                    )
+        reads.append(digest)
+        return original(digest)
+
+    monkeypatch.setattr(env.store, "get", read)
+    assert env.service.read_bundle(TOKEN, env.scope, snapshot.snapshot_id).snapshot == snapshot
+    assert snapshot.files[0].blob.digest in reads
+    with env.database.connection() as connection:
+        PostgresAuthorityAdministration(connection).configure_principal(
+            env.principal,
+            frozenset(),
+            expected_epoch=3,
+        )
+    reads.clear()
+    with pytest.raises(ControlAccessDenied):
+        env.service.read_bundle(TOKEN, env.scope, snapshot.snapshot_id)
+    assert reads == []
+
+
+def test_bundle_is_not_returned_when_real_read_transaction_commit_fails(
+    snapshot_setup, monkeypatch
+):
+    from app.repositories.postgres_repository_snapshots import PostgresSnapshotRepository
+
+    env = snapshot_setup
+    snapshot = env.service.capture(TOKEN, env.scope)
+    with env.database.connection() as connection:
+        connection.execute("CREATE TABLE control.bundle_commit_parent (id integer PRIMARY KEY)")
+        connection.execute(
+            "CREATE TABLE control.bundle_commit_child (parent integer REFERENCES "
+            "control.bundle_commit_parent(id) DEFERRABLE INITIALLY DEFERRED)"
+        )
+    original = PostgresSnapshotRepository.get
+
+    def inject_deferred_error(repository, scope, snapshot_id):
+        loaded = original(repository, scope, snapshot_id)
+        repository._connection.execute("INSERT INTO control.bundle_commit_child VALUES (1)")
+        return loaded
+
+    with monkeypatch.context() as patch:
+        patch.setattr(PostgresSnapshotRepository, "get", inject_deferred_error)
+        with pytest.raises(SnapshotStorageUnavailable):
+            env.service.read_bundle(TOKEN, env.scope, snapshot.snapshot_id)
+    with env.database.connection() as connection:
+        assert connection.execute(
+            "SELECT count(*) FROM control.bundle_commit_child"
+        ).fetchone() == (0,)
+    assert env.service.read_bundle(TOKEN, env.scope, snapshot.snapshot_id).snapshot == snapshot
+
+
 def test_revocation_blocks_capture_and_existing_file_reads(snapshot_setup):
     env = snapshot_setup
     snapshot = env.service.capture(TOKEN, env.scope)

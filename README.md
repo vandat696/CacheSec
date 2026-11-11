@@ -33,6 +33,8 @@ Bối cảnh đã cập nhật ngày **2026-11-02**. Frontend có thêm **Develo
 
 App báo giá chạy HTTP độc lập với quyền fixture được backend kiểm tra; giao diện dùng API này tại /quotations, mở từ sidebar hoặc toolbar Workspace. Control HTTP lấy scope từ principal backend và kiểm quyền hiện tại theo tenant/repo; đã cấp principal/profile dev chỉ đọc ba file business, API chạy bằng Docker local vì DLL psycopg Windows bị chặn. [Setup snapshot và Docker dev](docs/general/setup.md#2e-control-dev-trong-docker-khi-python-windows-bị-chặn) có hướng dẫn. Chưa có fixture báo giá đóng băng, Local Semantic Cache, embedding/matching/verification, model adapter, backend approval/deployment control, audit log hoặc runner thực nghiệm. Change Review/Phê duyệt/Nhật ký trong Workspace mới là bản mẫu; nút Triển khai luôn khóa. Dữ liệu demo không phải số đo hoặc bằng chứng quyền. Chat/tệp/cấu hình nháp mất khi tải lại; chọn RBAC/ABAC trong UI không cấp quyền.
 
+Backend còn có [bundle snapshot và source staging nội bộ](docs/system/architecture.md#bundle-snapshot-và-staging-đã-triển-khai): xác minh mọi bytes và chuẩn bị bản source riêng cho bước artifact/harness; chưa có artifact-ready hoặc thực thi code.
+
 ## Công nghệ và tổ chức
 
 | Thư mục | Vai trò |

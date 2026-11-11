@@ -1,6 +1,5 @@
 """Authorized capture and reads of immutable scoped source bytes."""
 
-import json
 from contextlib import AbstractContextManager
 from dataclasses import dataclass
 from typing import Protocol
@@ -16,6 +15,7 @@ from app.identity.control_authority import (
     ControlResourceUnavailable,
     RepositoryScope,
 )
+from app.repositories.snapshot_bundles import SnapshotBundle, decode_snapshot_profile
 from app.repositories.snapshot_models import (
     CapturedSourceFile,
     RepositorySnapshot,
@@ -50,40 +50,6 @@ class SnapshotSession:
 
 class SnapshotTransactions(Protocol):
     def open(self) -> AbstractContextManager[SnapshotSession]: ...
-
-
-def _decode_profile(content: bytes, snapshot: RepositorySnapshot) -> SourceProfile:
-    try:
-        data = json.loads(content)
-        if (
-            type(data) is not dict
-            or type(data.get("paths")) is not list
-            or any(
-                type(data.get(key)) is not str
-                for key in ("tenant_id", "repo_id", "repository_identity")
-            )
-        ):
-            raise ValueError("Invalid profile schema.")
-        profile = SourceProfile(
-            RepositoryScope(UUID(data["tenant_id"]), UUID(data["repo_id"])),
-            data["repository_identity"],
-            tuple(data["paths"]),
-            data["max_file_bytes"],
-            data["max_files"],
-            data["max_total_bytes"],
-        )
-        if (
-            content != encode_metadata(profile.metadata())
-            or profile.scope != snapshot.scope
-            or profile.repository_identity != snapshot.repository_identity
-            or profile.paths != tuple(item.path for item in snapshot.files)
-            or any(item.blob.byte_size > profile.max_file_bytes for item in snapshot.files)
-            or sum(item.blob.byte_size for item in snapshot.files) > profile.max_total_bytes
-        ):
-            raise ValueError("Profile does not match its snapshot.")
-        return profile
-    except (KeyError, TypeError, ValueError, UnicodeError) as error:
-        raise SnapshotIntegrityError("Stored source profile is invalid.") from error
 
 
 class RepositorySnapshotService:
@@ -195,7 +161,7 @@ class RepositorySnapshotService:
             or session.snapshots.active_profile(scope) != current_profile.digest
         ):
             raise ControlResourceUnavailable()
-        _decode_profile(self._read_blob(session, snapshot.profile_blob), snapshot)
+        decode_snapshot_profile(self._read_blob(session, snapshot.profile_blob), snapshot)
         if self._read_blob(session, snapshot.manifest_blob) != encode_metadata(snapshot.manifest()):
             raise SnapshotIntegrityError("Snapshot records do not match their manifest.")
         return snapshot
@@ -219,3 +185,24 @@ class RepositorySnapshotService:
                 raise ControlResourceUnavailable()
             content = self._read_blob(session, item.blob)
         return content
+
+    def read_bundle(
+        self, token: str | None, scope: RepositoryScope, snapshot_id: UUID
+    ) -> SnapshotBundle:
+        """Authorize and verify every file under one authority lock through commit.
+
+        This grants access to saved bytes only, not execution, freshness against the
+        working tree, dependency completeness, artifact readiness or deployment.
+        """
+        with self._transactions.open() as session:
+            _, repository = self._authorize(session, token, scope)
+            snapshot = self._load(session, scope, snapshot_id, repository.identity)
+            bundle = SnapshotBundle(
+                snapshot,
+                self._read_blob(session, snapshot.profile_blob),
+                tuple(
+                    CapturedSourceFile(item.path, self._read_blob(session, item.blob))
+                    for item in snapshot.files
+                ),
+            )
+        return bundle
