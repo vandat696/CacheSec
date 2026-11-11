@@ -168,6 +168,15 @@ class RepositoryAccessService:
         self._transactions = transactions
         self._authorizer = ControlAuthorizer()
 
+    def describe_current(self, token: str | None) -> RegisteredRepository:
+        """Resolve the sole fixture scope from current authority, never from HTTP metadata."""
+        with self._transactions.open() as authority:
+            caller = self._authorizer.authenticate(authority, token)
+            repository = self._authorizer.require(
+                authority, caller, caller.scope, frozenset({ControlCapability.REPOSITORY_READ})
+            )
+        return repository
+
     def describe(self, token: str | None, scope: RepositoryScope) -> RegisteredRepository:
         with self._transactions.open() as authority:
             caller = self._authorizer.authenticate(authority, token)

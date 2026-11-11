@@ -22,16 +22,16 @@ Bối cảnh đã cập nhật ngày **2026-11-02**. Frontend có thêm **Develo
 
 | Thành phần | Hiện có | Giới hạn |
 | --- | --- | --- |
-| Workspace `/workspace` | Bố cục IDE code/chat, diff/bản gốc, hộp thoại test/phê duyệt theo revision và nhật ký thu gọn | Chỉ mô phỏng UI trong phiên; không đọc/sửa repo, gọi Agent, chạy test nghiệp vụ hoặc deploy |
+| Workspace `/workspace` | Đọc snapshot repository qua control API có quyền; chế độ riêng cho diff/test/phê duyệt mẫu | Cần cấu hình nguồn và token control; chưa sửa source, Agent hoặc gate |
 | Thiết lập `/setup` | Chín nhóm mode/dataset/embedding/threshold/eviction/quyền/training/logging/export; snapshot trong phiên, validation và xuất JSON cấu hình | Bản nháp; results null, chưa áp dụng vào Chat hoặc chạy benchmark/training/logging thật |
 | Chat `/` | Lịch sử, bản nháp, Không cache/Cache/Cả hai với prompt chung; modal thông số từng lượt | Phản hồi mô phỏng, chưa AI/RAG hoặc cache thật |
 | Số liệu `/metrics` | Ba tab, biểu đồ/bảng/chi tiết; mặc định 24 truy vấn giả, nguồn phiên riêng tại `/metrics?source=session` | Fixture xem UI, không phải kết quả thực nghiệm |
 | Tài liệu `/documents` | Chọn/thả, phân loại, tìm/lọc tệp trong phiên | Chờ tải lên; chưa đọc/ingest/upload hoặc authorized retrieval |
-| Backend control | FastAPI `GET /health`, `GET /ready`, adapter PostgreSQL, blob storage, registry quyền và snapshot repository nội bộ | Snapshot chưa nối HTTP/UI hoặc cấu hình nguồn thật; readiness chỉ kiểm PostgreSQL, chưa Agent/gate |
+| Backend control | Health/readiness, PostgreSQL/blob/registry và HTTP snapshot/file có Bearer; CLI cấu hình chỉ đọc với epoch CAS | Chưa cấp cấu hình nguồn/token dev; readiness chỉ kiểm PostgreSQL, chưa Agent/gate |
 | Báo giá `/quotations` | Form nhập, danh sách/chi tiết và validation nền nối API/PostgreSQL thật; Bearer fixture reader/operator, retry idempotent | Một dataset dùng chung; validator nền chưa có quy tắc nghiệp vụ, chưa rule ngày hoặc artifact/gate |
 | Hạ tầng | PostgreSQL 17.11/pgvector 0.8.7 qua Compose; đã áp dụng migration báo giá và kiểm chứng DB thật | Control có index blob thô; chưa schema approval/deployment hoặc artifact-ready |
 
-App báo giá chạy HTTP độc lập với quyền fixture được backend kiểm tra; giao diện dùng API này tại /quotations, mở từ sidebar hoặc toolbar Workspace. Registry control đã có code kiểm quyền hiện tại theo tenant/repo nhưng chưa cấu hình principals hoặc nối endpoint. Chưa có fixture báo giá đóng băng, Local Semantic Cache, embedding/matching/verification, model adapter, backend approval/deployment control, audit log hoặc runner thực nghiệm. Change Review/Phê duyệt/Nhật ký trong Workspace mới là bản mẫu; nút Triển khai luôn khóa. Dữ liệu demo không phải số đo hoặc bằng chứng quyền. Chat/tệp/cấu hình nháp mất khi tải lại; chọn RBAC/ABAC trong UI không cấp quyền.
+App báo giá chạy HTTP độc lập với quyền fixture được backend kiểm tra; giao diện dùng API này tại /quotations, mở từ sidebar hoặc toolbar Workspace. Control HTTP lấy scope từ principal backend và kiểm quyền hiện tại theo tenant/repo; có CLI cấu hình read-only tường minh, chưa cấp principal/profile dev. [Setup snapshot](docs/general/setup.md#2d-repository-snapshot-và-workspace) có hướng dẫn. Chưa có fixture báo giá đóng băng, Local Semantic Cache, embedding/matching/verification, model adapter, backend approval/deployment control, audit log hoặc runner thực nghiệm. Change Review/Phê duyệt/Nhật ký trong Workspace mới là bản mẫu; nút Triển khai luôn khóa. Dữ liệu demo không phải số đo hoặc bằng chứng quyền. Chat/tệp/cấu hình nháp mất khi tải lại; chọn RBAC/ABAC trong UI không cấp quyền.
 
 ## Công nghệ và tổ chức
 

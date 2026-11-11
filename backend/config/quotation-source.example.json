@@ -1,0 +1,14 @@
+{
+  "tenant_id": "11111111-1111-4111-8111-111111111111",
+  "repo_id": "22222222-2222-4222-8222-222222222222",
+  "repository_identity": "cachesec-quotation-local-v1",
+  "root": "C:/path/to/CacheSec",
+  "paths": [
+    "backend/app/quotation_demo/business/quotation_models.py",
+    "backend/app/quotation_demo/business/quotation_service.py",
+    "backend/app/quotation_demo/business/quotation_validation.py"
+  ],
+  "max_file_bytes": 1048576,
+  "max_files": 256,
+  "max_total_bytes": 20971520
+}

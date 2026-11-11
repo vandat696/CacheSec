@@ -2,7 +2,7 @@
 
 ## Trạng thái và phạm vi
 
-**Đặc tả T02 v0.2 ngày 2026-11-07; đã triển khai tạo/danh sách/chi tiết và validation nền báo giá, GET /health và GET /ready.** Validation nền chưa có rule ngày; control/cache và validation gắn runtime artifact vẫn là thiết kế. API báo giá có entrypoint và quyền fixture riêng, được mô tả bên dưới; [domain/storage](architecture.md#lưu-trữ-báo-giá-đã-triển-khai) có migration riêng. Contract này cụ thể hóa [kiến trúc](architecture.md#bản-nháp-t02-module-và-contract), không phải SDK đã phát hành hoặc workflow Agent đang chạy. Các ví dụ JSON đều là dữ liệu giả minh họa, không phải fixture hoặc kết quả đo.
+**Đặc tả T02 v0.2 ngày 2026-11-07; đã triển khai tạo/danh sách/chi tiết và validation nền báo giá, GET /health và GET /ready.** Validation nền chưa có rule ngày; HTTP snapshot/file đã triển khai; workflow/cache và validation gắn runtime artifact vẫn là thiết kế. API báo giá có entrypoint và quyền fixture riêng, được mô tả bên dưới; [domain/storage](architecture.md#lưu-trữ-báo-giá-đã-triển-khai) có migration riêng. Contract này cụ thể hóa [kiến trúc](architecture.md#bản-nháp-t02-module-và-contract), không phải SDK đã phát hành hoặc workflow Agent đang chạy. Các ví dụ JSON đều là dữ liệu giả minh họa, không phải fixture hoặc kết quả đo.
 
 Đầu vào đã được người dùng chọn nằm tại [hồ sơ T01](../general/overview.md#hồ-sơ-đầu-vào-t01--đang-thực-hiện): sáu trường báo giá; ngày YYYY-MM-DD có thật và d >= 2026-11-07 trong fixture; Context Cache/browser trước; identity fixture backend quản lý; Developer được duyệt nếu có quyền Reviewer hiện tại. Acceptance vẫn chờ cô quy định, không mặc định 100%.
 
@@ -146,11 +146,28 @@ Ví dụ riêng phần data sau khi artifact có rule được phê duyệt và 
 
 ## Resource của control
 
-Registry identity/repository đã có [use case Python nội bộ](authorization.md#registry-control-nội-bộ-đã-triển-khai) và migration 002; snapshot có service nội bộ/migration 003 như mục sau. Chưa có endpoint Session/repository/snapshot hoặc token control được cấp local. RepositoryAccessService chỉ trả registry identity/authority epoch; RepositorySnapshotService chụp/đọc source có quyền. Bảng resource bên dưới vẫn mô tả API mục tiêu; chưa thay đổi OpenAPI/HTTP.
+Registry identity/repository và snapshot đã nối HTTP/Workspace ngày 2026-11-11; migration 002/003 và service giữ nguyên. HTTP repository lấy scope từ principal hiện tại trong DB, không có Session endpoint hoặc API cấp quyền. Chưa cấp token/profile dev. Các resource workflow/approval bên dưới vẫn là mục tiêu.
+
+### HTTP snapshot đã triển khai
+
+Control dùng Bearer riêng, không nhận token reader/operator của app báo giá. Mỗi thao tác lấy scope từ principal hiện tại qua RepositoryAccessService.describe_current, rồi service snapshot xác thực/kiểm repository.read lại trong transaction snapshot. Không có scope, root, path, role, profile hoặc digest do browser cấp. Các route không nhận query/body; UUID trên path chỉ là selector tài nguyên.
+
+| Method/path | Thành công và data |
+| --- | --- |
+| GET /api/v1/repository | 200: tenant_id, repo_id, repository_identity, authority_epoch từ registry hiện tại |
+| POST /api/v1/repository/snapshots | 201: snapshot_id, repository_identity, source_profile_digest, manifest_digest, files |
+| GET /api/v1/repository/snapshots/{snapshot_id} | 200: metadata snapshot; files gồm file_id, path tương đối, digest, byte_size |
+| GET /api/v1/repository/snapshots/{snapshot_id}/files/{file_id} | 200: snapshot_id, file_id, encoding = base64, content giữ đúng bytes đã lưu |
+
+Response có data/meta v0.2 với identity_mode = fixture và request_id UUID do backend sinh; X-Request-ID khớp meta, Cache-Control: no-store và X-Content-Type-Options: nosniff. OpenAPI có schema response. CORS allowlist CORS_ORIGINS cho GET/POST và Authorization/Content-Type, expose X-Request-ID; không cookie credentials. Capture chưa idempotent: mất response hoặc hủy request không có nghĩa DB rollback; tạo lại có thể thêm snapshot cùng manifest, không tự retry.
+
+Lỗi không echo input/exception/path/token: 400 INVALID_REQUEST cho body/query/UUID sai; 401 IDENTITY_REQUIRED kèm WWW-Authenticate; 403 ACCESS_DENIED trước đọc source khi thiếu quyền; 404 RESOURCE_UNAVAILABLE cho scope/ID/profile không khả dụng. 409 SOURCE_CHANGED khi source đổi giữa capture; 413 SOURCE_LIMIT_EXCEEDED hoặc PAYLOAD_TOO_LARGE. 503 gồm AUTHORITY_UNAVAILABLE, SOURCE_NOT_CONFIGURED, SOURCE_UNAVAILABLE, STORAGE_UNAVAILABLE hoặc INTEGRITY_UNVERIFIED; không trả bytes chưa xác minh. Lỗi lập trình trả 500 INTERNAL_ERROR, không giả thành snapshot rỗng. Body khai báo trên 64 KiB bị chặn trước route; bất kỳ body thực nào cũng bị từ chối vì thao tác này không có body.
+
+Worker chỉ tải binding từ CONTROL_REPOSITORY_CONFIG và dùng DATABASE_URL/CONTROL_ARTIFACT_ROOT tường minh; không tự seed/sync quyền hoặc profile. CLI host ở [setup](../general/setup.md#2d-repository-snapshot-và-workspace). Chưa có list toàn repository, source write, Git revision, Agent, artifact/test/approval hoặc deployment.
 
 ### Contract snapshot nội bộ đã triển khai
 
-RepositorySnapshotService nhận token/scope, capture tạo snapshot ID và file IDs UUID; get cần snapshot ID, read_file cần snapshot ID + file ID. Không nhận path/root/digest tùy ý từ người gọi. Cả ba cần repository.read hiện tại và active profile digest trong DB khớp cấu hình backend; ID/digest không cấp quyền. Các lỗi domain/adapter chưa có HTTP mapping. Chi tiết path/limits, storage/transaction và trust boundary ở [snapshot architecture](architecture.md#snapshot-repository-đã-triển-khai).
+RepositorySnapshotService nhận token/scope, capture tạo snapshot ID và file IDs UUID; get cần snapshot ID, read_file cần snapshot ID + file ID. Không nhận path/root/digest tùy ý từ người gọi. Cả ba cần repository.read hiện tại và active profile digest trong DB khớp cấu hình backend; ID/digest không cấp quyền. Các lỗi domain/adapter được ánh xạ ở HTTP snapshot bên dưới. Chi tiết path/limits, storage/transaction và trust boundary ở [snapshot architecture](architecture.md#snapshot-repository-đã-triển-khai).
 
 SourceProfile canonical có kind = repository-source-profile/schema_version = 1, tenant_id/repo_id, repository_identity, paths sắp tăng dần và max_file_bytes/max_files/max_total_bytes. Manifest canonical có kind = repository-snapshot/schema_version = 1, tenant_id/repo_id, repository_identity, source_profile_digest và files sắp theo path; mỗi item gồm path/digest/byte_size. Dùng encoder cachesec-json-v1; raw source bytes giữ nguyên. Không đưa root tuyệt đối, token, clock hoặc snapshot/file IDs ngẫu nhiên vào content digest. Wrapper DB giữ snapshot/file ID, actor/authority epoch và thời điểm tạo. Đây chưa phải artifact manifest hoặc ChangeBinding, không có runtime/test/deploy evidence.
 

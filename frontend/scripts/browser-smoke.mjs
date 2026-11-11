@@ -10,6 +10,7 @@ import { fileURLToPath } from "node:url";
 import { checkDeveloperPreview } from "./developer-browser-check.mjs";
 import { checkUiTemplates } from "./ui-template-browser-check.mjs";
 import { checkQuotations } from "./quotation-browser-check.mjs";
+import { checkRepository } from "./repository-browser-check.mjs";
 
 const frontend = fileURLToPath(new URL("..", import.meta.url));
 const output = join(frontend, "test-results", "browser");
@@ -239,10 +240,14 @@ try {
   });
   if (process.argv.includes("--quotations-only")) {
     await checkQuotations({ cdp, navigate, evaluate, waitFor, click, fill, key, screenshot });
-  } else {
+  } else if (!process.argv.includes("--repository-only")) {
     await checkDeveloperPreview({ cdp, navigate, evaluate, waitFor, click, fill, key, screenshot });
   }
-  if (!process.argv.includes("--developer-only") && !process.argv.includes("--quotations-only")) {
+  if (process.argv.includes("--repository-only")) {
+    await checkRepository({ cdp, navigate, evaluate, waitFor, click, fill, screenshot });
+    console.log("Repository browser checks passed (real control HTTP/PostgreSQL).");
+  }
+  if (!process.argv.includes("--repository-only") && !process.argv.includes("--developer-only") && !process.argv.includes("--quotations-only")) {
   await navigate("/ui");
   await navigate("/setup");
   assert.equal(await evaluate("document.querySelector('.sidebar nav a').getAttribute('href')"), '/workspace');
@@ -1125,7 +1130,9 @@ try {
   }
   assert.deepEqual(errors, [], "Lỗi runtime/React trên trình duyệt");
   console.log(
-    process.argv.includes("--quotations-only")
+    process.argv.includes("--repository-only")
+      ? "Đạt: Repository qua HTTP/PostgreSQL thật, token/quyền, snapshot/file, binary, response đến trễ, xóa dữ liệu khi bị từ chối và ba bố cục."
+      : process.argv.includes("--quotations-only")
       ? "Đạt: Báo giá qua HTTP/PostgreSQL thật, quyền reader/operator, pagination, missing/null/raw date, retry sau mất response, dữ liệu đến trễ, token trong bộ nhớ và responsive."
       : process.argv.includes("--developer-only")
       ? "Đạt: Workspace IDE code/Agent, diff, hộp thoại test/approval mẫu, invalidation theo revision, hội thoại trống/reset, nhập an toàn, focus/keyboard và 16 bố cục."

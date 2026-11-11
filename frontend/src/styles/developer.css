@@ -1,5 +1,37 @@
 .developer-workspace { height: calc(100dvh - 48px); min-height: 480px; padding: 0 24px 16px; display: flex; flex-direction: column; font-size: 13px; }
 .developer-workspace code { font-family: Consolas, "Cascadia Code", monospace; font-size: .92em; }
+.dev-source-mode { display: flex; gap: 4px; flex-wrap: wrap; }
+.dev-source-mode button { border: 1px solid var(--nui-border); background: var(--nui-surface); padding: 5px 8px; border-radius: 5px; cursor: pointer; font: inherit; }
+.dev-source-mode button[aria-pressed="true"] { background: #eaf1fb; color: #254d80; }
+.developer-workspace[data-preview-only="false"] .dev-workbench { display: block; }
+.developer-workspace[data-preview-only="false"] .dev-editor { height: 100%; }
+.developer-workspace[data-preview-only="false"] .dev-assistant { display: none; }
+.repository-panel { height: 100%; display: flex; flex-direction: column; overflow: auto; }
+.repository-connection, .repository-actions, .repository-open, .repository-reference { padding: 12px 16px; }
+.repository-connection { display: grid; gap: 12px; align-content: start; }
+.repository-connection button { justify-self: start; }
+.repository-actions { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
+.repository-actions > span { overflow-wrap: anywhere; margin-right: auto; }
+.repository-open summary, .repository-reference summary { cursor: pointer; color: var(--nui-muted); }
+.repository-open form { display: flex; align-items: end; gap: 8px; margin-top: 12px; }
+.repository-open .nui-field { flex: 1; min-width: 0; }
+.repository-reference { font-size: 11px; overflow-wrap: anywhere; }
+.repository-reference dd { margin: 3px 0 8px; font-family: Consolas, monospace; }
+.repository-error { margin: 12px 16px; color: #a33333; overflow-wrap: anywhere; }
+.repository-error small { display: block; margin-top: 6px; }
+.repository-notice { padding: 12px 16px; color: var(--nui-muted); line-height: 1.6; }
+.repository-source { display: grid; grid-template-columns: minmax(120px, 28%) minmax(0, 1fr); flex: 1; min-height: 160px; border-top: 1px solid var(--nui-border); }
+.repository-source nav { overflow: auto; border-right: 1px solid var(--nui-border); }
+.repository-source nav button { display: block; width: 100%; padding: 10px; border: 0; border-bottom: 1px solid var(--nui-border); text-align: left; overflow-wrap: anywhere; font: 11px/1.5 Consolas, monospace; color: inherit; background: transparent; cursor: pointer; }
+.repository-source nav button[aria-current] { background: #eaf1fb; }
+.repository-source nav small { display: block; color: var(--nui-muted); margin-top: 4px; }
+.repository-file { overflow: auto; min-width: 0; }
+.repository-file-heading { padding: 10px 14px; overflow-wrap: anywhere; font-size: 11px; border-bottom: 1px solid var(--nui-border); }
+.repository-file pre { padding: 12px 16px; margin: 0; font: 12px/1.7 Consolas, monospace; tab-size: 4; }
+@media (max-width: 600px) {
+  .repository-source { grid-template-columns: minmax(0, 1fr); }
+  .repository-source nav { max-height: 160px; border-right: 0; border-bottom: 1px solid var(--nui-border); }
+}
 .developer-workspace .nui-button { min-height: 32px; padding: 6px 9px; font-size: 12px; }
 .developer-workspace .nui-button .icon { width: 15px; height: 15px; }
 .dev-ide-toolbar { display: flex; align-items: center; flex-wrap: wrap; gap: 10px; min-height: 48px; padding-bottom: 10px; }

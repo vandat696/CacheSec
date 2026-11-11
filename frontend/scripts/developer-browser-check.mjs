@@ -18,6 +18,7 @@ export async function checkDeveloperPreview({ cdp, navigate, evaluate, waitFor, 
 
   await navigate("/workspace");
   await waitFor("!!document.querySelector('.developer-workspace')");
+  await click("#workspace-preview");
   assert.equal(await evaluate("document.querySelector('.developer-workspace').dataset.previewOnly"), "true");
   assert.equal(await evaluate("document.querySelector('.sidebar a[aria-current=page]').getAttribute('href')"), "/workspace");
   assert.equal(await evaluate("document.querySelectorAll('.dev-code-line.added').length"), 7);
@@ -100,6 +101,7 @@ export async function checkDeveloperPreview({ cdp, navigate, evaluate, waitFor, 
   for (const [width, height] of [[360, 800], [390, 844], [820, 1180], [1440, 900]]) {
     await cdp("Emulation.setDeviceMetricsOverride", { width, height, deviceScaleFactor: 1, mobile: width < 768 });
     await navigate("/workspace");
+    await click("#workspace-preview");
     if (width >= 1024) {
       assert.ok(await evaluate("document.querySelector('.dev-editor').getBoundingClientRect().right <= document.querySelector('.dev-assistant').getBoundingClientRect().left + 1"), "Code bên trái, Agent bên phải");
       assert.ok(await evaluate("document.querySelector('.dev-composer').getBoundingClientRect().bottom <= innerHeight"), "Ô nhập nằm trong viewport");

@@ -22,7 +22,8 @@ frontend/src/
       CopyButton.tsx
       Icon.tsx
   features/
-    developer/                 Workspace IDE mô phỏng
+    developer/                 lắp ghép Workspace, workflow IDE mô phỏng
+    repositories/              HTTP snapshot/file, phiên đọc và UI Repository thật
     quotations/                form/danh sách/chi tiết nối API, hook phiên và HTTP adapter
     experiment-config/         profile, comparison, experiment-plan, setup-plan
     ui-library/
@@ -45,7 +46,12 @@ Công cụ xem DB local ở frontend/prisma.config.ts và script npm db:studio �
 ```text
 backend/app/
   control/
-    control_api.py                             khởi tạo API control: /health, /ready
+    control_api.py                             lắp ghép health/readiness và HTTP repository
+    api/repository_routes.py                    HTTP describe/capture/get/file; schema response
+    api/repository_http_app.py                  ánh xạ lỗi HTTP snapshot
+    api/repository_request_middleware.py        body rỗng/cap, request ID/no-store, lỗi 500
+    repository_configuration.py                tải JSON binding host tin cậy, không ghi authority
+    configure_repository.py                     CLI host cấp read-only với expected_epoch
     control_settings.py                        cấu hình control
     health_routes.py                           các endpoint health/readiness
     control_storage.py                         lắp ghép blob service, filesystem và PostgreSQL
@@ -111,7 +117,7 @@ OOP dùng cho đối tượng có trạng thái/phụ thuộc; logic thuần gi�
 
 Blob storage không import HTTP, model báo giá, cache hoặc research; các adapter cùng thực hiện contract bytes/metadata và giữ lỗi thật. Wrapper quotation_migrations giữ các import Migration/MigrationError và load/apply_migrations hiện có, dùng shared mechanics cho đúng hai owner đã có; không thêm generic base repository hoặc layer trống. Migration control chạy python -m app.control.migrate_control; 002_control_authority.sql thêm registry quyền/repository, không seed principal/grants. tests/artifacts kiểm bytes/service/encoder; tests/identity kiểm quyền qua adapter thay thế; tests/control kiểm wiring/migration/DB thật, scope/rotation/epoch/lock. tests/conftest.py cấp DB ngẫu nhiên qua helper dùng chung, mỗi feature giữ fixture tên/scope riêng; không dọn DB từ URL nguồn.
 
-Registry domain không import FastAPI/Psycopg; RepositoryAccessService nhận transaction port rồi xác thực/kiểm repository.read trước trả metadata đã commit. Authorizer có thể dùng ngay authority repository của transaction control hiện tại, không tự mở connection tách biệt. Administration là adapter backend tin cậy, caller chịu trách nhiệm commit/rollback; không phải Agent tool hoặc route public. Registry metadata vẫn tách khỏi đọc source; snapshot use case do repositories sở hữu, chưa nối HTTP/UI.
+Registry domain không import FastAPI/Psycopg; RepositoryAccessService nhận transaction port rồi xác thực/kiểm repository.read trước trả metadata đã commit. Authorizer có thể dùng ngay authority repository của transaction control hiện tại, không tự mở connection tách biệt. Administration là adapter backend tin cậy, caller chịu trách nhiệm commit/rollback; không phải Agent tool hoặc route public. Registry metadata vẫn tách khỏi đọc source; snapshot use case do repositories sở hữu, control/api làm transport. describe_current lấy scope từ principal; snapshot service kiểm lại quyền trong transaction của thao tác. Frontend features/repositories dùng HTTP, không nhận source/token từ workflow mô phỏng.
 
 RepositorySnapshotService nhận source, bytes store và SnapshotTransactions. Session chứa authority/blob index/snapshot ports cùng connection; không gọi ArtifactBlobStorage mở transaction riêng trong capture. PostgresSourceProfileAdministration đổi active profile cùng lock/epoch authority; worker chỉ đọc policy, không tự provision từ config. tests/repositories kiểm path/capture và adapter thay thế; tests/control/test_repository_snapshots_integration.py kiểm DB/commit/constraint/profile freshness. Không có shell/Git/test executor trong adapter đọc source.
 

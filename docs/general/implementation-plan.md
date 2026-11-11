@@ -2,7 +2,7 @@
 
 ## Trạng thái và nguyên tắc
 
-Lập ngày 2026-11-02; cập nhật tiến độ ngày **2026-11-09**. Trạng thái từng gói T01–T17 nằm ở checklist; dấu chọn chỉ xác nhận đầu ra và kiểm chứng thuộc gói đó. **T02 đã hoàn thành đặc tả thiết kế v0.2**; T01 còn chờ điều kiện nghiên cứu. Đã có nền PostgreSQL/readiness và API báo giá tạo/đọc/phân trang độc lập, quyền Bearer fixture, application/ports và retry idempotent; UI /quotations đã nối API. Đây là lát cắt app T03–T07 và phần UI app T15; chưa hoàn thành toàn bộ gói hoặc chọn thay policy/control còn mở. UI IDE vẫn mô phỏng; chưa có workflow backend/cache/gate hoặc chạy thực nghiệm.
+Lập ngày 2026-11-02; cập nhật tiến độ ngày **2026-11-11**. Trạng thái từng gói T01–T17 nằm ở checklist; dấu chọn chỉ xác nhận đầu ra và kiểm chứng thuộc gói đó. **T02 đã hoàn thành đặc tả thiết kế v0.2**; T01 còn chờ điều kiện nghiên cứu. Đã có nền PostgreSQL/readiness và API báo giá tạo/đọc/phân trang độc lập, quyền Bearer fixture, application/ports và retry idempotent; UI /quotations đã nối API. Đây là lát cắt app T03–T07 và phần UI app T15; chưa hoàn thành toàn bộ gói hoặc chọn thay policy/control còn mở. Workspace đã đọc snapshot có quyền qua control HTTP; workflow IDE còn mô phỏng; chưa có workflow backend/cache/gate hoặc chạy thực nghiệm.
 
 Phạm vi và câu hỏi mở do [tổng quan](overview.md) sở hữu; module/runtime do [kiến trúc](../system/architecture.md) sở hữu, request/response/thao tác do [contract API](../system/api.md) sở hữu; quyền/gate do [phân quyền](../system/authorization.md) sở hữu; protocol/fixture/acceptance do [đánh giá](../evaluation/design.md) sở hữu. Kế hoạch này quản lý việc cần làm và điều kiện nghiệm thu, không thay đặc tả của các tài liệu đó.
 
@@ -51,7 +51,7 @@ Không tự chọn thay người dùng/giảng viên các giá trị ảnh hư�
 ### T04 — Thiết kế quyền, executor, gate và trace
 
 - [ ] Hoàn thành T04. **Phụ thuộc:** T01–T03.
-- **Trạng thái:** quyền/freshness API báo giá đã triển khai riêng. [Gói gate local v0.1](../system/authorization.md#phương-án-gate-local-v01-để-chốt) đã được người dùng chọn: authority/TTL/single-use, Docker executor/target, reservation/dispatch/reconciliation và failure boundary. Registry quyền control nội bộ đã có scope lock/epoch và kiểm quyền hiện tại; chưa cấp principal/grants local hoặc nối HTTP/gate/launcher, chưa kiểm chứng host isolation. T04 cho cache/retrieval/delegation còn mở; không dùng quyền app báo giá hoặc blob index làm quyền duyệt/deploy.
+- **Trạng thái:** quyền/freshness API báo giá đã triển khai riêng. [Gói gate local v0.1](../system/authorization.md#phương-án-gate-local-v01-để-chốt) đã được người dùng chọn: authority/TTL/single-use, Docker executor/target, reservation/dispatch/reconciliation và failure boundary. Registry quyền control nội bộ đã có scope lock/epoch và kiểm quyền hiện tại; đã nối Bearer HTTP snapshot và CLI read-only; chưa cấp principal/grants local hoặc nối gate/launcher, chưa kiểm chứng host isolation. T04 cho cache/retrieval/delegation còn mở; không dùng quyền app báo giá hoặc blob index làm quyền duyệt/deploy.
 - **Làm:** chốt nguồn identity/authority (identity fixture do backend kiểm soát nếu được chọn phải ghi là mô phỏng), repo/path/tool scope, freshness/revoke, offline policy, trusted provenance/integrity; chọn cơ chế cô lập source/test và giới hạn lệnh/tài nguyên/timeout. Đặc tả exact-change approval, artifact bất biến, kiểm tra cùng digest tại activation và mọi đường bypass thuộc PoC. Định nghĩa event/ID/digest/error tối thiểu để instrument ngay từ đầu.
 - **Đầu ra:** control/threat boundary và test matrix trong authorization; event schema/nguồn đo trong evaluation; cập nhật contract/schema ở T02–T03 nếu cần.
 - **Nghiệm thu:** nêu được cách block chưa duyệt, sai quyền, mã/artifact/evidence đổi sau duyệt, verifier lỗi và source stale; gate không thuộc cache. Process riêng chưa được xem là đủ sandbox. Không chạy Agent hoặc kích hoạt artifact trước khi các điều kiện an toàn phụ thuộc đã được khóa.
@@ -59,7 +59,7 @@ Không tự chọn thay người dùng/giảng viên các giá trị ảnh hư�
 ### T05 — Nối database và nền lưu trữ backend
 
 - [ ] Hoàn thành T05. **Phụ thuộc:** T02–T04 đã đủ điều kiện triển khai.
-- **Trạng thái:** đã có PostgreSQL/metadata retry báo giá, blob control 001, registry 002 và source profile/snapshot 003. Migration local/replay no-op giữ dữ liệu/history báo giá, registry và blob; không seed quyền/profile hoặc capture source thật. 302 test backend với PostgreSQL thật đạt. Artifact/test/approval/deployment persistence và toàn T04 còn tiếp tục.
+- **Trạng thái:** đã có PostgreSQL/metadata retry báo giá, blob control 001, registry 002 và source profile/snapshot 003. Migration local/replay no-op giữ dữ liệu/history báo giá, registry và blob; không seed quyền/profile hoặc capture source thật. 312 test backend với PostgreSQL thật trong container Linux đạt; xem project-status cho giới hạn host. Artifact/test/approval/deployment persistence và toàn T04 còn tiếp tục.
 - **Làm:** cấu hình kết nối, migration/constraints và adapter lưu trữ cần dùng ngay; kiểm chứng PostgreSQL/extension thực tế nếu được chọn. Tách liveness/readiness, transaction/error handling và cấu hình phiên bản. Chưa xây sẵn bảng, service hoặc dependency cho mọi biến thể mở rộng.
 - **Đầu ra:** migration tối thiểu, persistence adapters, hướng dẫn khởi động và reset dữ liệu phát triển trong phạm vi rõ ràng.
 - **Nghiệm thu:** migrate/read/write và lỗi kết nối được kiểm tra trên DB thật; migration rollback/forward hoặc khôi phục theo cách đã thiết kế. Không giả readiness thành công khi DB lỗi; không tự xóa volume/dữ liệu ngoài test được cho phép.
@@ -67,7 +67,7 @@ Không tự chọn thay người dùng/giảng viên các giá trị ảnh hư�
 ### T06 — Thực thi identity, scope và trace nền
 
 - [ ] Hoàn thành T06. **Phụ thuộc:** T04–T05.
-- **Trạng thái:** API báo giá có registry fixture và request ID backend. Control có registry Python nội bộ, composite tenant/repo/FK, token version, grants tường minh, scope lock/epoch CAS và repository.read use case qua transaction port; đã test quyền/revoke/rotation/concurrency trên DB thật. Chưa nối identity HTTP control, cấu hình principal/scope thật, policy epoch riêng, delegation hoặc event persistence/audit nghiên cứu; chưa hoàn thành toàn T06.
+- **Trạng thái:** API báo giá có registry fixture và request ID backend. Control có registry Python nội bộ, composite tenant/repo/FK, token version, grants tường minh, scope lock/epoch CAS và repository.read use case qua transaction port; đã test quyền/revoke/rotation/concurrency trên DB thật. Đã nối Bearer HTTP lấy scope từ registry và CLI host có epoch CAS; chưa cấp principal/scope dev, policy epoch riêng, delegation hoặc event persistence/audit nghiên cứu; chưa hoàn thành toàn T06.
 - **Làm:** middleware/dependency lấy identity đáng tin cậy, kiểm tra tenant/repo/action; lưu policy/config versions và tạo request/run/event IDs. Bổ sung thời gian thực tế, outcome/reason, lỗi/timeout và redaction cho các thao tác đã có; mỗi năng lực sau phải mở rộng trace của chính nó.
 - **Đầu ra:** authorization service nhỏ, bộ kiểm tra scope và event persistence theo contract; không tạo policy engine tổng quát.
 - **Nghiệm thu:** giả tenant/role/scope, thiếu quyền và authority unavailable bị chặn; trace success/deny/error không lộ secrets. Chưa có nghiệp vụ không được sinh event cache/test/deploy giả.
@@ -83,7 +83,7 @@ Không tự chọn thay người dùng/giảng viên các giá trị ảnh hư�
 ### T08 — Đọc repository được phép và theo dõi provenance
 
 - [ ] Hoàn thành T08. **Phụ thuộc:** T02, T04, T06–T07.
-- **Trạng thái:** đã có service snapshot có quyền, exact-file profile/root tường minh, DB active profile/epoch, manifest/blob refs, hai lượt đọc và get/read_file bằng scoped IDs. Đã test deny, traversal/case/hard-link/junction, source edit, tamper/rollback/COMMIT failure và worker giữ profile cũ. Chưa chọn profile nguồn thật hoặc nối HTTP/UI, chưa Git/base revision, dependency completeness, symbol retrieval/RAG hoặc kiểm source stale tại patch/use; chưa hoàn thành toàn T08.
+- **Trạng thái:** đã có service snapshot có quyền, exact-file profile/root tường minh, DB active profile/epoch, manifest/blob refs, hai lượt đọc và get/read_file bằng scoped IDs. Đã test deny, traversal/case/hard-link/junction, source edit, tamper/rollback/COMMIT failure và worker giữ profile cũ. Đã nối HTTP/Workspace và có profile mẫu exact-file/CLI; chưa cấp profile dev thật, chưa Git/base revision, dependency completeness, symbol retrieval/RAG hoặc kiểm source stale tại patch/use; chưa hoàn thành toàn T08.
 - **Làm:** repository adapter đọc source mục tiêu theo repo/path/snapshot; lấy file/symbol/context cần thiết, dependency manifest và hash từ nguồn tin cậy. Xác định snapshot khi working tree chưa commit và cách phát hiện file đổi; chỉ thêm index/RAG cần cho lát cắt.
 - **Đầu ra:** authorized retrieval có provenance, không phụ thuộc trực tiếp vào model nghiệp vụ báo giá.
 - **Nghiệm thu:** tìm đúng validation; deny repo/path ngoài scope, traversal/symlink và secrets theo policy. Mọi dependency cần có bằng chứng; source thay đổi phải phát hiện trước reuse hoặc sửa code. Code control/cache/gate không nằm trong scope Agent được sửa.
@@ -133,7 +133,7 @@ Không tự chọn thay người dùng/giảng viên các giá trị ảnh hư�
 ### T15 — Nối giao diện IDE và màn báo giá với backend
 
 - [ ] Hoàn thành T15. **Phụ thuộc:** API ở T07 và workflow T14.
-- **Trạng thái:** đã nối phần app báo giá: form/danh sách/chi tiết qua API, token fixture trong bộ nhớ, lỗi/quyền/retry thật, liên kết từ Workspace. IDE code/Agent/review/test/deploy còn mô phỏng; T15 chưa hoàn thành toàn bộ.
+- **Trạng thái:** đã nối phần app báo giá: form/danh sách/chi tiết qua API, token fixture trong bộ nhớ, lỗi/quyền/retry thật, liên kết từ Workspace. IDE đã đọc snapshot/file thật có quyền; Agent/review/test/deploy còn mô phỏng; T15 chưa hoàn thành toàn bộ.
 - **Làm:** tái sử dụng code/chat IDE, thay fixture bằng source/diff/message/status thật; nối hộp thoại test/approval. Thêm màn báo giá tối giản dùng API app để nhập/xem/validation và quan sát trước/sau activation; route cụ thể theo contract đã chốt, không dựng ERP hoặc IDE đầy đủ.
 - **Đầu ra:** demo sử dụng được từ trình duyệt: prompt → diff/test → reviewer duyệt → kích hoạt → báo giá phản ánh rule mới.
 - **Nghiệm thu:** UI không tự bịa hit/test/approval; loading/error/reconnect và stale revision rõ; thao tác chưa được phép không thành công qua API. Code/chat vẫn là hai vùng chính, giữ UI ít chữ, accessibility/responsive và các màn cũ.
@@ -162,7 +162,7 @@ Không tự chọn thay người dùng/giảng viên các giá trị ảnh hư�
 
 ## Bước tiếp theo ngay lúc này
 
-Gói local v0.1 đã được chọn; blob, registry và snapshot có quyền đã triển khai nội bộ/kiểm chứng. Tiếp theo review profile nguồn thật/đăng ký cấu hình tin cậy và nối read-only snapshot vào HTTP/Workspace; chưa có session/control identity transport hoặc public path API. Artifact/harness, patch scope/stale check và launcher/gate vẫn theo dependency, không dùng snapshot làm approval. App báo giá giữ validator nền chưa có rule expiration_review. T07 vẫn cần review oracle/one-fixture contract; R/config và artifact phải được runtime tin cậy cấp trước đóng băng source gốc/fixture nghiên cứu. Acceptance/protocol nghiên cứu chưa khóa, không bắt đầu run so sánh. Chi tiết trạng thái ở project-status; câu hỏi còn mở ở [overview](overview.md#giả-định-và-câu-hỏi-mở).
+Gói local v0.1 đã được chọn; blob, registry và snapshot có quyền đã triển khai nội bộ/kiểm chứng. Đã nối read-only snapshot vào HTTP/Workspace bằng Bearer control và CLI cấu hình host. Tiếp theo review/đăng ký profile nguồn dev thật bằng expected_epoch, rồi artifact/harness theo dependency; không có API nhận path tùy ý hoặc tự cấp quyền. Artifact/harness, patch scope/stale check và launcher/gate vẫn theo dependency, không dùng snapshot làm approval. App báo giá giữ validator nền chưa có rule expiration_review. T07 vẫn cần review oracle/one-fixture contract; R/config và artifact phải được runtime tin cậy cấp trước đóng băng source gốc/fixture nghiên cứu. Acceptance/protocol nghiên cứu chưa khóa, không bắt đầu run so sánh. Chi tiết trạng thái ở project-status; câu hỏi còn mở ở [overview](overview.md#giả-định-và-câu-hỏi-mở).
 
 | Trước bước phụ thuộc | Cần khóa |
 | --- | --- |

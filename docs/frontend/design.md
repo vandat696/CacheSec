@@ -12,6 +12,16 @@ Route /quotations mở từ sidebar hoặc liên kết Báo giá trên toolbar W
 
 Nguồn ở features/quotations, CSS scope quotations.css; route chỉ lắp ghép. NEXT_PUBLIC_QUOTATION_API_URL là địa chỉ public của API, **không chứa token**. CORS, quyền và lệnh chạy/kiểm tra tại [setup](../general/setup.md#2b-api-báo-giá-độc-lập), [API](../system/api.md#http-báo-giá-đã-triển-khai) và [authorization](../system/authorization.md#quyền-api-báo-giá-đã-triển-khai). Đây là kết nối app báo giá; Agent/code/review/test/deploy trong Workspace vẫn mô phỏng.
 
+## Repository trong Workspace — HTTP thật ngày 2026-11-11
+
+`/workspace` mặc định mở Repository chỉ đọc. Token control nhập qua password, chỉ giữ bộ nhớ component; scope do backend lấy từ registry, không có role/root/path input. Người dùng tạo snapshot hoặc mở bản đã lưu bằng UUID, chọn file trong danh sách server trả. Client kiểm response/ID, byte size và SHA-256 trước hiển thị; text phải là UTF-8 hợp lệ, binary báo rõ. Source được React render như văn bản, không HTML. Chi tiết ID/profile/manifest thu gọn; không hiển thị hash như approval hoặc current Git revision.
+
+Request mới hủy request cũ và bỏ qua response cũ kể cả transport không thực sự hủy; đổi file xóa nội dung đang xem. Đổi snapshot, ngắt/rời trang hoặc chuyển sang Mô phỏng workflow xóa phiên source. Lỗi tải cũng xóa source; 401/403/404 ngắt client, cần kết nối lại. Không lưu token/source vào localStorage, sessionStorage hoặc cache browser. Thu hồi quyền ngăn lần đọc tiếp theo, không thu hồi bytes đã đọc hoặc tự xóa tab đang đứng yên. Chưa polling/lease hoặc offline policy.
+
+Khi đọc source thật, Kiểm thử/Phê duyệt và composer Agent bị khóa. Mô phỏng workflow giữ diff/test/approval mẫu trước đây, không nhận source/token của RepositoryPanel. Các mô tả bản xem trước bên dưới chỉ thuộc chế độ đó; triển khai vẫn khóa. [API snapshot](../system/api.md#http-snapshot-đã-triển-khai) sở hữu wire/lỗi; [setup](../general/setup.md#2d-repository-snapshot-và-workspace) sở hữu cấu hình host.
+
+Source thuộc features/repositories: repositoryApi.ts kiểm wire/bytes, useRepository.ts điều phối phiên/request, RepositoryConnection.tsx và RepositoryPanel.tsx sở hữu UI; DeveloperWorkspace chỉ lắp ghép/chuyển chế độ. Test adapter và browser thật kiểm quyền, binary, đổi/ngắt phiên, response trễ và responsive; chưa phải trace/nghiệm thu nghiên cứu.
+
 ## Developer Workspace — bản xem trước ngày 2026-11-02
 
 Theo quy tắc tối giản chữ: không có lời giới thiệu, mô tả nhiệm vụ lặp, phần tổng kết diff hoặc footer quảng bá. Ghi chú mã/test mở khi cần; điều kiện duyệt và trạng thái chưa kết nối triển khai vẫn rõ.
@@ -67,7 +77,7 @@ So sánh hai nhánh nằm trong Chat với một ô nhập chung. Yêu cầu ng�
 
 | Route | Giao diện | Giới hạn |
 | --- | --- | --- |
-| `/workspace` | Developer Workspace xem trước | Chat, diff, test, approval và trace mô phỏng; chưa có backend/Agent/deployment |
+| `/workspace` | Đọc snapshot có quyền; chế độ workflow mô phỏng riêng | Cần token/profile control; chưa sửa source, Agent hoặc gate/deployment |
 | `/setup` | Thiết lập cache và kế hoạch thí nghiệm | Chỉ lưu nháp trong phiên; chưa áp dụng vào Chat, cache hay benchmark |
 | `/` | Chat nội bộ, lịch sử trong sidebar, gợi ý hỏi, gửi/sao chép, chat mới và ba chế độ qua nút bánh răng | Phản hồi mẫu; chưa gọi AI/RAG hoặc cache thật |
 | `/metrics` | Dashboard, lọc hội thoại, biểu đồ, đánh giá chất lượng/quyền và chi tiết lượt gửi | Tổng hợp phiên mô phỏng; chưa có telemetry hoặc nhãn đánh giá thật |

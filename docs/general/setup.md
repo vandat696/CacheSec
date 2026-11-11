@@ -2,7 +2,7 @@
 
 ## Phạm vi hướng dẫn
 
-Các lệnh dưới đây chạy frontend, control health/readiness, **API và UI báo giá thật**, cùng Prisma Studio để xem database local; chưa chạy AI Coding Agent, Local Semantic Cache hoặc approval/deployment control. Bối cảnh nghiên cứu đã đổi sang AI-assisted software development ngày 2026-11-02; UI chatbot nội bộ vẫn được giữ để tái sử dụng. Xem [hiện trạng](project-status.md) và [lộ trình PoC](implementation-plan.md).
+Các lệnh dưới đây chạy frontend, control health/readiness, **HTTP snapshot/Workspace và API/UI báo giá thật**, cùng Prisma Studio để xem database local; chưa chạy AI Coding Agent, Local Semantic Cache hoặc approval/deployment control. Bối cảnh nghiên cứu đã đổi sang AI-assisted software development ngày 2026-11-02; UI chatbot nội bộ vẫn được giữ để tái sử dụng. Xem [hiện trạng](project-status.md) và [lộ trình PoC](implementation-plan.md).
 
 Chỉ xem UI mô phỏng cần frontend; không cần backend, Docker/database hoặc API key. Backend health có thể chạy độc lập database. Chỉ cần khởi động Docker khi muốn kiểm tra hạ tầng PostgreSQL/pgvector; hướng dẫn này không yêu cầu cài thêm dịch vụ/model SDK.
 
@@ -113,6 +113,29 @@ Chưa có API/UI upload/read blob hoặc artifact-ready. Snapshot files đã t�
 
 Kiểm tra `.\.venv\Scripts\python.exe -m pytest tests/artifacts tests/identity tests/repositories tests/control -q --tb=short` và đặt CACHESEC_TEST_DATABASE_URL nếu muốn phần DB thật. DB test dùng prefix cachesec_test_control_<UUID>, báo giá vẫn cachesec_test_quotations_<UUID>; helper chỉ dọn DB nó tạo thành công, không reset DB từ URL. Filesystem tests dùng thư mục tạm; sandbox Windows có thể từ chối thư mục private của pytest, cần lượt ngoài sandbox để kiểm chứng. Test directory alias tạo junction thật trên Windows bằng PowerShell (symlink trên hệ khác) chỉ trong thư mục test. Không sửa ACL máy hoặc coi lượt lỗi quyền/skip là đã pass. Không có GC/reset tự động cho kho app.
 
+## 2d. Repository snapshot và Workspace
+
+Sau migration control 001–003, chuẩn bị binding JSON trên host tin cậy. [quotation-source.example.json](../../backend/config/quotation-source.example.json) đề xuất ba file business của app báo giá để đọc: models, service và validation. Profile không phát hiện secrets trong nội dung và chưa đủ dependency/runtime/test để tạo artifact. Không mở toàn backend hoặc cấp quyền sửa. UUID trong ví dụ chỉ minh họa, không phải registry đã cấp quyền.
+
+Từ backend, sao chép ví dụ vào backend/.local/repository.json được Git bỏ qua; đặt root tuyệt đối của checkout và UUID scope riêng. Review danh sách file trước áp dụng. Cấu hình DATABASE_URL và CONTROL_ARTIFACT_ROOT như mục 2c; thêm CONTROL_REPOSITORY_CONFIG là đường dẫn tuyệt đối đến JSON. Không đưa token hoặc quyền vào JSON này.
+
+```powershell
+New-Item -ItemType Directory -Path .local -Force | Out-Null
+Copy-Item config/quotation-source.example.json .local/repository.json
+# Sửa root/UUIDs trong file local; kiểm tra không đọc source hoặc đổi DB.
+.\.venv\Scripts\python.exe -m app.control.configure_repository --config "$((Get-Location).Path)/.local/repository.json"
+# Chỉ áp dụng sau review: thay UUID principal dưới đây bằng UUID riêng.
+.\.venv\Scripts\python.exe -m app.control.configure_repository --config "$((Get-Location).Path)/.local/repository.json" --apply --principal-id 33333333-3333-4333-8333-333333333333 --credential-version 1 --expected-epoch 0
+```
+
+CLI hỏi token qua getpass, không echo/in token hoặc nhận token trong argv; dùng secret ngẫu nhiên độc lập với app báo giá, giữ bằng công cụ lưu secret local. Cấp duy nhất repository.read. expected_epoch = 0 chỉ cho repo mới; repo đã có cần epoch hiện tại, CLI không tự ghi đè cấu hình cũ. Command **thay tập grants của principal được chỉ định thành read-only**, nên dùng principal riêng; không bảo toàn các grants khác của Reviewer. Đăng ký repo/principal/profile cùng transaction, lỗi rollback; rotation phải tăng credential version. Không có admin HTTP hoặc tự sync khi API startup. Không dùng token ví dụ/test làm token dev.
+
+Khởi động lại control bằng app.control.control_api:app tại loopback 8000. Frontend mặc định dùng http://127.0.0.1:8000; đổi địa chỉ qua NEXT_PUBLIC_CONTROL_API_URL rồi restart/build, chỉ đặt URL public, không token. Origin frontend phải thuộc CORS_ORIGINS. `/ready` vẫn chỉ probe PostgreSQL, không xác nhận profile/grants/snapshot sẵn sàng.
+
+Trong `/workspace`, Repository → nhập Token control → Kết nối → Tạo snapshot → chọn file. Có thể mở snapshot cũ bằng ID; ID không cấp quyền. Token chỉ giữ bộ nhớ component, rời trang/chuyển sang mô phỏng/ngắt kết nối cần nhập lại. Snapshot lưu bytes bất biến, source hiện tại có thể đã đổi; binary/không phải UTF-8 không bị giả thành code. Không có source write hoặc thực thi test/Agent/gate.
+
+Kiểm tra HTTP: pytest tests/control/test_repository_http.py tests/control/test_repository_configuration.py với CACHESEC_TEST_DATABASE_URL; fixture tạo/dọn DB ngẫu nhiên. Browser opt-in dùng tests/control/repository_browser_server.py và `node scripts/browser-smoke.mjs --repository-only`: server cần DSN test, CACHESEC_BROWSER_CONTROL_TOKEN bắt đầu bằng test-only-, frontend production loopback 3100 và API test cổng 8000 còn trống. Cùng token test phải được cấp cho process Node; script không in token. Server tạo/dọn DB riêng và source copy tạm, origin 3100; dừng server sau test. Fault injection response trễ/403 chỉ kiểm trạng thái UI; test HTTP/DB kiểm revoke thật. Không seed DB ứng dụng bằng harness này.
+
 ## 3. Frontend (terminal khác)
 
 ```powershell
@@ -121,7 +144,7 @@ npm ci
 npm run dev
 ```
 
-Mở http://127.0.0.1:3000/workspace để xem **Developer Workspace** theo bố cục IDE: code bên trái, chat Agent bên phải; màn nhỏ xếp dọc. Chat bắt đầu trống; gửi yêu cầu để xem phản hồi mẫu. Chuyển Diff/Bản gốc trong vùng code. Nút Kiểm thử và Phê duyệt trên toolbar mở hộp thoại; Escape hoặc nút đóng quay lại code/chat. Xem kết quả mẫu, chọn vai trò người duyệt và xác nhận đúng diff để duyệt bản mẫu. Mở Mã mẫu · Chỉ đọc rồi Thử bản sửa khác để thấy phê duyệt cũ mất hiệu lực. Nhật ký nằm thu gọn trong Phê duyệt; nút Triển khai luôn khóa. Không đọc repository, gọi AI, chạy test nghiệp vụ hoặc thực thi gate backend. Rời trang hoặc reload sẽ reset mẫu.
+Mở http://127.0.0.1:3000/workspace để đọc Repository theo mục 2d. Chọn **Mô phỏng workflow** để xem bố cục IDE mẫu: code bên trái, chat Agent bên phải; màn nhỏ xếp dọc. Chat bắt đầu trống; gửi yêu cầu để xem phản hồi mẫu. Chuyển Diff/Bản gốc trong vùng code. Nút Kiểm thử và Phê duyệt trên toolbar mở hộp thoại; Escape hoặc nút đóng quay lại code/chat. Xem kết quả mẫu, chọn vai trò người duyệt và xác nhận đúng diff để duyệt bản mẫu. Mở Mã mẫu · Chỉ đọc rồi Thử bản sửa khác để thấy phê duyệt cũ mất hiệu lực. Nhật ký nằm thu gọn trong Phê duyệt; nút Triển khai luôn khóa. Không đọc repository, gọi AI, chạy test nghiệp vụ hoặc thực thi gate backend. Rời trang hoặc reload sẽ reset mẫu.
 
 Kiểm tra riêng Workspace khi đã chạy server: từ `frontend`, chạy `$env:APP_URL='http://127.0.0.1:3000'; npm run test:browser -- --developer-only`. Script dùng Edge/Chrome, kiểm tra code và các hộp thoại/nhật ký ở bốn kích thước cùng tương tác demo, focus modal và bố cục hai vùng. Bỏ `--developer-only` để kiểm tra cả các trang cũ.
 
