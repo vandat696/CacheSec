@@ -1,0 +1,69 @@
+name: cachesec-control-dev
+
+services:
+  control:
+    build:
+      context: ../backend
+      dockerfile: Dockerfile.control
+    image: cachesec-control-dev:local
+    ports:
+      - "127.0.0.1:8000:8000"
+    read_only: true
+    cap_drop:
+      - ALL
+    security_opt:
+      - no-new-privileges:true
+    tmpfs:
+      - /tmp:size=64m,mode=1777
+    volumes:
+      - type: bind
+        source: ${CACHESEC_ROOT:?Set CACHESEC_ROOT}/backend/.local/control-runtime.env
+        target: /opt/control/.env
+        read_only: true
+        bind:
+          create_host_path: false
+      - type: bind
+        source: ${CACHESEC_ROOT:?Set CACHESEC_ROOT}/backend/.local/repository.docker.json
+        target: /run/control/repository.json
+        read_only: true
+        bind:
+          create_host_path: false
+      - type: bind
+        source: ${CACHESEC_ROOT:?Set CACHESEC_ROOT}/backend/.local/control-store
+        target: /control-store
+        bind:
+          create_host_path: false
+      - type: bind
+        source: ${CACHESEC_ROOT:?Set CACHESEC_ROOT}/backend/app/quotation_demo/business/quotation_models.py
+        target: /source/backend/app/quotation_demo/business/quotation_models.py
+        read_only: true
+        bind:
+          create_host_path: false
+      - type: bind
+        source: ${CACHESEC_ROOT:?Set CACHESEC_ROOT}/backend/app/quotation_demo/business/quotation_service.py
+        target: /source/backend/app/quotation_demo/business/quotation_service.py
+        read_only: true
+        bind:
+          create_host_path: false
+      - type: bind
+        source: ${CACHESEC_ROOT:?Set CACHESEC_ROOT}/backend/app/quotation_demo/business/quotation_validation.py
+        target: /source/backend/app/quotation_demo/business/quotation_validation.py
+        read_only: true
+        bind:
+          create_host_path: false
+    networks:
+      - database
+    healthcheck:
+      test:
+        - CMD
+        - python
+        - -c
+        - "import urllib.request; urllib.request.urlopen('http://127.0.0.1:8000/health', timeout=3).close()"
+      interval: 10s
+      timeout: 5s
+      retries: 3
+
+networks:
+  database:
+    external: true
+    name: cachesec_default

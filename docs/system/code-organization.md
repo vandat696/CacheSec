@@ -41,6 +41,8 @@ Trong quotations: quotationModel.ts sở hữu wire types/draft và bảo toàn 
 
 ## Backend
 
+Runtime dev control có backend/Dockerfile.control và backend/.dockerignore; infra/control.compose.yaml chỉ lắp ghép image, private config/store và ba source file read-only với PostgreSQL hiện có. Không đưa bootstrap/provisioning vào control_api hoặc chạy app báo giá trong process control. [Setup Docker dev](../general/setup.md#2e-control-dev-trong-docker-khi-python-windows-bị-chặn) sở hữu cách chạy và giới hạn. Browser smoke opt-in --repository-dev ở frontend/scripts/repository-dev-browser-check.mjs đọc riêng token dev local, tạo snapshot thật và đối chiếu UI với source host; --repository-only vẫn dành cho test server/database tạm.
+
 Công cụ xem DB local ở frontend/prisma.config.ts và script npm db:studio để dùng lại npm workspace hiện có. Đây là dev tooling, không import vào React/backend; nó chọn QUOTATION_DATABASE_URL của app, còn SQL migrations bên dưới tiếp tục do Python sở hữu. Cách chạy và ranh giới quyền ở [setup](../general/setup.md#xem-database-bằng-prisma-studio).
 
 ```text

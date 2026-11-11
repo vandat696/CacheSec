@@ -1,0 +1,15 @@
+# The build never receives .env, credentials, host stores, tests or the Python venv.
+**
+!app/
+!app/**
+app/**/__pycache__/
+app/**/*.pyc
+!requirements-dev.lock.txt
+!Dockerfile.control
+**/.env
+**/.env.*
+**/secrets/
+**/credentials/
+**/*.pem
+**/*.key
+**/*.pfx

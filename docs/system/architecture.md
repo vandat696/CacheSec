@@ -162,7 +162,7 @@ Migration 002_control_authority.sql bổ sung bốn bảng cho use case đọc t
 
 Registry không tự đăng ký repo, tạo token hoặc cấp grant khi import/start API. Backend administration nhận cấu hình tin cậy, khóa authority và so expected_epoch trước thay principal/grants cùng tăng epoch. Replay cấu hình không đổi giữ epoch; credential đổi cần version mới, không cho lùi version. Repository identity không remap qua thao tác đăng ký lại. Administration Python và CLI configure_repository chỉ dành cho host tin cậy; không có admin HTTP, event audit bền vững hoặc tự đồng bộ quyền từ worker startup; xem [quyền registry](authorization.md#registry-control-nội-bộ-đã-triển-khai).
 
-Chưa đăng ký identity/path thật của repository. Snapshot nội bộ được bổ sung ở mục sau; chưa có source write hoặc Agent delegation. Một identity registry không chứng minh source bytes đáng tin cậy. Bốn bảng có REVOKE PUBLIC, nhưng chưa provisioning runtime DB role hoặc kiểm chứng host isolation; không chạy code không tin cậy từ registry này.
+Đã đăng ký profile dev đọc ba file business báo giá qua Docker control; [setup](../general/setup.md#2e-control-dev-trong-docker-khi-python-windows-bị-chặn) sở hữu cấu hình host/runtime và giới hạn. Snapshot nội bộ được bổ sung ở mục sau; chưa có source write hoặc Agent delegation. Một identity registry không chứng minh source bytes đáng tin cậy. Bốn bảng có REVOKE PUBLIC, nhưng chưa provisioning runtime DB role hoặc kiểm chứng host isolation; không chạy code không tin cậy từ registry này.
 
 ### Snapshot repository đã triển khai
 

@@ -146,7 +146,7 @@ Ví dụ riêng phần data sau khi artifact có rule được phê duyệt và 
 
 ## Resource của control
 
-Registry identity/repository và snapshot đã nối HTTP/Workspace ngày 2026-11-11; migration 002/003 và service giữ nguyên. HTTP repository lấy scope từ principal hiện tại trong DB, không có Session endpoint hoặc API cấp quyền. Chưa cấp token/profile dev. Các resource workflow/approval bên dưới vẫn là mục tiêu.
+Registry identity/repository và snapshot đã nối HTTP/Workspace ngày 2026-11-11; migration 002/003 và service giữ nguyên. HTTP repository lấy scope từ principal hiện tại trong DB, không có Session endpoint hoặc API cấp quyền. Đã cấp principal/profile dev chỉ repository.read; môi trường Docker và cách dùng token ở [setup](../general/setup.md#2e-control-dev-trong-docker-khi-python-windows-bị-chặn). Các resource workflow/approval bên dưới vẫn là mục tiêu.
 
 ### HTTP snapshot đã triển khai
 
