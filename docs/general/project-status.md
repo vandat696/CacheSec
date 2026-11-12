@@ -1,5 +1,12 @@
 # Trạng thái dự án
 
+## 2026-11-12 — Một phiên local cho Workspace và Báo giá
+
+- Theo yêu cầu bỏ nhập lại token/ID, owner launcher mới mở cả hai màn bằng cùng phiên HttpOnly tối đa 8 giờ. Next dùng riêng credential dev control và fixture operator báo giá đã có, chỉ ở server; helper sinh `quotation-access.json` private, không đổi grants/registry/DB schema. Cookie control cũ phải mở lại bằng launcher một lần, không tự nhận quyền mới; rotation/revoke báo giá không chuyển danh tính control, logout local đóng hai màn.
+- Route group giữ editor/undo, chat và form khi đổi `/workspace` ↔ `/quotations`. UUID proposal/báo giá giữ trong URL, reload tải lại dữ liệu đã lưu qua backend có kiểm quyền; không lưu token/source/chat trong browser storage. Draft chưa lưu không khôi phục sau reload. Manual Bearer vẫn là mục nâng cao.
+- **Kiểm chứng:** 99 test frontend, 3 test helper Python, Ruff lint/format theo config backend, ESLint và production build/typecheck đạt. Edge thật đạt tự kết nối hai màn, không hiện ô token, giữ draft/form khi điều hướng, reload khôi phục cả proposal và báo giá, logout xóa cả hai và reload vẫn ngắt. Dataset dev ban đầu rỗng nên smoke tạo một báo giá giả có nhãn `Local session navigation check`; chỉ thêm proposal/revision kỹ thuật, không đổi source gốc/triển khai. Lượt browser đầu lỗi helper thiếu focus trước Ctrl+S; sửa helper và lượt cuối đạt. Không chạy lại backend suite vì không đổi backend app/domain/API.
+- Cập nhật setup, phân quyền, frontend và source map. Frontend mới đang chạy loopback 3000; quotation baseline vẫn chưa có rule ngày, Agent/key/cache/gate và các điều kiện nghiên cứu giữ trạng thái trước đó.
+
 ## 2026-11-12 — Thu gọn thông tin phụ trong Workspace
 
 - Theo yêu cầu người dùng, bỏ nhãn Bản làm việc riêng ở toolbar và footer editor; giữ Chỉ đọc khi cần. Gom model, trạng thái/hướng dẫn API key, tải lại cấu hình, số file source và ghi chú kiểm tra kết quả vào nút ⓘ ở góc phải Agent. Chat mặc định trống, không có nhãn/hướng dẫn/nguồn lặp; giữ tên truy cập cho ô nhập, thông báo lỗi thao tác và khóa gửi khi chưa cấu hình. Tiêu đề tab rút thành Workspace · CacheSec.

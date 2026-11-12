@@ -1,8 +1,9 @@
 "use client";
 
 import { useEffect, useEffectEvent, useRef, useState } from "react";
-import { clearLocalBootstrap, closeLocalWorkspace, initializeLocalWorkspace } from "../local-workspace/localWorkspaceClient";
-import { ChangeWorkflowClient, editablePath } from "../code-changes/changeWorkflowApi";
+import { clearLocalBootstrap, closeLocalWorkspace, initializeLocalWorkspace, localSessionEnded } from "../local-workspace/localWorkspaceClient";
+import { ChangeApiError, ChangeWorkflowClient, editablePath, type Revision } from "../code-changes/changeWorkflowApi";
+import { readViewReference, writeViewReference } from "../workbench/viewReferences";
 import { AgentHttpClient } from "../agent/agentApi";
 import {
   RepositoryApiError, RepositoryHttpClient, sourceText,
@@ -27,6 +28,7 @@ export function useRepository() {
   const [rawContent, setRawContent] = useState<string | null>(null);
   const [changes, setChanges] = useState<ChangeWorkflowClient | null>(null);
   const [agent, setAgent] = useState<AgentHttpClient | null>(null);
+  const [restoredRevision, setRestoredRevision] = useState<Revision | null>(null);
   const [openedFiles, setOpenedFiles] = useState<Record<string, RepositoryFileContent>>({});
   const [busy, setBusy] = useState(false);
   const [checkingSession, setCheckingSession] = useState(true);
@@ -36,6 +38,11 @@ export function useRepository() {
   const current = useRef<AbortController | null>(null);
   const localSession = useRef(false);
   useEffect(() => () => { current.current?.abort(); client.current = null; }, []);
+  const endSession = useEffectEvent(() => { if (localSession.current) { localSession.current = false; clearConnection(); } });
+  useEffect(() => {
+    const ended = () => endSession(); window.addEventListener(localSessionEnded, ended);
+    return () => window.removeEventListener(localSessionEnded, ended);
+  }, []);
 
   const openSession = useEffectEvent(() => connect(null));
   useEffect(() => {
@@ -48,7 +55,7 @@ export function useRepository() {
   }, []);
 
   function clearFile() { setSelected(null); setContent(null); setRawContent(null); setBinary(false); }
-  function clearSource() { setSnapshot(null); setOpenedFiles({}); clearFile(); }
+  function clearSource() { setSnapshot(null); setOpenedFiles({}); setRestoredRevision(null); clearFile(); }
   function clearConnection() {
     current.current?.abort(); current.current = null; client.current = null;
     setChanges(null); setAgent(null);
@@ -79,12 +86,12 @@ export function useRepository() {
       if (!active(controller)) return;
       // Fail closed in the view too; an old file must not remain presented after denial/outage.
       clearSource();
-      if (failure instanceof RepositoryApiError && [401, 403, 404].includes(failure.status)) {
+      if ((failure instanceof RepositoryApiError || failure instanceof ChangeApiError) && [401, 403, 404].includes(failure.status)) {
         client.current = null; setRepository(null);
         setChanges(null); setAgent(null);
       }
-      setError(failure instanceof RepositoryApiError ? failure.message : "Không kết nối được API control.");
-      setRequestId(failure instanceof RepositoryApiError ? failure.requestId : undefined);
+      setError(failure instanceof RepositoryApiError || failure instanceof ChangeApiError ? failure.message : "Không kết nối được API control.");
+      setRequestId(failure instanceof RepositoryApiError || failure instanceof ChangeApiError ? failure.requestId : undefined);
     } finally { if (active(controller)) setBusy(false); }
   }
   async function connect(token: string | null) {
@@ -93,11 +100,14 @@ export function useRepository() {
     localSession.current = token === null;
     const baseUrl = token === null ? "/api/local-control" : apiUrl;
     const api = new RepositoryHttpClient(baseUrl, token);
+    const workflow = new ChangeWorkflowClient(baseUrl, token);
     await run(async (signal) => {
       const data = await api.describe(signal);
-      const opened = await prepareSnapshot(api, data.repository_identity, signal);
-      return () => { client.current = api; setRepository(data); setChanges(new ChangeWorkflowClient(baseUrl, token));
-        setAgent(new AgentHttpClient(baseUrl, token)); opened(); };
+      const proposalId = readViewReference("proposal");
+      const revision = proposalId ? await workflow.open(proposalId, signal) : null;
+      const opened = await prepareSnapshot(api, data.repository_identity, signal, revision?.base_snapshot_id);
+      return () => { client.current = api; setRepository(data); setChanges(workflow);
+        setAgent(new AgentHttpClient(baseUrl, token)); setRestoredRevision(revision); opened(); };
     });
   }
   async function prepareSnapshot(api: RepositoryHttpClient, identity: string, signal: AbortSignal, snapshotId?: string) {
@@ -114,6 +124,7 @@ export function useRepository() {
   async function load(snapshotId?: string) {
     const api = client.current, identity = repository?.repository_identity;
     if (!api || !identity) return;
+    writeViewReference("proposal", null);
     clearSource();
     await run(signal => prepareSnapshot(api, identity, signal, snapshotId));
   }
@@ -128,6 +139,6 @@ export function useRepository() {
         setRawContent(content.raw); setOpenedFiles(previous => ({ ...previous, [file.file_id]: content })); };
     });
   }
-  return { repository, snapshot, selected, content, rawContent, changes, agent, openedFiles, binary, busy: busy || checkingSession, error, requestId,
+  return { repository, snapshot, selected, content, rawContent, changes, agent, restoredRevision, openedFiles, binary, busy: busy || checkingSession, error, requestId,
     connect, disconnect, load, select };
 }

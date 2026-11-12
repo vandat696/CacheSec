@@ -2,11 +2,12 @@
 .quotation-workspace h2 { font-size: 16px; font-weight: 600; }
 .quotation-note { color: var(--nui-muted); font-size: 13px; }
 .quotation-connection {
-  display: flex; align-items: flex-start; gap: 16px;
+  display: grid; gap: 16px;
   padding: 24px; border: 1px solid var(--nui-border); background: var(--nui-surface);
 }
 .quotation-connection .nui-field { flex: 1; max-width: 560px; min-width: 0; }
-.quotation-connection > button { margin-top: 26px; }
+.quotation-manual-connection summary { cursor: pointer; color: var(--nui-muted); font-size: 12px; }
+.quotation-manual-connection form { display: grid; gap: 12px; margin-top: 16px; }
 .quotation-layout { display: grid; grid-template-columns: 340px minmax(0, 1fr); gap: 32px; align-items: start; }
 .quotation-form { display: grid; gap: 16px; padding: 20px; border: 1px solid var(--nui-border); background: var(--nui-surface); }
 .quotation-form fieldset { display: grid; gap: 16px; margin: 0; padding: 0; border: 0; min-width: 0; }

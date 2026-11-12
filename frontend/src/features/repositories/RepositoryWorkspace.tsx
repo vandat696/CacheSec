@@ -1,7 +1,8 @@
 "use client";
 
 import { useEffect, useImperativeHandle, useState, type KeyboardEvent, type Ref } from "react";
-import { useRouter } from "next/navigation";
+import { usePathname, useRouter } from "next/navigation";
+import { writeViewReference } from "../workbench/viewReferences";
 import { Button } from "@/components/ui/Button";
 import { Icon } from "@/components/ui/Icon";
 import { editablePath, pendingTest } from "../code-changes/changeWorkflowApi";
@@ -19,10 +20,11 @@ export type RepositoryWorkspaceHandle = { requestLeave: (action: () => void) => 
 export function RepositoryWorkspace({ repo, ref }: { repo: ReturnType<typeof useRepository>; ref?: Ref<RepositoryWorkspaceHandle> }) {
   const snapshot = repo.snapshot!;
   const router = useRouter();
+  const pathname = usePathname();
   const editable = snapshot.files.find(file => file.path === editablePath);
   const original = editable ? repo.openedFiles[editable.file_id]?.raw : null;
   const change = useCodeChanges(original !== null && original !== undefined ? repo.changes : null,
-    snapshot.snapshot_id, original ?? "", repo.repository!.repository_identity, repo.disconnect);
+    snapshot.snapshot_id, original ?? "", repo.repository!.repository_identity, repo.disconnect, repo.restoredRevision);
   const [tabs, setTabs] = useState<SnapshotFile[]>(repo.selected ? [repo.selected] : []);
   const [activeId, setActiveId] = useState<string | null>(repo.selected?.file_id ?? null);
   const [consoleTab, setConsoleTab] = useState<"tests" | "diff" | "details">("tests");
@@ -35,6 +37,9 @@ export function RepositoryWorkspace({ repo, ref }: { repo: ReturnType<typeof use
   const pending = change.jobs.some(job => job.revision === change.saved?.revision && pendingTest(job));
   const canTest = !!change.config?.can_test && (!!change.saved || !!change.config.can_propose)
     && (!change.dirty || !!change.config.can_propose) && !change.busy && !pending;
+  useEffect(() => {
+    if (pathname === "/workspace" && change.saved) writeViewReference("proposal", change.saved.proposal_id);
+  }, [pathname, change.saved]);
   function requestLeave(action: () => void) {
     if (change.dirty) setPendingAction(() => action);
     else action();
@@ -52,6 +57,8 @@ export function RepositoryWorkspace({ repo, ref }: { repo: ReturnType<typeof use
       if (!link || link.target || link.hasAttribute("download")) return;
       const destination = new URL(link.href, location.href);
       if (destination.origin !== location.origin || destination.pathname === location.pathname) return;
+      // These routes share the mounted workbench, so switching views keeps the draft and undo history.
+      if (["/workspace", "/quotations"].includes(destination.pathname)) return;
       event.preventDefault(); event.stopPropagation();
       setPendingAction(() => () => router.push(destination.pathname + destination.search + destination.hash));
     };

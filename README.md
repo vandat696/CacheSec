@@ -18,7 +18,7 @@ Theo lựa chọn người dùng ngày **2026-11-07**, PoC bắt đầu bằng *
 
 ## Trạng thái thực tế
 
-Máy dev đã cấu hình: bật Docker Desktop rồi chạy `npm --prefix frontend run local` để mở stack và Workspace tự kết nối, không dán token. Nếu dịch vụ đang chạy, `npm --prefix frontend run workspace` chỉ mở project. Phiên local tối đa 8 giờ; [hướng dẫn](docs/general/setup.md#mở-toàn-bộ-stack-local-bằng-một-lệnh) có tùy chọn Studio và giới hạn.
+Máy dev đã cấu hình: bật Docker Desktop rồi chạy `npm --prefix frontend run local` để mở stack; Workspace và Báo giá tự kết nối, không dán token. Đổi giữa hai trang giữ bản sửa và báo giá đang chọn, không nhập lại ID. Nếu dịch vụ đang chạy, `npm --prefix frontend run workspace` chỉ mở project. Phiên local tối đa 8 giờ; [hướng dẫn](docs/general/setup.md#mở-toàn-bộ-stack-local-bằng-một-lệnh) có tùy chọn Studio và giới hạn.
 
 Bối cảnh đã cập nhật ngày **2026-11-02**. Frontend có thêm **Developer Workspace tại `/workspace`** để xem thử workflow mới; các màn chatbot nội bộ cũ tiếp tục được giữ để tái sử dụng.
 

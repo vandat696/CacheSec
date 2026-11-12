@@ -7,6 +7,7 @@ import { cookieName, LocalSessionStore, localOrigin, launchLifetime, sessionLife
 import { LocalWorkspaceServer } from "../src/features/local-workspace/localWorkspaceServer.ts";
 import { RepositoryHttpClient } from "../src/features/repositories/repositoryApi.ts";
 import { ChangeWorkflowClient } from "../src/features/code-changes/changeWorkflowApi.ts";
+import { QuotationHttpClient } from "../src/features/quotations/quotationApi.ts";
 
 const token = "test-only-local-workspace-" + "a".repeat(40);
 async function fixture(t, fetcher = async () => Response.json({ data: {} })) {
@@ -159,14 +160,79 @@ test("revocation response is preserved and invalidates the local session; logout
 });
 
 test("local clients send same-origin session requests without Bearer; external adapters keep their contract", async () => {
-  for (const Api of [RepositoryHttpClient, ChangeWorkflowClient]) {
+  for (const Api of [RepositoryHttpClient, ChangeWorkflowClient, QuotationHttpClient]) {
     let seen;
     const client = new Api("/api/local-control", null, async (url, init) => { seen = { url, init }; return Response.json({}, { status: 401 }); });
-    await assert.rejects(Api === RepositoryHttpClient ? client.describe(new AbortController().signal) : client.config(new AbortController().signal));
+    await assert.rejects(Api === RepositoryHttpClient ? client.describe(new AbortController().signal)
+      : Api === QuotationHttpClient ? client.list(new AbortController().signal) : client.config(new AbortController().signal));
     assert.equal(seen.init.credentials, "same-origin");
     assert.equal(seen.init.headers.Authorization, undefined);
     assert.equal(seen.init.headers["X-CacheSec-Workspace"], "1");
     assert.ok(seen.url.startsWith("/api/local-control/api/v1/"));
     assert.throws(() => new Api("https://external.example", null));
   }
+});
+
+const quotationToken = "test-only-quotation-operator-" + "q".repeat(40);
+async function quotationAccess(store, value = quotationToken) {
+  await writeFile(join(store.root, "../quotation-access.json"), JSON.stringify({ operator_token: value }));
+}
+test("one owner launch binds separate existing realm credentials; quotation cursor and validate stay scoped", async t => {
+  const seen = [];
+  const { store, server } = await fixture(t, async (url, init) => { seen.push({ url, init }); return Response.json({}); });
+  await quotationAccess(store);
+  const cookie = await login(store, server); seen.length = 0;
+  const id = "aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa";
+  assert.equal((await server.proxy(request(`/api/v1/quotations?cursor=${id}`, "GET", undefined, cookie))).status, 200);
+  assert.equal(seen[0].url, `http://127.0.0.1:8001/api/v1/quotations?cursor=${id}`);
+  assert.equal(seen[0].init.headers.Authorization, "Bearer " + quotationToken);
+  assert.equal((await server.proxy(request(`/api/v1/quotations/${id}/validate`, "POST", undefined, cookie))).status, 200);
+  assert.equal(seen[1].init.body, undefined);
+  assert.equal((await server.proxy(request("/api/v1/repository", "GET", undefined, cookie))).status, 200);
+  assert.equal(seen[2].init.headers.Authorization, "Bearer " + token);
+  for (const path of ["/api/v1/quotations?cursor=bad", `/api/v1/quotations?cursor=${id}&cursor=${id}`,
+    "/api/v1/quotations?role=operator", "/api/v1/quotations?url=http://evil.example"])
+    assert.equal((await server.proxy(request(path, "GET", undefined, cookie))).status, 403);
+  assert.equal(seen.length, 3);
+});
+
+test("a control-only cookie never gains quotation access when configuration is added later", async t => {
+  let calls = 0;
+  const { store, server } = await fixture(t, async () => { calls++; return Response.json({}); });
+  const cookie = await login(store, server);
+  await quotationAccess(store); calls = 0;
+  assert.equal((await server.proxy(request("/api/v1/quotations", "GET", undefined, cookie))).status, 401);
+  assert.equal(calls, 0);
+  assert.equal((await server.proxy(request("/api/v1/repository", "GET", undefined, cookie))).status, 200);
+  const second = await login(store, server);
+  assert.equal((await server.proxy(request("/api/v1/quotations", "GET", undefined, second))).status, 200);
+});
+
+test("quotation revocation/rotation does not upgrade credentials or log control out; shared logout revokes both", async t => {
+  let denyQuotation = false;
+  const { store, server } = await fixture(t, async url => Response.json({}, {
+    status: denyQuotation && String(url).includes(":8001/") ? 401 : 200,
+  }));
+  await quotationAccess(store);
+  const cookie = await login(store, server);
+  denyQuotation = true;
+  assert.equal((await server.proxy(request("/api/v1/quotations", "GET", undefined, cookie))).status, 401);
+  assert.equal((await server.proxy(request("/api/v1/repository", "GET", undefined, cookie))).status, 200);
+  denyQuotation = false;
+  await quotationAccess(store, quotationToken + "rotated");
+  assert.equal((await server.proxy(request("/api/v1/quotations", "GET", undefined, cookie))).status, 401);
+  assert.equal((await server.proxy(request("/api/v1/repository", "GET", undefined, cookie))).status, 200);
+  await server.session(request("/session", "DELETE", undefined, cookie));
+  assert.equal((await server.proxy(request("/api/v1/repository", "GET", undefined, cookie))).status, 401);
+  assert.equal((await server.proxy(request("/api/v1/quotations", "GET", undefined, cookie))).status, 401);
+});
+
+test("quotation credential rotation between launch and exchange cannot adopt the new identity", async t => {
+  const { store, server } = await fixture(t);
+  await quotationAccess(store);
+  const launch = await store.issueLaunch();
+  await quotationAccess(store, quotationToken + "rotated");
+  const result = await server.session(request("/session", "POST", { launch }));
+  assert.equal(result.status, 401);
+  assert.equal(result.headers.get("set-cookie"), null);
 });

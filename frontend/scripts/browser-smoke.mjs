@@ -15,13 +15,15 @@ import { checkRepositoryDev } from "./repository-dev-browser-check.mjs";
 import { checkCodeChanges } from "./code-changes-browser-check.mjs";
 import { checkLocalWorkspace } from "./local-workspace-browser-check.mjs";
 import { checkAgent } from "./agent-browser-check.mjs";
+import { checkWorkbench } from "./workbench-browser-check.mjs";
 
 const frontend = fileURLToPath(new URL("..", import.meta.url));
 const codeChanges = process.argv.includes("--code-changes");
 const repositoryDev = process.argv.includes("--repository-dev") || codeChanges;
 const localWorkspace = process.argv.includes("--local-workspace");
 const agentOnly = process.argv.includes("--agent");
-const repositoryOnly = process.argv.includes("--repository-only") || repositoryDev || localWorkspace || agentOnly;
+const workbenchOnly = process.argv.includes("--workbench");
+const repositoryOnly = process.argv.includes("--repository-only") || repositoryDev || localWorkspace || agentOnly || workbenchOnly;
 if (repositoryDev) {
   // This private file contains only the dedicated read credential, never the backend DSN.
   process.loadEnvFile(join(frontend, "../backend/.local/control-access.env"));
@@ -272,6 +274,10 @@ try {
   if (agentOnly) {
     await checkAgent({ cdp, navigate, evaluate, waitFor, click, fill, key, screenshot });
     console.log("Đạt: UI Agent với generation double có nhãn, revision/Docker thật, bảo vệ draft và disconnect.");
+  }
+  if (workbenchOnly) {
+    await checkWorkbench({ cdp, navigate, evaluate, waitFor, click, fill, screenshot });
+    console.log("Đạt: một phiên local cho Workspace/Báo giá, giữ draft khi đổi trang, reload khôi phục IDs có quyền và logout cả hai.");
   }
   if (!repositoryOnly && !process.argv.includes("--developer-only") && !process.argv.includes("--quotations-only")) {
   await navigate("/ui");
@@ -1156,7 +1162,8 @@ try {
   }
   assert.deepEqual(errors, [], "Lỗi runtime/React trên trình duyệt");
   console.log(
-    agentOnly ? "Đạt: Workspace/Agent một màn, đề xuất/apply/test và ba bố cục; model response là test double."
+    workbenchOnly ? "Đạt: hai trang tự kết nối, không nhập token/ID, giữ bản sửa và báo giá qua điều hướng/reload."
+      : agentOnly ? "Đạt: Workspace/Agent một màn, đề xuất/apply/test và ba bố cục; model response là test double."
       : localWorkspace ? "Đạt: Workspace local mở tự động, token ở server, sửa/lưu/test và vòng đời phiên."
       : codeChanges ? "Đạt: editor/diff/revision thật, Docker pass/fail/timeout, không reuse verdict cũ và ba bố cục."
       : repositoryDev

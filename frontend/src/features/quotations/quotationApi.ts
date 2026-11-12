@@ -51,13 +51,14 @@ function validation(value: unknown): value is QuotationValidation {
 
 export class QuotationHttpClient {
   private readonly baseUrl: string;
-  private readonly token: string;
+  private readonly token: string | null;
   private readonly fetcher: Fetch;
   constructor(
     baseUrl: string,
-    token: string,
+    token: string | null,
     fetcher: Fetch = globalThis.fetch,
   ) {
+    if (token === null && baseUrl !== "/api/local-control") throw new Error("INVALID_LOCAL_TRANSPORT");
     this.baseUrl = baseUrl;
     this.token = token;
     // Keep native window.fetch's receiver from becoming this client instance.
@@ -69,8 +70,8 @@ export class QuotationHttpClient {
     post?: { data: QuotationCreate; key: string } | true,
   ): Promise<Envelope<T>> {
     const response = await this.fetcher(`${this.baseUrl.replace(/\/$/, "")}/api/v1/quotations${path}`, {
-      method: post ? "POST" : "GET", signal, cache: "no-store", credentials: "omit", redirect: "error",
-      headers: { Authorization: `Bearer ${this.token}`, ...(post && post !== true ? { "Content-Type": "application/json", "Idempotency-Key": post.key } : {}) },
+      method: post ? "POST" : "GET", signal, cache: "no-store", credentials: this.token === null ? "same-origin" : "omit", redirect: "error",
+      headers: { ...(this.token === null ? { "X-CacheSec-Workspace": "1" } : { Authorization: `Bearer ${this.token}` }), ...(post && post !== true ? { "Content-Type": "application/json", "Idempotency-Key": post.key } : {}) },
       ...(post && post !== true ? { body: JSON.stringify(post.data) } : {}),
     });
     const body: unknown = await response.json().catch(() => null);

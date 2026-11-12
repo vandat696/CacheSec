@@ -246,3 +246,7 @@ Hiện không đọc nội dung, parse, chunk, embed, upload hoặc lập chỉ 
 Bản gốc nằm tại [frontend/design-reference](../../frontend/design-reference/). Chế độ browser `--reference` chỉ sửa lỗi cú pháp `$$let` trong response preview để chụp ảnh, không sửa bản gốc. Bố cục app hiện tại gồm Workspace, Thiết lập, Chat, Số liệu và Tài liệu.
 
 Đổi màu/font tại `styles/tokens.css`; đổi điều hướng tại `components/layout/AppShell.tsx`. Client API tương lai thuộc `src/lib/` theo [kiến trúc](../system/architecture.md), không đặt upload/RAG/auth vào component trình bày. Xem [hướng dẫn chạy và kiểm tra](../general/setup.md#kiểm-tra).
+
+## Phiên local chung Workspace/Báo giá
+
+Mở project qua launcher tự kết nối cả hai màn bằng cookie HttpOnly tối đa 8 giờ. Chuyển trang giữ editor/undo, Agent chat, form và record đang chọn trong layout chung. URL giữ UUID proposal/quotation để reload khôi phục dữ liệu đã lưu qua API có kiểm quyền; draft chưa lưu không lưu bền. Ngắt local ở một màn đóng cả hai; Bearer thủ công là mục nâng cao thu gọn. Không thêm token/source/chat vào browser storage.

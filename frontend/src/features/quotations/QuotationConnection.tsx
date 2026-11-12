@@ -16,12 +16,16 @@ export function QuotationConnection({ busy, onConnect }: {
     await onConnect(credential);
   }
   return (
-    <form className="quotation-connection" onSubmit={submit} aria-label="Kết nối API báo giá">
+    <div className="quotation-connection">
+      <p>{busy ? "Đang mở Báo giá…" : "Chạy npm run workspace trong frontend để mở phiên local."}</p>
+      <details className="quotation-manual-connection"><summary>Kết nối bằng token</summary>
+      <form onSubmit={submit} aria-label="Kết nối API báo giá">
       <TextInput id="quotation-token" label="Token fixture" type="password" value={token}
         autoComplete="off" spellCheck={false} required disabled={busy}
-        help="Chỉ giữ trong bộ nhớ trang. Rời trang cần kết nối lại."
+        help="Chỉ dùng cho kết nối thủ công."
         onChange={(event) => setToken(event.target.value)} />
       <Button type="submit" loading={busy} loadingLabel="Đang kết nối…" disabled={!token.trim()}>Kết nối</Button>
-    </form>
+      </form></details>
+    </div>
   );
 }

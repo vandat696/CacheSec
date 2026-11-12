@@ -1,4 +1,5 @@
 const endpoint = "/api/local-control/session";
+export const localSessionEnded = "cachesec-local-session-ended";
 let bootstrap: Promise<boolean> | null = null;
 
 async function request(method: string, launch?: string) {
@@ -25,4 +26,6 @@ export function initializeLocalWorkspace() {
   return request("GET");
 }
 export function clearLocalBootstrap() { bootstrap = null; }
-export async function closeLocalWorkspace() { clearLocalBootstrap(); await request("DELETE"); }
+export async function closeLocalWorkspace() {
+  clearLocalBootstrap(); window.dispatchEvent(new Event(localSessionEnded)); await request("DELETE");
+}

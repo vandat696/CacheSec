@@ -1,8 +1,10 @@
 "use client";
 
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useEffectEvent, useRef, useState } from "react";
+import { closeLocalWorkspace, initializeLocalWorkspace, localSessionEnded } from "../local-workspace/localWorkspaceClient";
 import { QuotationApiError, QuotationHttpClient, quotationError } from "./quotationApi";
 import type { QuotationCreate, QuotationRecord, QuotationValidation } from "./quotationModel";
+import { readViewReference, writeViewReference } from "../workbench/viewReferences";
 
 const apiUrl = process.env.NEXT_PUBLIC_QUOTATION_API_URL ?? "http://127.0.0.1:8001";
 type Busy = "connect" | "list" | "detail" | "create" | "validate" | null;
@@ -16,12 +18,24 @@ export function useQuotations() {
   const [selected, setSelected] = useState<QuotationRecord | null>(null);
   const [validation, setValidation] = useState<QuotationValidation | null>(null);
   const [busy, setBusy] = useState<Busy>(null);
+  const [checkingSession, setCheckingSession] = useState(true);
   const [error, setError] = useState("");
   const [requestId, setRequestId] = useState<string>();
   const client = useRef<QuotationHttpClient | null>(null);
   const current = useRef<AbortController | null>(null);
+  const localSession = useRef(false);
 
   useEffect(() => () => { current.current?.abort(); client.current = null; }, []);
+  const openSession = useEffectEvent(() => connect(null));
+  const endSession = useEffectEvent(() => { if (localSession.current) { localSession.current = false; clearConnection(); } });
+  useEffect(() => {
+    let cancelled = false;
+    initializeLocalWorkspace().then(async connected => { if (!cancelled && connected) await openSession(); })
+      .catch(() => { if (!cancelled) setError("Chưa mở được phiên local. Hãy chạy npm run workspace."); })
+      .finally(() => { if (!cancelled) setCheckingSession(false); });
+    const ended = () => endSession(); window.addEventListener(localSessionEnded, ended);
+    return () => { cancelled = true; window.removeEventListener(localSessionEnded, ended); };
+  }, []);
 
   function begin(operation: Busy) {
     current.current?.abort();
@@ -34,9 +48,16 @@ export function useQuotations() {
     return current.current === controller && !controller.signal.aborted;
   }
   function clearData() { setItems([]); setCursor(null); setSelected(null); setValidation(null); }
-  function disconnect() {
+  function clearConnection() {
     current.current?.abort(); current.current = null; client.current = null;
     setConnected(false); setBusy(null); setError(""); setRequestId(undefined); clearData();
+  }
+  function disconnect() {
+    clearConnection();
+    if (localSession.current) {
+      localSession.current = false;
+      void closeLocalWorkspace().catch(() => setError("Chưa hủy được phiên local. Tải lại trang rồi thử ngắt kết nối."));
+    }
   }
   function failed(error: unknown, controller: AbortController) {
     if (!active(controller)) return;
@@ -48,17 +69,23 @@ export function useQuotations() {
   }
   function finish(controller: AbortController) { if (active(controller)) setBusy(null); }
 
-  async function connect(token: string) {
+  async function connect(token: string | null) {
     const controller = begin("connect");
     setListUnavailable(false);
     clearData(); setConnected(false); client.current = null;
-    const api = new QuotationHttpClient(apiUrl, token);
+    localSession.current = token === null;
+    const api = new QuotationHttpClient(token === null ? "/api/local-control" : apiUrl, token);
     try {
       const response = await api.list(controller.signal);
       if (!active(controller)) return;
       client.current = api; setConnected(true);
       setItems(response.data.items); setCursor(response.data.next_cursor);
       setRequestId(response.meta.request_id);
+      const quotationId = readViewReference("quotation");
+      if (quotationId) {
+        const detail = await api.get(quotationId, controller.signal);
+        if (active(controller)) setSelected(detail.data);
+      }
     } catch (error) { failed(error, controller); }
     finally { finish(controller); }
   }
@@ -67,7 +94,7 @@ export function useQuotations() {
     if (!api || (more && !cursor)) return;
     const controller = begin("list");
     setListUnavailable(false);
-    if (!more) clearData();
+    if (!more) { clearData(); writeViewReference("quotation", null); }
     try {
       const response = await api.list(controller.signal, more ? cursor ?? undefined : undefined);
       if (!active(controller)) return;
@@ -129,5 +156,6 @@ export function useQuotations() {
     finally { finish(controller); }
   }
 
-  return { connected, items, listUnavailable, cursor, selected, validation, busy, error, requestId, connect, disconnect, load, select, create, validate };
+  return { connected, items, listUnavailable, cursor, selected, validation, busy: checkingSession ? "connect" as const : busy,
+    error, requestId, connect, disconnect, load, select, create, validate };
 }

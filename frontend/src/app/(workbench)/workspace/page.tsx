@@ -1,5 +1,4 @@
 import type { Metadata } from "next";
-import { DeveloperWorkspace } from "@/features/developer/DeveloperWorkspace";
 
 export const metadata: Metadata = {
   title: "Workspace · CacheSec",
@@ -7,5 +6,5 @@ export const metadata: Metadata = {
 };
 
 export default function WorkspacePage() {
-  return <DeveloperWorkspace />;
+  return null;
 }

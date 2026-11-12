@@ -9,6 +9,8 @@ export async function checkQuotations({ cdp, navigate, evaluate, waitFor, click,
   const idle = "!document.querySelector('#quotation-save')?.disabled";
 
   async function connect(token) {
+    await waitFor("!document.querySelector('#quotation-token').disabled");
+    if (!await evaluate("document.querySelector('.quotation-manual-connection').open")) await click(".quotation-manual-connection > summary");
     await fill("#quotation-token", token);
     await click('.quotation-connection button[type="submit"]');
   }

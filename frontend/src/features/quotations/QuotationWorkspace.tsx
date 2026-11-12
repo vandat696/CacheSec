@@ -1,5 +1,8 @@
 "use client";
 
+import { useEffect } from "react";
+import { usePathname } from "next/navigation";
+import { writeViewReference } from "../workbench/viewReferences";
 import { PageHeading } from "@/components/layout/PageHeading";
 import { Button } from "@/components/ui/Button";
 import { QuotationConnection } from "./QuotationConnection";
@@ -10,6 +13,10 @@ import { useQuotations } from "./useQuotations";
 
 export function QuotationWorkspace() {
   const quotation = useQuotations();
+  const pathname = usePathname();
+  useEffect(() => {
+    if (pathname === "/quotations" && quotation.connected && quotation.selected) writeViewReference("quotation", quotation.selected.id);
+  }, [pathname, quotation.connected, quotation.selected]);
   const busy = quotation.busy !== null;
   return (
     <div className="content-page quotation-workspace" data-connected={quotation.connected}>

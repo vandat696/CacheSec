@@ -9,16 +9,18 @@ export const launchLifetime = 60 * 1000;
 export const cookieName = "cachesec_workspace";
 export const sessionPath = "/api/local-control";
 const capability = /^[a-f0-9]{64}$/;
-type RecordData = { origin: string; expires: number; credential: string };
+type RecordData = { origin: string; expires: number; credential: string; quotation?: string | null };
 const digest = (value: string) => createHash("sha256").update(value).digest("hex");
 
 /** Host-owned files only. No permissions or backend authorization decisions are stored here. */
 export class LocalSessionStore {
   readonly root: string;
   private readonly credentialFile: string;
+  private readonly quotationFile: string;
   constructor(localRoot: string) {
     this.root = join(localRoot, "workspace-sessions");
     this.credentialFile = join(localRoot, "control-access.env");
+    this.quotationFile = join(localRoot, "quotation-access.json");
   }
   async credential() {
     const raw = await readFile(this.credentialFile, "utf8");
@@ -26,6 +28,15 @@ export class LocalSessionStore {
     const token = parseEnv(raw).CONTROL_REPOSITORY_READ_TOKEN;
     if (!token || !/^[\x21-\x7e]{32,65536}$/.test(token)) throw new Error("LOCAL_CREDENTIAL_UNAVAILABLE");
     return { token, digest: digest(token) };
+  }
+  async quotationCredential() {
+    const raw = await readFile(this.quotationFile, "utf8");
+    if (Buffer.byteLength(raw) > 70000) throw new Error("LOCAL_CREDENTIAL_UNAVAILABLE");
+    const data: unknown = JSON.parse(raw);
+    if (!data || typeof data !== "object" || !("operator_token" in data)
+      || Object.keys(data).length !== 1 || typeof data.operator_token !== "string"
+      || !/^[\x21-\x7e]{32,65536}$/.test(data.operator_token)) throw new Error("LOCAL_CREDENTIAL_UNAVAILABLE");
+    return { token: data.operator_token, digest: digest(data.operator_token) };
   }
   private file(kind: "launch" | "sessions", value: string) {
     if (!capability.test(value)) throw new Error("INVALID_SESSION");
@@ -49,7 +60,9 @@ export class LocalSessionStore {
   }
   async issueLaunch(now = Date.now()) {
     const credential = await this.credential();
-    return this.create("launch", { origin: localOrigin, credential: credential.digest, expires: now + launchLifetime });
+    const quotation = await this.quotationCredential().catch(() => null);
+    return this.create("launch", { origin: localOrigin, credential: credential.digest,
+      quotation: quotation?.digest ?? null, expires: now + launchLifetime });
   }
   async consumeLaunch(value: string, origin: string, now = Date.now()) {
     const result = await this.read("launch", value, origin, now);
@@ -59,13 +72,19 @@ export class LocalSessionStore {
     await unlink(path + ".claimed");
     return result;
   }
-  async createSession(origin: string, credential: string, now = Date.now()) {
+  async createSession(origin: string, credential: string, now = Date.now(), quotation: string | null = null) {
     const expires = now + sessionLifetime;
-    const value = await this.create("sessions", { origin, credential, expires });
+    const value = await this.create("sessions", { origin, credential, expires, quotation });
     return { value, expires };
   }
   async session(value: string, origin: string, now = Date.now()) {
     return this.read("sessions", value, origin, now);
+  }
+  async quotationSession(value: string, origin: string, now = Date.now()) {
+    const session = await this.session(value, origin, now);
+    const credential = await this.quotationCredential();
+    if (session.data.quotation !== credential.digest) throw new Error("INVALID_QUOTATION_SESSION");
+    return { data: session.data, token: credential.token };
   }
   async remove(value: string) {
     if (capability.test(value)) await unlink(this.file("sessions", value)).catch(error => {

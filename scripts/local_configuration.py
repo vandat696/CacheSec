@@ -62,6 +62,11 @@ def prepare():
     target.write_text(
         "".join(f"{name}={value}\n" for name, value in values.items()), encoding="utf-8"
     )
+    # The web adapter gets only the existing quotation operator credential, never its DSN.
+    (local / "quotation-access.json").write_text(
+        json.dumps({"operator_token": values["QUOTATION_FIXTURE_OPERATOR_TOKEN"]}) + "\n",
+        encoding="utf-8",
+    )
 
 
 def worker_state():

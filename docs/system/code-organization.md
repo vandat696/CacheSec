@@ -29,6 +29,7 @@ frontend/src/
     developer/                 lắp ghép Workspace, workflow IDE mô phỏng
     agent/                     panel/client assistance, dùng proposal/test hiện có
     repositories/              HTTP snapshot/file, phiên đọc và UI Repository thật
+    workbench/                 layout giữ hai màn và UUID điều hướng, không lưu source/token
     local-workspace/           phiên local private, proxy allowlist và bootstrap browser
     quotations/                form/danh sách/chi tiết nối API, hook phiên và HTTP adapter
     experiment-config/         profile, comparison, experiment-plan, setup-plan
@@ -161,3 +162,5 @@ React dùng components/ui; JS DOM độc lập dùng design-reference/templates/
 manifest.json khai báo source từng template và thứ tự bundle. Sửa source rồi chạy npm run templates:build; templates:check phát hiện bundle lệch source. components.js là bundle sinh tự động để giữ script defer và API NoiUI v2.0.0, không sửa tay; app nhúng không cần TypeScript/catalog. CSS template được định dạng dễ đọc, giữ thứ tự cascade. Lỗi có sẵn $$let đã sửa trong demo-shell; browser smoke phục vụ file thật, không vá response.
 
 [Hướng dẫn template](../../frontend/design-reference/templates/README.md) sở hữu cách nhúng; [setup](../general/setup.md#kiểm-tra) sở hữu kiểm chứng. Khi đổi path phải cập nhật imports, snippets, test, manifest/script và link docs cùng lúc, không đổi hành vi hoặc dữ liệu nghiên cứu chỉ để thay cấu trúc.
+
+Hai route `/workspace` và `/quotations` nằm trong route group `app/(workbench)` dùng `LocalWorkbench` chung để giữ trạng thái khi điều hướng. Page chỉ giữ metadata; `viewReferences.ts` sở hữu UUID trong URL, hook feature tự tải và kiểm quyền lại khi reload. Browser smoke `--workbench` kiểm phiên chung, draft, khôi phục ID và logout hai màn.

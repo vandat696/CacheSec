@@ -6,11 +6,11 @@ import { ChangeApiError, ChangeWorkflowClient, editorContent, pendingTest,
 import { saveRevision, submitCodeChange, type ChangeAttempts } from "./changeSubmission";
 
 export function useCodeChanges(api: ChangeWorkflowClient | null, snapshotId: string, original: string,
-  repositoryIdentity: string, accessLost: () => void) {
+  repositoryIdentity: string, accessLost: () => void, initialRevision: Revision | null = null) {
   const [config, setConfig] = useState<ChangeConfig | null>(null);
-  const [draft, setDraft] = useState(original.replace(/\r\n?/g, "\n"));
-  const [saved, setSaved] = useState<Revision | null>(null);
-  const [jobs, setJobs] = useState<TestJob[]>([]);
+  const [draft, setDraft] = useState((initialRevision?.content ?? original).replace(/\r\n?/g, "\n"));
+  const [saved, setSaved] = useState<Revision | null>(initialRevision);
+  const [jobs, setJobs] = useState<TestJob[]>(initialRevision?.tests ?? []);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState("");
   const [requestId, setRequestId] = useState<string>();
