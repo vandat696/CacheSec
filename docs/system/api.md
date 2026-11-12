@@ -10,6 +10,8 @@ App báo giá và control có entrypoint/base URL riêng. Các route mới dư�
 
 Danh mục HTTP mô tả host web PoC; tích hợp lõi cache vào Agent/IDE khác không bắt buộc dựng ứng dụng báo giá hoặc toàn bộ WorkflowRun API. Host khác có thể dùng contract context/lookup/verify/admit/invalidate với adapter nguồn/quyền tin cậy tương ứng. Không đưa Quotation hoặc ReviewDecision vào kiểu dữ liệu lõi cache.
 
+Workspace local có adapter phiên ở Next server: `GET/POST/DELETE /api/local-control/session` kiểm phiên, exchange launch capability và logout; proxy `/api/local-control/api/v1/...` chỉ chuyển tiếp allowlist repository và changes read/propose/test đến backend loopback. Đây là transport của web host, không đổi contract Bearer v0.2 hoặc quyền backend. Request cần header/metadata cùng origin, session cookie private và no-store; xem [authorization](authorization.md#phiên-workspace-local). Không có proxy admin/worker/approval/deploy hoặc URL tùy ý.
+
 ## Endpoint nền đã triển khai
 
 Luồng revision/test kỹ thuật mới dùng `/api/v1/changes` và private worker channel; route, payload, permission, idempotency và trạng thái thực tế được quản lý tại [workflow T12](change-workflow.md#http-đã-triển-khai). Các API Agent/cache/binding-ready/approval/deployment mục tiêu bên dưới chưa được triển khai bởi mốc này.

@@ -68,17 +68,18 @@ function revision(v: unknown): v is Revision {
 
 export class ChangeWorkflowClient {
   private readonly baseUrl: string;
-  private readonly token: string;
+  private readonly token: string | null;
   private readonly fetcher: typeof fetch;
-  constructor(baseUrl: string, token: string,
+  constructor(baseUrl: string, token: string | null,
     fetcher: typeof fetch = (input, init) => fetch(input, init)) {
+    if (token === null && baseUrl !== "/api/local-control") throw new Error("INVALID_LOCAL_TRANSPORT");
     this.baseUrl = baseUrl; this.token = token; this.fetcher = fetcher;
   }
   private async request<T>(path: string, signal: AbortSignal, decode: (v: unknown) => v is T,
     body?: unknown, key?: string): Promise<T> {
     const response = await this.fetcher(this.baseUrl.replace(/\/$/, "") + "/api/v1/changes" + path, {
-      method: body === undefined ? "GET" : "POST", signal, cache: "no-store", credentials: "omit",
-      redirect: "error", headers: { Authorization: `Bearer ${this.token}`, "Content-Type": "application/json",
+      method: body === undefined ? "GET" : "POST", signal, cache: "no-store", credentials: this.token === null ? "same-origin" : "omit",
+      redirect: "error", headers: { ...(this.token === null ? { "X-CacheSec-Workspace": "1" } : { Authorization: `Bearer ${this.token}` }), "Content-Type": "application/json",
         ...(key ? { "Idempotency-Key": key } : {}) },
       body: body === undefined ? undefined : JSON.stringify(body),
     });

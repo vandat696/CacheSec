@@ -2,9 +2,11 @@
 
 ## Workspace — bản sửa và test thật ngày 2026-11-12
 
-Chế độ Sửa mã nhận token rồi tự chụp snapshot và mở file validation trong editor; người dùng sửa mã và bấm Lưu và kiểm thử. Hai request lưu revision rồi tạo job vẫn riêng biệt, tuần tự và có idempotency; nếu tạo job lỗi thì bản đã lưu vẫn được giữ để thử lại, không tự tạo thêm revision. Nút Chỉ lưu cho phép dừng trước bước test; Bắt đầu bản mới lấy source hiện tại, phần mở source cũ/Proposal ID vẫn ở details. Status/evidence gắn revision/artifact; sửa tiếp giữ lịch sử với nhãn Bản cũ, mã chưa lưu có thông báo không thuộc kết quả đã test. Kết quả mới nhất mở sẵn, lỗi hiển thị tiếng Việt; raw reason/ID/hash nằm trong Chi tiết kỹ thuật. Token chỉ giữ trong bộ nhớ và nội dung bị xóa khỏi view khi mất quyền/disconnect. Xem [contract và giới hạn T12](../system/change-workflow.md).
+Chế độ Sửa mã tự kết nối phiên local do launcher mở, chụp snapshot và mở file validation trong CodeMirror với Explorer/tab, undo/redo, tìm kiếm và Ctrl+S. Token dài hạn ở Next server; browser dùng cookie HttpOnly tối đa 8 giờ. Không có phiên thì chỉ dẫn chạy `npm run workspace`; kết nối token thủ công nằm trong mục thu gọn. Reload dùng phiên còn hạn, lấy source hiện tại; bản nháp chưa lưu không được tự khôi phục. Ngắt kết nối hủy phiên và xóa source. Xem [ranh giới phiên local](../system/authorization.md#phiên-workspace-local).
 
-Agent, approval/deployment chưa nối backend; workflow mẫu là chế độ riêng. Các nút test/phê duyệt mẫu được ẩn và khóa trong Sửa mã, hiện lại ở Mô phỏng workflow. Nút Lưu và kiểm thử của editor dùng API thật. Không có thao tác triển khai từ mốc này. Token vẫn nhập mỗi phiên, không nhúng token vào bundle hoặc đọc file secret từ browser; form có mục Lấy token ở đâu? để hướng dẫn ngắn.
+Lưu/Ctrl+S chỉ lưu revision; Chạy test tự lưu mã chưa lưu rồi tạo job. Hai POST vẫn riêng biệt, tuần tự, có idempotency; lỗi tạo job giữ bản đã lưu để thử lại, không tự tạo revision mới. Có thể test source chưa đổi hoặc lưu bản undo về nguồn gốc. Project mở lại source/snapshot, Chi tiết mở Proposal ID cũ; đóng/rời bản nháp có hộp thoại Lưu/Không lưu/Hủy. Status/evidence gắn revision/artifact, sửa tiếp giữ lịch sử với nhãn Bản cũ; mã chưa lưu không thuộc kết quả đã test. Kết quả mới nhất mở sẵn, lỗi tiếng Việt; ID/hash nằm trong Chi tiết kỹ thuật. Nội dung bị xóa khỏi view khi mất quyền/disconnect. Xem [contract và giới hạn T12](../system/change-workflow.md).
+
+Agent, approval/deployment chưa nối backend; workflow mẫu là chế độ riêng. Các nút test/phê duyệt mẫu được ẩn và khóa trong Sửa mã, hiện lại ở Mô phỏng workflow. Nút Lưu/Chạy test của editor dùng API thật. Không có thao tác triển khai từ mốc này. Token không nhúng vào bundle hoặc đọc file secret từ browser; chỉ đường kết nối Bearer nâng cao mới yêu cầu nhập thủ công.
 
 ## Báo giá — nối API thật ngày 2026-11-09
 
@@ -20,7 +22,7 @@ Nguồn ở features/quotations, CSS scope quotations.css; route chỉ lắp gh�
 
 ## Repository trong Workspace — HTTP thật ngày 2026-11-11
 
-`/workspace` mặc định mở Repository chỉ đọc. Token control nhập qua password, chỉ giữ bộ nhớ component; scope do backend lấy từ registry, không có role/root/path input. Người dùng tạo snapshot hoặc mở bản đã lưu bằng UUID, chọn file trong danh sách server trả. Client kiểm response/ID, byte size và SHA-256 trước hiển thị; text phải là UTF-8 hợp lệ, binary báo rõ. Source được React render như văn bản, không HTML. Chi tiết ID/profile/manifest thu gọn; không hiển thị hash như approval hoặc current Git revision.
+Lát cắt đọc ngày 2026-11-11 đã được mở rộng bằng bản sửa/test và phiên local mô tả ở đầu trang. Scope vẫn do backend lấy từ registry, không có role/root/path input. Người dùng mở source hiện tại hoặc snapshot bằng UUID, chọn file trong profile server trả. Client kiểm response/ID, byte size và SHA-256 trước hiển thị; text phải là UTF-8 hợp lệ, binary báo rõ. Source hiển thị như văn bản, không HTML. ID/profile/manifest thu gọn; hash không phải approval hoặc current Git revision. Với adapter Bearer thủ công, token vẫn chỉ giữ bộ nhớ component.
 
 Request mới hủy request cũ và bỏ qua response cũ kể cả transport không thực sự hủy; đổi file xóa nội dung đang xem. Đổi snapshot, ngắt/rời trang hoặc chuyển sang Mô phỏng workflow xóa phiên source. Lỗi tải cũng xóa source; 401/403/404 ngắt client, cần kết nối lại. Không lưu token/source vào localStorage, sessionStorage hoặc cache browser. Thu hồi quyền ngăn lần đọc tiếp theo, không thu hồi bytes đã đọc hoặc tự xóa tab đang đứng yên. Chưa polling/lease hoặc offline policy.
 
@@ -83,7 +85,7 @@ So sánh hai nhánh nằm trong Chat với một ô nhập chung. Yêu cầu ng�
 
 | Route | Giao diện | Giới hạn |
 | --- | --- | --- |
-| `/workspace` | Đọc snapshot có quyền; chế độ workflow mô phỏng riêng | Cần token/profile control; chưa sửa source, Agent hoặc gate/deployment |
+| `/workspace` | Phiên local, snapshot có quyền, editor/revision/test thật; workflow mô phỏng riêng | Chỉ file validation trong bản riêng; chưa Agent/cache hoặc gate/deployment |
 | `/setup` | Thiết lập cache và kế hoạch thí nghiệm | Chỉ lưu nháp trong phiên; chưa áp dụng vào Chat, cache hay benchmark |
 | `/` | Chat nội bộ, lịch sử trong sidebar, gợi ý hỏi, gửi/sao chép, chat mới và ba chế độ qua nút bánh răng | Phản hồi mẫu; chưa gọi AI/RAG hoặc cache thật |
 | `/metrics` | Dashboard, lọc hội thoại, biểu đồ, đánh giá chất lượng/quyền và chi tiết lượt gửi | Tổng hợp phiên mô phỏng; chưa có telemetry hoặc nhãn đánh giá thật |

@@ -1,6 +1,7 @@
 "use client";
 
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useEffectEvent, useRef, useState } from "react";
+import { clearLocalBootstrap, closeLocalWorkspace, initializeLocalWorkspace } from "../local-workspace/localWorkspaceClient";
 import { ChangeWorkflowClient, editablePath } from "../code-changes/changeWorkflowApi";
 import {
   RepositoryApiError, RepositoryHttpClient, sourceText,
@@ -26,18 +27,37 @@ export function useRepository() {
   const [changes, setChanges] = useState<ChangeWorkflowClient | null>(null);
   const [openedFiles, setOpenedFiles] = useState<Record<string, RepositoryFileContent>>({});
   const [busy, setBusy] = useState(false);
+  const [checkingSession, setCheckingSession] = useState(true);
   const [error, setError] = useState("");
   const [requestId, setRequestId] = useState<string>();
   const client = useRef<RepositoryHttpClient | null>(null);
   const current = useRef<AbortController | null>(null);
+  const localSession = useRef(false);
   useEffect(() => () => { current.current?.abort(); client.current = null; }, []);
+
+  const openSession = useEffectEvent(() => connect(null));
+  useEffect(() => {
+    let cancelled = false;
+    initializeLocalWorkspace().then(async connected => {
+      if (!cancelled && connected) await openSession();
+    }).catch(() => { if (!cancelled) setError("Không mở được phiên local. Hãy chạy lại npm run workspace."); })
+      .finally(() => { if (!cancelled) { clearLocalBootstrap(); setCheckingSession(false); } });
+    return () => { cancelled = true; };
+  }, []);
 
   function clearFile() { setSelected(null); setContent(null); setRawContent(null); setBinary(false); }
   function clearSource() { setSnapshot(null); setOpenedFiles({}); clearFile(); }
-  function disconnect() {
+  function clearConnection() {
     current.current?.abort(); current.current = null; client.current = null;
     setChanges(null);
     setRepository(null); clearSource(); setError(""); setRequestId(undefined); setBusy(false);
+  }
+  function disconnect() {
+    clearConnection();
+    if (localSession.current) {
+      localSession.current = false;
+      void closeLocalWorkspace().catch(() => setError("Chưa đóng được phiên local. Hãy đóng trình duyệt và thử lại."));
+    }
   }
   function begin() {
     current.current?.abort();
@@ -65,14 +85,16 @@ export function useRepository() {
       setRequestId(failure instanceof RepositoryApiError ? failure.requestId : undefined);
     } finally { if (active(controller)) setBusy(false); }
   }
-  async function connect(token: string) {
+  async function connect(token: string | null) {
     client.current = null; setRepository(null); clearSource();
     setChanges(null);
-    const api = new RepositoryHttpClient(apiUrl, token);
+    localSession.current = token === null;
+    const baseUrl = token === null ? "/api/local-control" : apiUrl;
+    const api = new RepositoryHttpClient(baseUrl, token);
     await run(async (signal) => {
       const data = await api.describe(signal);
       const opened = await prepareSnapshot(api, data.repository_identity, signal);
-      return () => { client.current = api; setRepository(data); setChanges(new ChangeWorkflowClient(apiUrl, token)); opened(); };
+      return () => { client.current = api; setRepository(data); setChanges(new ChangeWorkflowClient(baseUrl, token)); opened(); };
     });
   }
   async function prepareSnapshot(api: RepositoryHttpClient, identity: string, signal: AbortSignal, snapshotId?: string) {
@@ -103,6 +125,6 @@ export function useRepository() {
         setRawContent(content.raw); setOpenedFiles(previous => ({ ...previous, [file.file_id]: content })); };
     });
   }
-  return { repository, snapshot, selected, content, rawContent, changes, openedFiles, binary, busy, error, requestId,
+  return { repository, snapshot, selected, content, rawContent, changes, openedFiles, binary, busy: busy || checkingSession, error, requestId,
     connect, disconnect, load, select };
 }

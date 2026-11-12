@@ -137,7 +137,10 @@ try {
     }
     Write-Host 'Ready: http://127.0.0.1:3000/workspace | http://127.0.0.1:3000/quotations'
     Write-Host "API ports: control 8000, quotations 8001. Background logs: $logs"
-    if (-not $NoBrowser) { Start-Process 'http://127.0.0.1:3000/workspace' }
+    if (-not $NoBrowser) {
+        & node --experimental-strip-types (Join-Path $frontendRoot 'scripts\open-workspace.mjs')
+        if ($LASTEXITCODE -ne 0) { throw 'Cannot open the local Workspace session.' }
+    }
 } finally {
     if ($launcherLock) { $launcherLock.Dispose() }
     $env:CACHESEC_ROOT = $previousRoot

@@ -11,12 +11,14 @@ export async function checkRepositoryDev({ cdp, navigate, evaluate, waitFor, cli
     .replace(/^\uFEFF/, "").replace(/\r\n?/g, "\n");
   const connected = "document.querySelector('.repository-panel')?.dataset.connected === 'true'";
   async function connect(value = token) {
+    await waitFor("!document.querySelector('#repository-token').disabled");
+    if (!await evaluate("document.querySelector('.repository-manual-connection').open")) await click(".repository-manual-connection > summary");
     await fill("#repository-token", value);
     await click('.repository-connection button[type="submit"]');
   }
   await navigate("/workspace");
   await connect("invalid-dev-smoke-token");
-  await waitFor("document.querySelector('.repository-error')?.textContent.includes('Token không hợp lệ')");
+  await waitFor("document.querySelector('.repository-error')?.textContent.includes('Phiên không hợp lệ')");
   await connect(); await waitFor(connected);
   await waitFor("!!document.querySelector('.cm-content')");
   assert.deepEqual(await evaluate("[...document.querySelectorAll('.repository-explorer button')].map(button => button.dataset.path)"), expectedPaths);

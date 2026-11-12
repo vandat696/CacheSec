@@ -28,6 +28,7 @@ frontend/src/
   features/
     developer/                 lắp ghép Workspace, workflow IDE mô phỏng
     repositories/              HTTP snapshot/file, phiên đọc và UI Repository thật
+    local-workspace/           phiên local private, proxy allowlist và bootstrap browser
     quotations/                form/danh sách/chi tiết nối API, hook phiên và HTTP adapter
     experiment-config/         profile, comparison, experiment-plan, setup-plan
     ui-library/
@@ -38,6 +39,8 @@ frontend/src/
 ```
 
 experiment-config thay tên workspace cũ vì module đó giữ cấu hình thí nghiệm, không phải IDE. ExperimentConfigProvider/useExperimentConfig giữ state phiên; model thuần tách theo profile/comparison/plan/setup. Import .ts giữa các model cho phép Node test runner dùng cùng source; tsconfig cho phép extension này với noEmit.
+
+`local-workspace/localSessionStore.ts` sở hữu capability/session file private và credential digest; `localWorkspaceServer.ts` kiểm request browser, exchange/logout và proxy allowlist tới backend cố định. `localWorkspaceRuntime.ts` có server-only boundary và lắp ghép path host, `localWorkspaceClient.ts` chỉ biết bootstrap/session cùng origin. Route `/api/local-control` mỏng, không chứa auth implementation. `scripts/open-workspace.mjs` là helper host dùng chung store để mở browser, gọi qua npm workspace hoặc launcher PowerShell; token backend không import vào client. Test bảo mật nằm ở `frontend/scripts/local-workspace.test.mjs`, browser smoke `--local-workspace` kiểm trên dev thật.
 
 Một file chứa component chính, props/helper cục bộ liên quan; helper dùng chung có file rõ tên trong cùng nhóm (Field/useField, ChartFrame/CartesianPlot/DonutPlot). Import trực tiếp module, ví dụ `@/components/ui/forms/Select`. Registry catalog chỉ lắp ghép definitions/previews, không chứa implementation. React giữ function component/hooks và composition; CSS app giữ selector/token hiện có.
 

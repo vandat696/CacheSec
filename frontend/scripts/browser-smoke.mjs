@@ -13,11 +13,13 @@ import { checkQuotations } from "./quotation-browser-check.mjs";
 import { checkRepository } from "./repository-browser-check.mjs";
 import { checkRepositoryDev } from "./repository-dev-browser-check.mjs";
 import { checkCodeChanges } from "./code-changes-browser-check.mjs";
+import { checkLocalWorkspace } from "./local-workspace-browser-check.mjs";
 
 const frontend = fileURLToPath(new URL("..", import.meta.url));
 const codeChanges = process.argv.includes("--code-changes");
 const repositoryDev = process.argv.includes("--repository-dev") || codeChanges;
-const repositoryOnly = process.argv.includes("--repository-only") || repositoryDev;
+const localWorkspace = process.argv.includes("--local-workspace");
+const repositoryOnly = process.argv.includes("--repository-only") || repositoryDev || localWorkspace;
 if (repositoryDev) {
   // This private file contains only the dedicated read credential, never the backend DSN.
   process.loadEnvFile(join(frontend, "../backend/.local/control-access.env"));
@@ -187,8 +189,9 @@ try {
   };
   const navigate = async (path) => {
     await cdp("Page.navigate", { url: new URL(path, baseUrl).href });
+    const pathname = new URL(path, baseUrl).pathname;
     await waitFor(
-      `document.readyState === 'complete' && location.pathname === ${JSON.stringify(path)} && !!document.querySelector('main')`,
+      `document.readyState === 'complete' && location.pathname === ${JSON.stringify(pathname)} && !!document.querySelector('main')`,
     );
     await waitFor(
       `Object.keys(document.querySelector('button')).some(key => key.startsWith('__reactProps'))`,
@@ -259,6 +262,10 @@ try {
   if (repositoryDev) {
     if (codeChanges) await checkCodeChanges({ cdp, navigate, evaluate, waitFor, click, fill, screenshot });
     else await checkRepositoryDev({ cdp, navigate, evaluate, waitFor, click, fill, screenshot });
+  }
+  if (localWorkspace) {
+    await checkLocalWorkspace({ cdp, navigate, evaluate, waitFor, click, screenshot });
+    console.log("Đạt: phiên local tự kết nối, Ctrl+S/test Docker thật, reload, logout và chặn replay.");
   }
   if (!repositoryOnly && !process.argv.includes("--developer-only") && !process.argv.includes("--quotations-only")) {
   await navigate("/ui");
@@ -1143,7 +1150,8 @@ try {
   }
   assert.deepEqual(errors, [], "Lỗi runtime/React trên trình duyệt");
   console.log(
-    codeChanges ? "Đạt: editor/diff/revision thật, Docker pass/fail/timeout, không reuse verdict cũ và ba bố cục."
+    localWorkspace ? "Đạt: Workspace local mở tự động, token ở server, sửa/lưu/test và vòng đời phiên."
+      : codeChanges ? "Đạt: editor/diff/revision thật, Docker pass/fail/timeout, không reuse verdict cũ và ba bố cục."
       : repositoryDev
       ? "Đạt: Workspace/dev API/PostgreSQL thật, đúng ba file host, tạo/mở snapshot, token trong bộ nhớ và ba bố cục."
       : process.argv.includes("--repository-only")

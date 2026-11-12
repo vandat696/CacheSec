@@ -11,6 +11,8 @@ export async function checkCodeChanges({ cdp, navigate, evaluate, waitFor, click
   const original = (await readFile(new URL("../../backend/app/quotation_demo/business/quotation_validation.py", import.meta.url), "utf8"))
     .replace(/\r\n?/g, "\n");
   await navigate("/workspace");
+  await waitFor("!document.querySelector('#repository-token').disabled");
+  await click(".repository-manual-connection > summary");
   await fill("#repository-token", token);
   await click('.repository-connection button[type="submit"]');
   await waitFor("document.querySelector('.repository-panel')?.dataset.connected === 'true'");
@@ -99,6 +101,7 @@ export async function checkCodeChanges({ cdp, navigate, evaluate, waitFor, click
   assert.equal(await evaluate("!!document.querySelector('.cm-content')"), false);
 
   // A normal IDE can run the current source before any edit, then save a real undo.
+  await click(".repository-manual-connection > summary");
   await fill("#repository-token", token);
   await click('.repository-connection button[type="submit"]');
   await waitFor(`!!document.querySelector(${JSON.stringify(editableSource + '[contenteditable="true"]')})`);

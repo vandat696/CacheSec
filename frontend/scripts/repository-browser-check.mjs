@@ -7,6 +7,8 @@ export async function checkRepository({ cdp, navigate, evaluate, waitFor, click,
   assert.ok(token?.startsWith("test-only-"), "Start repository_browser_server.py with a test-only token.");
   const connected = "document.querySelector('.repository-panel')?.dataset.connected === 'true'";
   async function connect(value = token) {
+    await waitFor("!document.querySelector('#repository-token').disabled");
+    if (!await evaluate("document.querySelector('.repository-manual-connection').open")) await click(".repository-manual-connection > summary");
     await fill("#repository-token", value);
     await click('.repository-connection button[type="submit"]');
   }
@@ -35,7 +37,7 @@ export async function checkRepository({ cdp, navigate, evaluate, waitFor, click,
   assert.equal(await evaluate("document.querySelector('#preview-open-approval').disabled"), true);
   assert.equal(await evaluate("document.querySelector('#developer-prompt').disabled"), true);
   await connect("invalid-test-token");
-  await waitFor("document.querySelector('.repository-error')?.textContent.includes('Token không hợp lệ')");
+  await waitFor("document.querySelector('.repository-error')?.textContent.includes('Phiên không hợp lệ')");
   await connect(token + "-denied");
   await waitFor("document.querySelector('.repository-error')?.textContent.includes('không có quyền')");
   await connect(); await waitFor(connected);

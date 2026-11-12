@@ -20,7 +20,7 @@ export class RepositoryApiError extends Error {
   readonly code?: string;
   constructor(status: number, requestId?: string, code?: string) {
     super(code === "SOURCE_NOT_CONFIGURED" ? "Backend chưa cấu hình nguồn repository." : ({
-      400: "Yêu cầu không đúng định dạng.", 401: "Token không hợp lệ hoặc đã bị thu hồi.",
+      400: "Yêu cầu không đúng định dạng.", 401: "Phiên không hợp lệ hoặc đã hết hạn.",
       403: "Danh tính này không có quyền đọc repository.",
       404: "Snapshot hoặc nguồn không còn khả dụng trong phạm vi hiện tại.",
       409: "Source thay đổi khi chụp. Hãy tạo snapshot lại.",
@@ -58,9 +58,10 @@ function snapshot(value: unknown): value is RepositorySnapshot {
 export class RepositoryHttpClient {
   private readonly fetcher: Fetch;
   private readonly baseUrl: string;
-  private readonly token: string;
-  constructor(baseUrl: string, token: string,
+  private readonly token: string | null;
+  constructor(baseUrl: string, token: string | null,
     fetcher: Fetch = globalThis.fetch) {
+    if (token === null && baseUrl !== "/api/local-control") throw new Error("INVALID_LOCAL_TRANSPORT");
     this.baseUrl = baseUrl; this.token = token;
     this.fetcher = (input, init) => fetcher(input, init);
   }
@@ -68,8 +69,8 @@ export class RepositoryHttpClient {
   private async request<T>(path: string, signal: AbortSignal,
     decode: (value: unknown) => value is T, post = false): Promise<T> {
     const response = await this.fetcher(`${this.baseUrl.replace(/\/$/, "")}/api/v1/repository${path}`, {
-      method: post ? "POST" : "GET", signal, credentials: "omit", cache: "no-store", redirect: "error",
-      headers: { Authorization: `Bearer ${this.token}` },
+      method: post ? "POST" : "GET", signal, credentials: this.token === null ? "same-origin" : "omit", cache: "no-store", redirect: "error",
+      headers: this.token === null ? { "X-CacheSec-Workspace": "1" } : { Authorization: `Bearer ${this.token}` },
     });
     const body: unknown = await response.json().catch(() => null);
     const requestId = object(body) && object(body.meta) && id(body.meta.request_id)

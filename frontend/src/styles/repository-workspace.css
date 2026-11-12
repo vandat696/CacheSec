@@ -1,4 +1,6 @@
 .repository-panel:has(.repository-workspace) { overflow: hidden; }
+.repository-manual-connection > summary { color: var(--nui-muted); cursor: pointer; font-size: 12px; }
+.repository-manual-connection > form { display: grid; gap: 16px; margin-top: 20px; }
 .repository-project-menu { display: flex; align-items: center; gap: 4px; flex-wrap: wrap; border-bottom: 1px solid var(--nui-border); padding: 4px 8px; }
 .repository-project-menu > details { position: relative; padding: 0; font-size: 12px; }
 .repository-project-menu > details > summary { padding: 7px 9px; cursor: pointer; list-style: none; color: var(--nui-text); }
