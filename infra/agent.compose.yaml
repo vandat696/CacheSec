@@ -1,0 +1,12 @@
+# Host-owned model key only; never mounted into quotation/test candidate containers.
+services:
+  control:
+    environment:
+      CONTROL_AGENT_CONFIG: /run/agent/openai.env
+    volumes:
+      - type: bind
+        source: ${CACHESEC_ROOT:?Set CACHESEC_ROOT}/backend/.local/agent-config
+        target: /run/agent
+        read_only: true
+        bind:
+          create_host_path: false

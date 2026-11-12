@@ -14,12 +14,14 @@ import { checkRepository } from "./repository-browser-check.mjs";
 import { checkRepositoryDev } from "./repository-dev-browser-check.mjs";
 import { checkCodeChanges } from "./code-changes-browser-check.mjs";
 import { checkLocalWorkspace } from "./local-workspace-browser-check.mjs";
+import { checkAgent } from "./agent-browser-check.mjs";
 
 const frontend = fileURLToPath(new URL("..", import.meta.url));
 const codeChanges = process.argv.includes("--code-changes");
 const repositoryDev = process.argv.includes("--repository-dev") || codeChanges;
 const localWorkspace = process.argv.includes("--local-workspace");
-const repositoryOnly = process.argv.includes("--repository-only") || repositoryDev || localWorkspace;
+const agentOnly = process.argv.includes("--agent");
+const repositoryOnly = process.argv.includes("--repository-only") || repositoryDev || localWorkspace || agentOnly;
 if (repositoryDev) {
   // This private file contains only the dedicated read credential, never the backend DSN.
   process.loadEnvFile(join(frontend, "../backend/.local/control-access.env"));
@@ -266,6 +268,10 @@ try {
   if (localWorkspace) {
     await checkLocalWorkspace({ cdp, navigate, evaluate, waitFor, click, screenshot });
     console.log("Đạt: phiên local tự kết nối, Ctrl+S/test Docker thật, reload, logout và chặn replay.");
+  }
+  if (agentOnly) {
+    await checkAgent({ cdp, navigate, evaluate, waitFor, click, fill, screenshot });
+    console.log("Đạt: UI Agent với generation double có nhãn, revision/Docker thật, bảo vệ draft và disconnect.");
   }
   if (!repositoryOnly && !process.argv.includes("--developer-only") && !process.argv.includes("--quotations-only")) {
   await navigate("/ui");
@@ -1150,7 +1156,8 @@ try {
   }
   assert.deepEqual(errors, [], "Lỗi runtime/React trên trình duyệt");
   console.log(
-    localWorkspace ? "Đạt: Workspace local mở tự động, token ở server, sửa/lưu/test và vòng đời phiên."
+    agentOnly ? "Đạt: Workspace/Agent một màn, đề xuất/apply/test và ba bố cục; model response là test double."
+      : localWorkspace ? "Đạt: Workspace local mở tự động, token ở server, sửa/lưu/test và vòng đời phiên."
       : codeChanges ? "Đạt: editor/diff/revision thật, Docker pass/fail/timeout, không reuse verdict cũ và ba bố cục."
       : repositoryDev
       ? "Đạt: Workspace/dev API/PostgreSQL thật, đúng ba file host, tạo/mở snapshot, token trong bộ nhớ và ba bố cục."

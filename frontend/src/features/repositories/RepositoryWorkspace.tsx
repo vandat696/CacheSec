@@ -14,7 +14,7 @@ import { RepositoryExplorer } from "./navigation/RepositoryExplorer";
 import type { SnapshotFile } from "./repositoryApi";
 import type { useRepository } from "./useRepository";
 
-export type RepositoryWorkspaceHandle = { requestLeave: (action: () => void) => void };
+export type RepositoryWorkspaceHandle = { requestLeave: (action: () => void) => void; openProposal: (id: string) => void };
 
 export function RepositoryWorkspace({ repo, ref }: { repo: ReturnType<typeof useRepository>; ref?: Ref<RepositoryWorkspaceHandle> }) {
   const snapshot = repo.snapshot!;
@@ -39,7 +39,9 @@ export function RepositoryWorkspace({ repo, ref }: { repo: ReturnType<typeof use
     if (change.dirty) setPendingAction(() => action);
     else action();
   }
-  useImperativeHandle(ref, () => ({ requestLeave }));
+  useImperativeHandle(ref, () => ({ requestLeave, openProposal: id => requestLeave(() => {
+    if (editable) { openFile(editable); setConsoleTab("diff"); void change.open(id); }
+  }) }));
 
   useEffect(() => {
     if (!change.dirty) return;

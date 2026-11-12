@@ -3,7 +3,7 @@ import { DeveloperWorkspace } from "@/features/developer/DeveloperWorkspace";
 
 export const metadata: Metadata = {
   title: "Developer Workspace · CacheSec",
-  description: "Bản xem trước workflow phát triển phần mềm với Secure Local Semantic Cache.",
+  description: "Workspace sửa mã, kiểm thử và Agent cho CacheSec.",
 };
 
 export default function WorkspacePage() {

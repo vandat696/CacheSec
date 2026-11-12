@@ -1,12 +1,20 @@
 # Thiết kế frontend
 
+## Workspace và Agent — một màn hình
+
+`/workspace` chỉ có editor/Explorer/diff/test bên trái và Agent bên phải; nút Agent ẩn/hiện khung chat mà không remount editor hoặc mất bản nháp. Bỏ lựa chọn Sửa mã/Mô phỏng workflow khỏi toolbar chính. Bản mô phỏng giữ riêng ở `/ui/workspace-preview`, mở từ thư viện UI, dùng source/hội thoại mẫu và không khởi tạo phiên repository thật.
+
+Agent dùng OpenAI Responses với `gpt-6.1-sol`, trạng thái cấu hình lấy từ backend sau xác thực. Chưa có key thì ô gửi khóa, hiển thị hướng dẫn cấu hình private trong details; không trả lời mẫu giả thành công. Model đọc source gốc của đúng snapshot gồm ba file, không đọc bản nháp editor hoặc toàn repository. Hội thoại trong bộ nhớ phiên, gửi lại tối đa 12 message/24 KiB; đổi snapshot/ngắt phiên xóa chat và bỏ response đến trễ. Lỗi key/quota/provider/refusal/incomplete hiển thị rõ, không tự retry có thể tính phí.
+
+Đề xuất chỉ chứa source đầy đủ cho file validation. Người dùng xem source, chọn Áp dụng bản sửa để lưu proposal qua API hiện có rồi mở diff; có cảnh báo Lưu/Không lưu/Hủy nếu editor còn draft, kể cả draft mới phát sinh trong lúc lưu proposal. Chạy test ở editor vẫn là thao tác người dùng, đi qua worker Docker thật. Chat không tự có quyền approve/deploy hoặc chạy shell. Đây là assistance do người dùng khởi tạo, chưa phải Agent tự điều phối T14. [Contract/bảo mật](../system/api.md#agent-assistance) và [cấu hình key](../general/setup.md#agent-gpt-61-sol) mô tả giới hạn.
+
 ## Workspace — bản sửa và test thật ngày 2026-11-12
 
 Chế độ Sửa mã tự kết nối phiên local do launcher mở, chụp snapshot và mở file validation trong CodeMirror với Explorer/tab, undo/redo, tìm kiếm và Ctrl+S. Token dài hạn ở Next server; browser dùng cookie HttpOnly tối đa 8 giờ. Không có phiên thì chỉ dẫn chạy `npm run workspace`; kết nối token thủ công nằm trong mục thu gọn. Reload dùng phiên còn hạn, lấy source hiện tại; bản nháp chưa lưu không được tự khôi phục. Ngắt kết nối hủy phiên và xóa source. Xem [ranh giới phiên local](../system/authorization.md#phiên-workspace-local).
 
 Lưu/Ctrl+S chỉ lưu revision; Chạy test tự lưu mã chưa lưu rồi tạo job. Hai POST vẫn riêng biệt, tuần tự, có idempotency; lỗi tạo job giữ bản đã lưu để thử lại, không tự tạo revision mới. Có thể test source chưa đổi hoặc lưu bản undo về nguồn gốc. Project mở lại source/snapshot, Chi tiết mở Proposal ID cũ; đóng/rời bản nháp có hộp thoại Lưu/Không lưu/Hủy. Status/evidence gắn revision/artifact, sửa tiếp giữ lịch sử với nhãn Bản cũ; mã chưa lưu không thuộc kết quả đã test. Kết quả mới nhất mở sẵn, lỗi tiếng Việt; ID/hash nằm trong Chi tiết kỹ thuật. Nội dung bị xóa khỏi view khi mất quyền/disconnect. Xem [contract và giới hạn T12](../system/change-workflow.md).
 
-Agent, approval/deployment chưa nối backend; workflow mẫu là chế độ riêng. Các nút test/phê duyệt mẫu được ẩn và khóa trong Sửa mã, hiện lại ở Mô phỏng workflow. Nút Lưu/Chạy test của editor dùng API thật. Không có thao tác triển khai từ mốc này. Token không nhúng vào bundle hoặc đọc file secret từ browser; chỉ đường kết nối Bearer nâng cao mới yêu cầu nhập thủ công.
+Agent assistance đã có backend adapter, cần key để gọi model thật; approval/deployment chưa nối backend. Các nút test/phê duyệt mẫu chỉ ở trang UI phụ. Nút Lưu/Chạy test của editor dùng API thật, không có thao tác triển khai. Token không nhúng vào bundle hoặc đọc file secret từ browser; chỉ đường kết nối Bearer nâng cao mới yêu cầu nhập thủ công.
 
 ## Báo giá — nối API thật ngày 2026-11-09
 
@@ -18,15 +26,15 @@ Route /quotations mở từ sidebar hoặc liên kết Báo giá trên toolbar W
 - Mỗi lần tạo có Idempotency-Key riêng. Khi mất response hoặc gặp lỗi chưa rõ kết quả, giữ nguyên body/key trong bộ nhớ, khóa sửa form và cho Thử lại lần gửi. Thành công chỉ sau response hợp lệ; refresh danh sách lỗi không biến báo giá đã lưu thành lần gửi chưa thành công. Reload/rời route mất key đang chờ: cần xem lại dữ liệu trước khi tạo lại; chưa có recovery bền vững qua reload hoặc audit workflow.
 - Chi tiết có nút Kiểm tra báo giá gọi POST validate thật; chỉ operator có đủ quyền read/validate, reader nhận lỗi 403 từ backend. QuotationValidationPanel hiển thị kết quả thuộc đúng báo giá đang chọn; baseline trả tập quy tắc rỗng và ghi Chưa áp dụng quy tắc nghiệp vụ, không tô Đạt/Ngày hợp lệ/Đã duyệt. Decoder từ chối sai quotation_id, thiếu fields hoặc metadata artifact/reference_date ngoài contract nền. Kết quả được xóa khi chọn record khác, refresh, tạo mới hoặc đổi/ngắt phiên; request bị hủy/kết quả đến trễ không phục hồi dữ liệu cũ. Validation không ghi DB và không phải test bản sửa trong Workspace.
 
-Nguồn ở features/quotations, CSS scope quotations.css; route chỉ lắp ghép. NEXT_PUBLIC_QUOTATION_API_URL là địa chỉ public của API, **không chứa token**. CORS, quyền và lệnh chạy/kiểm tra tại [setup](../general/setup.md#2b-api-báo-giá-độc-lập), [API](../system/api.md#http-báo-giá-đã-triển-khai) và [authorization](../system/authorization.md#quyền-api-báo-giá-đã-triển-khai). Đây là kết nối app báo giá; Agent/code/review/test/deploy trong Workspace vẫn mô phỏng.
+Nguồn ở features/quotations, CSS scope quotations.css; route chỉ lắp ghép. NEXT_PUBLIC_QUOTATION_API_URL là địa chỉ public của API, **không chứa token**. CORS, quyền và lệnh chạy/kiểm tra tại [setup](../general/setup.md#2b-api-báo-giá-độc-lập), [API](../system/api.md#http-báo-giá-đã-triển-khai) và [authorization](../system/authorization.md#quyền-api-báo-giá-đã-triển-khai). Realm báo giá riêng, không cấp quyền đọc/sửa/test/approval source.
 
 ## Repository trong Workspace — HTTP thật ngày 2026-11-11
 
 Lát cắt đọc ngày 2026-11-11 đã được mở rộng bằng bản sửa/test và phiên local mô tả ở đầu trang. Scope vẫn do backend lấy từ registry, không có role/root/path input. Người dùng mở source hiện tại hoặc snapshot bằng UUID, chọn file trong profile server trả. Client kiểm response/ID, byte size và SHA-256 trước hiển thị; text phải là UTF-8 hợp lệ, binary báo rõ. Source hiển thị như văn bản, không HTML. ID/profile/manifest thu gọn; hash không phải approval hoặc current Git revision. Với adapter Bearer thủ công, token vẫn chỉ giữ bộ nhớ component.
 
-Request mới hủy request cũ và bỏ qua response cũ kể cả transport không thực sự hủy; đổi file xóa nội dung đang xem. Đổi snapshot, ngắt/rời trang hoặc chuyển sang Mô phỏng workflow xóa phiên source. Lỗi tải cũng xóa source; 401/403/404 ngắt client, cần kết nối lại. Không lưu token/source vào localStorage, sessionStorage hoặc cache browser. Thu hồi quyền ngăn lần đọc tiếp theo, không thu hồi bytes đã đọc hoặc tự xóa tab đang đứng yên. Chưa polling/lease hoặc offline policy.
+Request mới hủy request cũ và bỏ qua response cũ kể cả transport không thực sự hủy; đổi file xóa nội dung đang xem. Đổi snapshot, ngắt/rời trang xóa source đang mở. Lỗi tải cũng xóa source; 401/403/404 ngắt client, cần kết nối lại. Không lưu token/source vào localStorage, sessionStorage hoặc cache browser. Thu hồi quyền ngăn lần đọc tiếp theo, không thu hồi bytes đã đọc hoặc tự xóa tab đang đứng yên. Chưa polling/lease hoặc offline policy.
 
-Khi đọc source thật, Kiểm thử/Phê duyệt và composer Agent bị khóa. Mô phỏng workflow giữ diff/test/approval mẫu trước đây, không nhận source/token của RepositoryPanel. Các mô tả bản xem trước bên dưới chỉ thuộc chế độ đó; triển khai vẫn khóa. [API snapshot](../system/api.md#http-snapshot-đã-triển-khai) sở hữu wire/lỗi; [setup](../general/setup.md#2d-repository-snapshot-và-workspace) sở hữu cấu hình host.
+Lát cắt đọc đã được nối thêm proposal/test và Agent assistance như đầu trang. Diff/test/approval mẫu giữ ở trang UI phụ, không nhận source/token của RepositoryPanel. Các mô tả bản xem trước bên dưới chỉ thuộc trang mẫu; triển khai chưa có. [API snapshot](../system/api.md#http-snapshot-đã-triển-khai) sở hữu wire/lỗi; [setup](../general/setup.md#2d-repository-snapshot-và-workspace) sở hữu cấu hình host.
 
 Source thuộc features/repositories: repositoryApi.ts kiểm wire/bytes, useRepository.ts điều phối phiên/request, RepositoryConnection.tsx và RepositoryPanel.tsx sở hữu UI; DeveloperWorkspace chỉ lắp ghép/chuyển chế độ. Test adapter và browser thật kiểm quyền, binary, đổi/ngắt phiên, response trễ và responsive; chưa phải trace/nghiệm thu nghiên cứu.
 
@@ -85,7 +93,8 @@ So sánh hai nhánh nằm trong Chat với một ô nhập chung. Yêu cầu ng�
 
 | Route | Giao diện | Giới hạn |
 | --- | --- | --- |
-| `/workspace` | Phiên local, snapshot có quyền, editor/revision/test thật; workflow mô phỏng riêng | Chỉ file validation trong bản riêng; chưa Agent/cache hoặc gate/deployment |
+| `/workspace` | Phiên local, editor/revision/test và Agent assistance | Model cần key; chỉ file validation trong bản riêng; chưa cache/Agent tự điều phối/gate |
+| `/ui/workspace-preview` | Workflow mô phỏng giữ để tham chiếu UI | Source/test/approval mẫu, không nhận phiên repository thật |
 | `/setup` | Thiết lập cache và kế hoạch thí nghiệm | Chỉ lưu nháp trong phiên; chưa áp dụng vào Chat, cache hay benchmark |
 | `/` | Chat nội bộ, lịch sử trong sidebar, gợi ý hỏi, gửi/sao chép, chat mới và ba chế độ qua nút bánh răng | Phản hồi mẫu; chưa gọi AI/RAG hoặc cache thật |
 | `/metrics` | Dashboard, lọc hội thoại, biểu đồ, đánh giá chất lượng/quyền và chi tiết lượt gửi | Tổng hợp phiên mô phỏng; chưa có telemetry hoặc nhãn đánh giá thật |

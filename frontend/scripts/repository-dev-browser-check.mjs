@@ -27,7 +27,7 @@ export async function checkRepositoryDev({ cdp, navigate, evaluate, waitFor, cli
   const snapshotId = await evaluate("document.querySelector('.repository-reference dd').textContent");
   assert.match(snapshotId, /^[0-9a-f-]{36}$/);
   assert.equal(await evaluate("localStorage.length + sessionStorage.length"), 0);
-  assert.equal(await evaluate("document.querySelector('#preview-open-approval').disabled"), true);
+  assert.equal(await evaluate("document.querySelector('#preview-open-approval')"), null);
   for (const [width, height] of [[390, 844], [820, 1180], [1440, 900]]) {
     await cdp("Emulation.setDeviceMetricsOverride", { width, height, deviceScaleFactor: 1, mobile: width < 768 });
     await navigate("/workspace");

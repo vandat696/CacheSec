@@ -7,12 +7,11 @@ import { RepositoryConnection } from "./RepositoryConnection";
 import { RepositoryWorkspace, type RepositoryWorkspaceHandle } from "./RepositoryWorkspace";
 import { useRepository } from "./useRepository";
 
-export function RepositoryPanel({ ref }: { ref?: Ref<RepositoryWorkspaceHandle> }) {
-  const repo = useRepository();
+export function RepositoryPanel({ ref, repo }: { ref?: Ref<RepositoryWorkspaceHandle>; repo: ReturnType<typeof useRepository> }) {
   const [snapshotId, setSnapshotId] = useState("");
   const workspace = useRef<RepositoryWorkspaceHandle>(null);
   function requestLeave(action: () => void) { if (workspace.current) workspace.current.requestLeave(action); else action(); }
-  useImperativeHandle(ref, () => ({ requestLeave }));
+  useImperativeHandle(ref, () => ({ requestLeave, openProposal: id => workspace.current?.openProposal(id) }));
   return <div className="repository-panel" data-connected={!!repo.repository} aria-busy={repo.busy}>
     {!repo.repository ? <RepositoryConnection busy={repo.busy} onConnect={repo.connect} /> : <>
       <div className="repository-project-menu">

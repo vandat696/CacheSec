@@ -90,6 +90,8 @@ Không tự chọn thay người dùng/giảng viên các giá trị ảnh hư�
 
 ### T09 — Nối LLM và embedding qua adapter riêng
 
+- **Lát cắt đã có:** người dùng chọn OpenAI `gpt-6.1-sol`; Responses generation adapter, API assistance đọc ba file có quyền/freshness và UI đề xuất → người dùng áp dụng/test đã có implementation. Key private do người dùng cấu hình; xem project-status cho kiểm chứng model thật, không coi provider double là kết nối thật. Chưa embedding/cache hoặc Agent tự điều phối; chưa hoàn thành toàn T09/T14.
+
 - [ ] Hoàn thành T09. **Phụ thuộc:** T01–T02, T06 và T08.
 - **Làm:** chọn provider/model/config đã xác nhận, tách generation khỏi embedding; chuẩn hóa usage, timeout, retry, lỗi và provenance đầu vào. Chỉ kết nối embedding khi lát cắt cần; không thêm nhiều provider hoặc SDK ngoài nhu cầu.
 - **Đầu ra:** đường hỏi hiểu repo No Cache chạy thật, usage/duration có trace; vector namespace/config khi có embedding.
@@ -152,7 +154,7 @@ Kết thúc mốc khi demo được cả lưu/sửa/test thành công, sai quy�
 ### T15 — Nối giao diện IDE và màn báo giá với backend
 
 - [ ] Hoàn thành T15. **Phụ thuộc:** API ở T07 và workflow T14.
-- **Trạng thái:** đã nối phần app báo giá: form/danh sách/chi tiết qua API, token fixture trong bộ nhớ, lỗi/quyền/retry thật, liên kết từ Workspace. IDE đọc snapshot/file, sửa revision/diff và chạy test Docker thật có quyền; Agent/review/deploy còn mô phỏng; T15 chưa hoàn thành toàn bộ.
+- **Trạng thái:** đã nối app báo giá, phiên Workspace local, editor/revision/test Docker và Agent assistance cần key. Workspace chỉ một màn chính, mô phỏng chuyển vào UI phụ; review/deploy thật và Agent tự điều phối chưa có, T15 chưa hoàn thành toàn bộ.
 - **Làm:** tái sử dụng code/chat IDE, thay fixture bằng source/diff/message/status thật; nối hộp thoại test/approval. Thêm màn báo giá tối giản dùng API app để nhập/xem/validation và quan sát trước/sau activation; route cụ thể theo contract đã chốt, không dựng ERP hoặc IDE đầy đủ.
 - **Đầu ra:** demo sử dụng được từ trình duyệt: prompt → diff/test → reviewer duyệt → kích hoạt → báo giá phản ánh rule mới.
 - **Nghiệm thu:** UI không tự bịa hit/test/approval; loading/error/reconnect và stale revision rõ; thao tác chưa được phép không thành công qua API. Code/chat vẫn là hai vùng chính, giữ UI ít chữ, accessibility/responsive và các màn cũ.

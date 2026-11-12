@@ -67,6 +67,12 @@ try {
     & docker info --format '{{.OSType}}' | Out-Null
     if ($LASTEXITCODE -ne 0) { throw 'Start Docker Desktop with Linux containers first.' }
     New-Item -ItemType Directory -Path $logs -Force | Out-Null
+    $agentConfig = Join-Path $localRoot 'agent-config'
+    New-Item -ItemType Directory -Path $agentConfig -Force | Out-Null
+    $agentKeyFile = Join-Path $agentConfig 'openai.env'
+    if (-not (Test-Path -LiteralPath $agentKeyFile)) {
+        [IO.File]::WriteAllText($agentKeyFile, "OPENAI_API_KEY=`n", [Text.UTF8Encoding]::new($false))
+    }
     $launcherLock = [IO.File]::Open((Join-Path $logs 'launcher.lock'), 'OpenOrCreate', 'ReadWrite', 'None')
     & $python -X utf8 $helper prepare
     if ($LASTEXITCODE -ne 0) { throw 'Private configuration was not prepared.' }
@@ -92,6 +98,7 @@ try {
         'up', '-d', '--wait', 'db')
     Invoke-Docker -DockerArgs @('compose', '-f', (Join-Path $workspaceRoot 'infra\control.compose.yaml'),
         '-f', (Join-Path $workspaceRoot 'infra\test-workflow.compose.yaml'),
+        '-f', (Join-Path $workspaceRoot 'infra\agent.compose.yaml'),
         'up', '-d', '--no-build', '--wait', 'control')
     & $python -X utf8 $helper probe-control
     if ($LASTEXITCODE -ne 0) { throw 'The local profile does not match the configured control workflow.' }

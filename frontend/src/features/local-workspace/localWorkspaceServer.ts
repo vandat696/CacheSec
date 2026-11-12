@@ -3,8 +3,10 @@ import { cookieName, localOrigin, LocalSessionStore, sessionLifetime, sessionPat
 const uuid = "[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}";
 const routes: Record<string, RegExp[]> = {
   GET: [new RegExp(`^/api/v1/repository(?:/snapshots/${uuid}(?:/files/${uuid})?)?$`),
+    /^\/api\/v1\/agent\/config$/,
     new RegExp(`^/api/v1/changes/(?:config|proposals/${uuid}|tests/${uuid})$`)],
   POST: [/^\/api\/v1\/repository\/snapshots$/,
+    /^\/api\/v1\/agent\/messages$/,
     new RegExp(`^/api/v1/changes/proposals(?:/${uuid}/(?:revisions|tests))?$`)],
 };
 const headers = { "Cache-Control": "no-store", "X-Content-Type-Options": "nosniff" };
@@ -36,7 +38,8 @@ export class LocalWorkspaceServer {
   private upstream(path: string, token: string, signal?: AbortSignal, init: RequestInit = {}) {
     return this.fetcher("http://127.0.0.1:8000" + path, {
       ...init, cache: "no-store", credentials: "omit", redirect: "error",
-      signal: signal ? AbortSignal.any([signal, AbortSignal.timeout(15000)]) : AbortSignal.timeout(15000),
+      signal: signal ? AbortSignal.any([signal, AbortSignal.timeout(path.startsWith("/api/v1/agent/") ? 90000 : 15000)])
+        : AbortSignal.timeout(15000),
       headers: { ...init.headers, Authorization: "Bearer " + token },
     });
   }

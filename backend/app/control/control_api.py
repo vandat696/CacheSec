@@ -3,6 +3,9 @@
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
+from app.agent_assistance.assistance_http import configure_assistance_http
+from app.agent_assistance.assistance_service import AgentAssistanceService
+from app.agent_assistance.openai_generation import OpenAIResponsesGeneration
 from app.artifacts.filesystem_blob_store import FileSystemBlobStore
 from app.change_workflow.postgres_workflow_transactions import PostgresWorkflowTransactions
 from app.change_workflow.proposal_service import ProposalService
@@ -53,6 +56,14 @@ def create_app(configuration: Settings = settings) -> FastAPI:
         )
         jobs = TestJobService(proposals, binding.profile.scope)
     configure_workflow_http(app, proposals, jobs, configuration.control_test_worker_token)
+    configure_assistance_http(
+        app,
+        AgentAssistanceService(
+            RepositoryAccessService(PostgresControlAuthorityTransactions(database)),
+            snapshots,
+            OpenAIResponsesGeneration(configuration.control_agent_config),
+        ),
+    )
     app.add_middleware(
         CORSMiddleware,
         allow_origins=configuration.cors_origins,

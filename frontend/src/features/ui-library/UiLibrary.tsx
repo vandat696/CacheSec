@@ -43,8 +43,8 @@ export function UiLibrary() {
             hoặc kết hợp qua cùng hệ token.
           </p>
         </div>
-        <Link className="btn" href="/chat">
-          Mở chat mẫu →
+        <Link className="btn" href="/ui/workspace-preview">
+          Workspace mẫu →
         </Link>
       </div>
       <div className="catalog-guide panel">

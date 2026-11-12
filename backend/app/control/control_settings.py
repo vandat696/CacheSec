@@ -16,6 +16,7 @@ class Settings(BaseSettings):
     control_repository_config: Path | None = Field(default=None, repr=False)
     control_test_profile_config: Path | None = Field(default=None, repr=False)
     control_test_worker_token: SecretStr | None = Field(default=None, repr=False)
+    control_agent_config: Path | None = Field(default=None, repr=False)
 
     @field_validator("database_url", mode="before")
     @classmethod

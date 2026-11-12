@@ -27,6 +27,7 @@ frontend/src/
       Icon.tsx
   features/
     developer/                 lắp ghép Workspace, workflow IDE mô phỏng
+    agent/                     panel/client assistance, dùng proposal/test hiện có
     repositories/              HTTP snapshot/file, phiên đọc và UI Repository thật
     local-workspace/           phiên local private, proxy allowlist và bootstrap browser
     quotations/                form/danh sách/chi tiết nối API, hook phiên và HTTP adapter
@@ -47,6 +48,8 @@ Một file chứa component chính, props/helper cục bộ liên quan; helper d
 Trong quotations: quotationModel.ts sở hữu wire types/draft và bảo toàn missing/null/raw; quotationApi.ts là adapter HTTP kiểm response/lỗi, nhận fetch qua constructor. useQuotations.ts quản lý request/abort/phiên trong bộ nhớ; QuotationConnection/Form/List/Details mỗi file một component, QuotationWorkspace chỉ lắp ghép. Form giữ body/key cho retry khi kết quả chưa rõ; không nhét token/nghiệp vụ vào AppShell hoặc route.
 
 ## Backend
+
+`app/agent_assistance` tách generation contract (`generation.py`), adapter OpenAI Responses (`openai_generation.py`), use case có quyền/nguồn (`assistance_service.py`) và HTTP (`assistance_http.py`). Control entrypoint chỉ lắp ghép. Adapter nhận cấu hình private, không import quotation domain/cache hoặc tự ghi/chạy source. Test hành vi/HTTP/adapter nằm ở `tests/control/test_agent_assistance.py`, dùng provider double có nhãn; không biến unit/integration thành kết quả model thật. `infra/agent.compose.yaml` chỉ mount cấu hình provider vào control.
 
 Runtime dev control có backend/Dockerfile.control và backend/.dockerignore; infra/control.compose.yaml chỉ lắp ghép image, private config/store và ba source file read-only với PostgreSQL hiện có. Không đưa bootstrap/provisioning vào control_api hoặc chạy app báo giá trong process control. [Setup Docker dev](../general/setup.md#2e-control-dev-trong-docker-khi-python-windows-bị-chặn) sở hữu cách chạy và giới hạn. Browser smoke opt-in --repository-dev ở frontend/scripts/repository-dev-browser-check.mjs đọc riêng token dev local, tạo snapshot thật và đối chiếu UI với source host; --repository-only vẫn dành cho test server/database tạm.
 

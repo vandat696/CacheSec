@@ -12,7 +12,7 @@ class WorkflowRequestMiddleware:
 
     async def __call__(self, scope, receive, send):
         if scope["type"] != "http" or not scope["path"].startswith(
-            ("/api/v1/changes", "/_internal/test-worker")
+            ("/api/v1/changes", "/api/v1/agent", "/_internal/test-worker")
         ):
             await self.app(scope, receive, send)
             return

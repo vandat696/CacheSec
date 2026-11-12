@@ -90,7 +90,7 @@ export async function checkCodeChanges({ cdp, navigate, evaluate, waitFor, click
   assert.ok(await evaluate("document.querySelector('.change-diff pre').textContent.includes('+')"));
   await click('[data-console-tab="tests"]');
   assert.equal(await evaluate("localStorage.length + sessionStorage.length"), 0);
-  assert.equal(await evaluate("document.querySelector('#preview-open-approval').disabled"), true);
+  assert.equal(await evaluate("document.querySelector('#preview-open-approval')"), null);
   for (const [width, height] of [[390, 844], [820, 1180], [1440, 900]]) {
     await cdp("Emulation.setDeviceMetricsOverride", { width, height, deviceScaleFactor: 1, mobile: width < 768 });
     assert.equal(await evaluate("document.documentElement.scrollWidth <= innerWidth"), true);
