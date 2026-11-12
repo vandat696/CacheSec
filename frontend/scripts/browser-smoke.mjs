@@ -59,8 +59,8 @@ let referenceServer;
 let captureFailure;
 
 const pause = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
-async function until(check, label) {
-  for (let attempt = 0; attempt < 150; attempt++) {
+async function until(check, label, attempts = 150) {
+  for (let attempt = 0; attempt < attempts; attempt++) {
     if (await check()) return;
     await pause(100);
   }
@@ -130,8 +130,8 @@ try {
       );
     return result.result.value;
   };
-  const waitFor = (expression, label = expression) =>
-    until(() => evaluate(expression), label);
+  const waitFor = (expression, label = expression, attempts = 150) =>
+    until(() => evaluate(expression), label, attempts);
   const setMetricsSource = async (source) => {
     await evaluate(`window.history.pushState(null, '', ${JSON.stringify(`/metrics?source=${source}`)})`);
     await waitFor(`document.querySelector('.metrics-workspace')?.dataset.metricsSource === ${JSON.stringify(source)}`);
@@ -270,7 +270,7 @@ try {
     console.log("Đạt: phiên local tự kết nối, Ctrl+S/test Docker thật, reload, logout và chặn replay.");
   }
   if (agentOnly) {
-    await checkAgent({ cdp, navigate, evaluate, waitFor, click, fill, screenshot });
+    await checkAgent({ cdp, navigate, evaluate, waitFor, click, fill, key, screenshot });
     console.log("Đạt: UI Agent với generation double có nhãn, revision/Docker thật, bảo vệ draft và disconnect.");
   }
   if (!repositoryOnly && !process.argv.includes("--developer-only") && !process.argv.includes("--quotations-only")) {

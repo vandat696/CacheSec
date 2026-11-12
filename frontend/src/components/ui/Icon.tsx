@@ -27,6 +27,7 @@ const paths = {
   close: "m6 6 12 12 M6 18 18 6",
   send: "m3 3 18 9-18 9 4-9-4-9 M7 12h14",
   spark: "m12 3 2.5 6.5L21 12l-6.5 2.5L12 21l-2.5-6.5L3 12l6.5-2.5Z",
+  info: "M22 12a10 10 0 1 1-20 0 10 10 0 0 1 20 0 M12 11v6 M12 7h.01",
 } as const;
 
 export function Icon({ name }: { name: keyof typeof paths }) {

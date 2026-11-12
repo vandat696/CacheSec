@@ -2,7 +2,7 @@ import type { Metadata } from "next";
 import { DeveloperWorkspace } from "@/features/developer/DeveloperWorkspace";
 
 export const metadata: Metadata = {
-  title: "Developer Workspace · CacheSec",
+  title: "Workspace · CacheSec",
   description: "Workspace sửa mã, kiểm thử và Agent cho CacheSec.",
 };
 

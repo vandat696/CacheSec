@@ -95,7 +95,7 @@ export function RepositoryWorkspace({ repo, ref }: { repo: ReturnType<typeof use
     <div className="repository-workspace-toolbar">
       <Button variant="tertiary" className="repository-explorer-toggle" aria-label="Explorer"
         aria-expanded={explorerOpen} onClick={() => setExplorerOpen(value => !value)}><Icon name="menu" /></Button>
-      <strong>CacheSec</strong><span className="repository-branch"><Icon name="branch" />Bản làm việc riêng</span>
+      <strong>CacheSec</strong>
       <span className="repository-save-status" role="status">{change.dirty ? "Chưa lưu" : savedNotice || (change.saved ? "Đã lưu" : "")}</span>
       <Button id="change-save" variant="secondary" title="Lưu (Ctrl+S)" onClick={() => { void save(); }} disabled={!canSave}>Lưu <kbd>Ctrl S</kbd></Button>
       <Button id="change-test" onClick={() => { void runTests(); }} disabled={!canTest} loading={change.busy}

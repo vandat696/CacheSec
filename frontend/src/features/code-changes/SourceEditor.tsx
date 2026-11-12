@@ -64,7 +64,7 @@ export function SourceEditor(props: Props) {
   }, [props.active]);
   return <div className="source-editor" hidden={!props.active}>
     <div className="source-editor-host" ref={host} />
-    <div className="source-editor-status"><span>{props.readOnly ? "Chỉ đọc" : "Bản làm việc riêng"}</span>
+    <div className="source-editor-status">{props.readOnly && <span className="source-editor-access">Chỉ đọc</span>}
       <span>Ln {cursor.line}, Col {cursor.column}</span><span>UTF-8</span><span>Python</span></div>
   </div>;
 }

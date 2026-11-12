@@ -9,13 +9,15 @@
 .developer-workspace[data-preview-only="false"][data-agent-open="false"] .dev-workbench { grid-template-columns: minmax(0, 1fr); }
 .developer-workspace[data-preview-only="false"] .dev-editor { height: 100%; }
 .dev-assistant[hidden] { display: none; }
-.agent-model { margin-left: auto; color: var(--nui-muted); font-size: 10px; }
-.dev-agent-heading > .nui-button { padding: 4px; min-height: 26px; }
+.agent-information { position: relative; margin-left: auto; }
+.agent-information-trigger { padding: 5px; min-width: 30px; min-height: 30px; }
+.agent-information-panel { position: absolute; z-index: 10; top: calc(100% + 8px); right: 0; width: min(300px, calc(100vw - 60px)); max-height: min(420px, 65dvh); overflow: auto; padding: 14px; border: 1px solid var(--nui-border); border-radius: 7px; background: var(--nui-surface); box-shadow: 0 8px 25px #17263c18; font-size: 12px; line-height: 1.7; }
+.agent-information-panel[hidden] { display: none; }
+.agent-information-panel p { margin: 9px 0; }
+.agent-information-panel code { overflow-wrap: anywhere; }
+.agent-information-panel .nui-button { font-size: 11px; }
+.agent-information-note { padding-top: 10px; border-top: 1px solid var(--nui-border); color: var(--nui-muted); }
 .agent-empty { color: var(--nui-muted); font-size: 12px; line-height: 1.8; }
-.agent-empty details { margin-top: 8px; }
-.agent-empty summary { cursor: pointer; }
-.agent-empty code { overflow-wrap: anywhere; }
-.agent-context { display: block; margin-top: 6px; font-size: 10px; color: var(--nui-muted); }
 .agent-error { padding: 0 12px; }
 .agent-proposal { display: grid; gap: 8px; margin-top: 12px; font-size: 11px; }
 .agent-proposal summary { cursor: pointer; }
@@ -187,6 +189,7 @@
 .dev-trace-list code { font-size: 10px; color: #7b8ca4; }
 .dev-trace-list p { font-size: 12px; line-height: 1.8; margin-top: 4px; }
 @media (max-width: 1023px) {
+  .agent-information-panel { top: auto; bottom: calc(100% + 8px); max-height: min(420px, 50dvh); }
   .developer-workspace { height: auto; min-height: 0; padding-inline: 16px; }
   .dev-workbench { grid-template-columns: minmax(0, 1fr); }
   .dev-editor { height: max(360px, 48dvh); }

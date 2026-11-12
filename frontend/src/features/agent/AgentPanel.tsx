@@ -7,6 +7,7 @@ import type { useRepository } from "../repositories/useRepository";
 import { editablePath, type Revision } from "../code-changes/changeWorkflowApi";
 import { ChangeApiError } from "../code-changes/changeWorkflowApi";
 import { AgentApiError, type AgentConfig, type AgentMessage, type AgentReply } from "./agentApi";
+import { AgentInformation } from "./AgentInformation";
 
 type Message = AgentMessage & { reply?: AgentReply };
 export function AgentPanel({ repo, hidden, guardAction, onOpenProposal }: {
@@ -78,13 +79,10 @@ export function AgentPanel({ repo, hidden, guardAction, onOpenProposal }: {
   }
   return <section className="dev-assistant" hidden={hidden} aria-labelledby="dev-agent-title" data-agent-ready={!!config?.configured}>
     <div className="dev-agent-heading"><Icon name="spark" /><h2 id="dev-agent-title">Agent</h2>
-      <span className="agent-model">GPT-6.1 Sol</span>
-      <Button variant="tertiary" aria-label="Tải lại cấu hình Agent" onClick={() => { void refreshConfig(); }} disabled={!api || busy}><Icon name="refresh" /></Button>
+      <AgentInformation config={config} connected={!!api} fileCount={repo.snapshot?.files.length ?? 0}
+        busy={busy} onRefresh={() => { void refreshConfig(); }} />
     </div>
     <div className="dev-messages" role="log" aria-label="Hội thoại với Agent" aria-live="polite" ref={log}>
-      {!api ? <p className="agent-empty">Mở project để bắt đầu.</p> : config && !config.configured ?
-        <div className="agent-empty"><p>Chưa cấu hình API key OpenAI.</p><details><summary>Cấu hình trên máy</summary>
-          <p>Đặt <code>OPENAI_API_KEY</code> trong <code>backend/.local/agent-config/openai.env</code>, rồi bấm tải lại cấu hình.</p></details></div> : null}
       {messages.map((message, index) => <article key={index} className={`dev-message ${message.role === "user" ? "developer" : "assistant"}`}>
         <p>{message.content}</p>
         {message.reply?.content !== null && message.reply?.content !== undefined && <div className="agent-proposal">
@@ -99,12 +97,10 @@ export function AgentPanel({ repo, hidden, guardAction, onOpenProposal }: {
     </div>
     {error && <p className="dev-input-error agent-error" role="alert">{error}</p>}
     <form className="dev-composer" onSubmit={send}>
-      <label className="sr-only" htmlFor="agent-prompt">Yêu cầu cho Agent</label>
-      <div><textarea id="agent-prompt" value={draft} maxLength={4000} rows={3} disabled={!config?.configured || busy}
+      <div><textarea id="agent-prompt" aria-label="Nhắn cho Agent" value={draft} maxLength={4000} rows={3} disabled={!config?.configured || busy}
         placeholder="Hỏi về mã nguồn hoặc yêu cầu sửa…" onChange={event => setDraft(event.target.value)}
         onKeyDown={event => { if (event.key === "Enter" && !event.shiftKey && !event.nativeEvent.isComposing) { event.preventDefault(); event.currentTarget.form?.requestSubmit(); } }} />
         <Button type="submit" aria-label="Gửi yêu cầu" disabled={!config?.configured || busy || !draft.trim()}><Icon name="send" /></Button></div>
-      {api && <span className="agent-context">Source gốc · {repo.snapshot?.files.length ?? 0} tệp</span>}
     </form>
   </section>;
 }

@@ -1,5 +1,11 @@
 # Trạng thái dự án
 
+## 2026-11-12 — Thu gọn thông tin phụ trong Workspace
+
+- Theo yêu cầu người dùng, bỏ nhãn Bản làm việc riêng ở toolbar và footer editor; giữ Chỉ đọc khi cần. Gom model, trạng thái/hướng dẫn API key, tải lại cấu hình, số file source và ghi chú kiểm tra kết quả vào nút ⓘ ở góc phải Agent. Chat mặc định trống, không có nhãn/hướng dẫn/nguồn lặp; giữ tên truy cập cho ô nhập, thông báo lỗi thao tác và khóa gửi khi chưa cấu hình. Tiêu đề tab rút thành Workspace · CacheSec.
+- Popup hỗ trợ Escape, click ngoài, Tab/focus và mở lên trên ở màn nhỏ để không tràn viewport. ESLint, typecheck, production build và Edge đạt thao tác popup/giữ draft/áp dụng/test ở ba cỡ 390/820/1440; generation vẫn là double có nhãn, revision/Docker thật. Thời gian chờ riêng job trong browser harness tăng 15 lên 60 giây sau khi worker đã pass nhưng UI check hết hạn sớm. Không đổi backend/API/quyền/model, không chạy lại suite backend cho thay đổi UI này.
+- Cập nhật thiết kế frontend/setup. Các dòng Beta/0 / 0 lượt/image/svg người dùng chép không tìm thấy trong source Workspace; không thêm bộ đếm hoặc hạn mức giả. Tình trạng key/provider, cache/gate và nghiên cứu giữ nguyên mốc trước.
+
 ## 2026-11-12 — Một Workspace và Agent GPT-6.1 Sol
 
 - Người dùng yêu cầu một màn IDE chính, đưa mô phỏng ra khu phụ và chọn `gpt-6.1-sol`; đã xác minh model ID bằng OpenAI Docs. Workspace hiện ghép editor/Explorer/revision/diff/test và khung Agent ẩn/hiện được, giữ draft. Mô phỏng chuyển tới `/ui/workspace-preview`, mở từ UI templates; source/state mẫu tách khỏi phiên thật, không xóa frontend cũ.

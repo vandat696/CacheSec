@@ -24,7 +24,7 @@ Frontend dùng production build hiện có, build lần đầu nếu chưa có `
 
 ### Agent GPT-6.1 Sol
 
-Từ `frontend`, chạy `npm run local` rồi mở Workspace. Agent nằm cạnh editor; mô phỏng nằm ở `/ui/workspace-preview`, không còn là lựa chọn trên màn chính. Launcher chuẩn bị `backend/.local/agent-config/openai.env` nếu chưa có, giữ nguyên file đã tồn tại. Đặt `OPENAI_API_KEY=...` trong file này, lưu rồi bấm **Tải lại cấu hình Agent**. Không dán key vào chat hoặc đặt trong `NEXT_PUBLIC_*`. Key phải có quyền/hạn mức dùng model; trạng thái Đã cấu hình chỉ chứng minh có key, không chứng minh provider đã chấp nhận.
+Từ `frontend`, chạy `npm run local` rồi mở Workspace. Agent nằm cạnh editor; mô phỏng nằm ở `/ui/workspace-preview`, không còn là lựa chọn trên màn chính. Launcher chuẩn bị `backend/.local/agent-config/openai.env` nếu chưa có, giữ nguyên file đã tồn tại. Đặt `OPENAI_API_KEY=...` trong file này, lưu rồi mở nút **ⓘ Thông tin Agent** ở góc khung chat, bấm **Tải lại cấu hình**. Không dán key vào chat hoặc đặt trong `NEXT_PUBLIC_*`. Key phải có quyền/hạn mức dùng model; trạng thái Đã cấu hình chỉ chứng minh có key, không chứng minh provider đã chấp nhận.
 
 Override `infra/agent.compose.yaml` chỉ mount thư mục cấu hình key read-only vào control API và đặt `CONTROL_AGENT_CONFIG=/run/agent/openai.env`; không mount vào app báo giá/candidate/harness hoặc Next. Adapter đọc lại file mỗi lần kiểm cấu hình/gọi model, không cần restart khi thay key. Chạy control native có thể đặt `CONTROL_AGENT_CONFIG` tới đường dẫn private tuyệt đối. Model cố định `gpt-6.1-sol` theo lựa chọn người dùng, endpoint cố định OpenAI Responses; không tự fallback sang model khác. [OpenAI Docs](https://developers.openai.com/api/docs/models/gpt-6.1-sol) xác nhận model ID.
 
