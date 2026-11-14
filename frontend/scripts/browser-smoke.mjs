@@ -3,7 +3,7 @@ import assert from "node:assert/strict";
 import { spawn } from "node:child_process";
 import { once } from "node:events";
 import { existsSync } from "node:fs";
-import { mkdir, mkdtemp, readFile, writeFile } from "node:fs/promises";
+import { mkdir, mkdtemp, readFile, rm, writeFile } from "node:fs/promises";
 import { createServer } from "node:http";
 import { resolve, join, extname } from "node:path";
 import { fileURLToPath } from "node:url";
@@ -60,6 +60,9 @@ const browser = spawn(
   ],
   { windowsHide: true, stdio: "ignore" },
 );
+const browserClosed = new Promise((resolve) => browser.once("close", resolve));
+let browserError;
+browser.once("error", (error) => { browserError = error; });
 const errors = [];
 let socket;
 let referenceServer;
@@ -77,6 +80,7 @@ async function until(check, label, attempts = 150) {
 try {
   let port;
   await until(async () => {
+    if (browserError) throw browserError;
     try {
       port = (
         await readFile(join(profile, "DevToolsActivePort"), "utf8")
@@ -1201,4 +1205,6 @@ try {
   socket?.close();
   referenceServer?.close();
   browser.kill();
+  await browserClosed;
+  await rm(profile, { recursive: true, force: true, maxRetries: 10, retryDelay: 200 });
 }

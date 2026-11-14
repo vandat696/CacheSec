@@ -1,5 +1,10 @@
 # Trạng thái dự án
 
+## 2026-11-14 — Dọn profile trình duyệt test
+
+- Xóa 144 profile test cũ trong `frontend/test-results/browser/`, giải phóng khoảng 5,9 GiB; giữ ảnh và kết quả kiểm chứng. Browser smoke chờ process thoát rồi xóa profile riêng, có retry khi file còn bị khóa; lỗi khởi động trình duyệt cũng đi qua cleanup.
+- Kiểm chứng syntax/ESLint và smoke UI preview 16 bố cục đạt; kiểm riêng lỗi executable không tồn tại và test cố ý thất bại trên loopback đều không để lại profile mới, giữ ảnh cũ. Cập nhật setup; không đổi ứng dụng/backend hoặc chạy lại toàn bộ suite. Cảnh báo Node module detection có sẵn còn.
+
 ## 2026-11-14 — Vòng Agent tự sửa và test có giới hạn
 
 - Theo yêu cầu người dùng, thêm backend controller đọc source → model → revision riêng → test T12 → feedback/sửa tiếp, tối đa ba lượt/mười phút, một run hoạt động mỗi process. API create/get/cancel có idempotency, requester/scope/credential binding và recheck quyền/source; model không nhận token, command hoặc khả năng review/deploy. Vòng hai dùng source candidate đã đọc lại từ revision và feedback test có binding, không dùng kết quả của artifact khác. UI thêm Tự sửa và test, tiến trình/bước thu gọn, Dừng và Xem bản sửa có guard draft; giữ hỏi đáp thủ công.

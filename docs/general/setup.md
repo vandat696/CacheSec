@@ -279,7 +279,7 @@ npm run test:browser
 npm run test:browser -- --reference
 ```
 
-Script mặc định tìm Edge/Chrome tại đường dẫn Windows thông dụng. Nếu khác, đặt `BROWSER_PATH` tới executable; `APP_URL` đổi địa chỉ app (mặc định http://127.0.0.1:3100). Ảnh và profile trình duyệt tạm nằm trong `frontend/test-results/browser/`, được Git bỏ qua. Script chỉ đóng process trình duyệt do nó mở; không dùng profile cá nhân. Nếu môi trường chặn tạo process hoặc truy cập DevTools local, cần chạy ngoài sandbox đó.
+Script mặc định tìm Edge/Chrome tại đường dẫn Windows thông dụng. Nếu khác, đặt `BROWSER_PATH` tới executable; `APP_URL` đổi địa chỉ app (mặc định http://127.0.0.1:3100). Ảnh kiểm chứng nằm trong `frontend/test-results/browser/`, được Git bỏ qua. Mỗi lượt tạo profile riêng tại đây và tự xóa sau khi process trình duyệt thoát, kể cả khi test thất bại; ảnh vẫn được giữ. Script chỉ đóng process trình duyệt do nó mở; không dùng profile cá nhân. Nếu môi trường chặn tạo process hoặc truy cập DevTools local, cần chạy ngoài sandbox đó.
 
 Thanh nhập và nút Gửi nằm cùng hàng, có cùng thiết kế ở cả ba chế độ. Enter gửi; Shift+Enter xuống dòng. Ô nhập tự giãn khi viết dài và thu gọn sau gửi.
 
