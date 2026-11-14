@@ -184,6 +184,8 @@ try {
       ArrowUp: 38,
       ArrowLeft: 37,
       ArrowRight: 39,
+      Home: 36,
+      End: 35,
     }[key];
     await cdp("Input.dispatchKeyEvent", {
       type: "keyDown",
@@ -288,7 +290,7 @@ try {
     await checkAgentLive({ navigate, evaluate, waitFor, click, fill, screenshot });
   }
   if (agentRuns) {
-    await checkAgentRuns({ cdp, navigate, evaluate, waitFor, click, fill, screenshot });
+    await checkAgentRuns({ cdp, navigate, evaluate, waitFor, click, fill, key, screenshot });
   }
   if (agentRunLive) {
     await checkAgentRunLive({ cdp, navigate, evaluate, waitFor, click, fill, screenshot });

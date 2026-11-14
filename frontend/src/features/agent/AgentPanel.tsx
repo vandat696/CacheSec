@@ -90,7 +90,7 @@ export function AgentPanel({ repo, hidden, guardAction, onOpenProposal }: {
     } catch (value) { if (!controller.signal.aborted) fail(value); }
     finally { if (!controller.signal.aborted) setBusy(false); }
   }
-  return <section className="dev-assistant" hidden={hidden} aria-labelledby="dev-agent-title" data-agent-ready={!!config?.configured}>
+  return <section id="workspace-agent" className="dev-assistant" hidden={hidden} aria-labelledby="dev-agent-title" data-agent-ready={!!config?.configured}>
     <div className="dev-agent-heading"><Icon name="spark" /><h2 id="dev-agent-title">Agent</h2>
       <AgentInformation config={config} connected={!!api} fileCount={repo.snapshot?.files.length ?? 0}
         busy={blocked} onRefresh={() => { void refreshConfig(); }} />

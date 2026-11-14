@@ -11,7 +11,7 @@ export function CodeChangesPanel({ change, tab, onTab }: {
   change: ReturnType<typeof useCodeChanges>; tab: ConsoleTab; onTab: (tab: ConsoleTab) => void;
 }) {
   const [proposalId, setProposalId] = useState("");
-  return <section className="code-changes repository-console" aria-label="Bảng kết quả">
+  return <section id="repository-console" className="code-changes repository-console" aria-label="Bảng kết quả">
     <div className="repository-console-tabs" role="tablist" aria-label="Bảng công cụ">
       {([["tests", "Kiểm thử"], ["diff", "Thay đổi"], ["details", "Chi tiết"]] as const).map(([key, label]) =>
         <button type="button" role="tab" key={key} data-console-tab={key} aria-selected={key === tab} onClick={() => onTab(key)}>{label}

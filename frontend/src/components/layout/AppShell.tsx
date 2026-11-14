@@ -24,6 +24,7 @@ export function AppShell({ children }: { children: ReactNode }) {
   const pathname = usePathname();
   const chat = useChat();
   const [drawerOpen, setDrawerOpen] = useState(false);
+  const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
   const sidebar = useRef<HTMLElement>(null);
   const toggle = useRef<HTMLButtonElement>(null);
 
@@ -77,7 +78,7 @@ export function AppShell({ children }: { children: ReactNode }) {
       <a href="#main-content" className="skip-link">
         Đến nội dung chính
       </a>
-      <div className="app">
+      <div className="app" data-sidebar-collapsed={sidebarCollapsed}>
         {drawerOpen && (
           <button
             type="button"
@@ -113,6 +114,7 @@ export function AppShell({ children }: { children: ReactNode }) {
                 <SidebarChat
                   key={item.href}
                   active={pathname === "/"}
+                  collapsed={sidebarCollapsed && !drawerOpen}
                   onNavigate={() => setDrawerOpen(false)}
                 />
               ) : (
@@ -121,6 +123,8 @@ export function AppShell({ children }: { children: ReactNode }) {
                   href={item.href}
                   className={`nav${pathname === item.href ? " active" : ""}`}
                   aria-current={pathname === item.href ? "page" : undefined}
+                  aria-label={item.label}
+                  title={item.label}
                   onClick={() => setDrawerOpen(false)}
                 >
                   <Icon name={item.icon} />
@@ -129,6 +133,13 @@ export function AppShell({ children }: { children: ReactNode }) {
               ),
             )}
           </nav>
+          <button type="button" id="sidebar-collapse-toggle" className="sidebar-collapse-toggle"
+            aria-label={sidebarCollapsed ? "Mở rộng sidebar" : "Thu gọn sidebar"}
+            title={sidebarCollapsed ? "Mở rộng sidebar" : "Thu gọn sidebar"}
+            aria-controls="sidebar" aria-expanded={!sidebarCollapsed}
+            onClick={() => setSidebarCollapsed(value => !value)}>
+            <Icon name="chevron" /><span>Thu gọn</span>
+          </button>
         </aside>
         <div
           className={`workspace${pathname === "/" ? " chat-workspace-shell" : ""}`}

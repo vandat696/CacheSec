@@ -12,14 +12,17 @@ const PAGE_SIZE = 5;
 export function SidebarChat({
   active,
   onNavigate,
+  collapsed = false,
 }: {
   active: boolean;
   onNavigate: () => void;
+  collapsed?: boolean;
 }) {
   const chat = useChat();
   const router = useRouter();
   const [expanded, setExpanded] = useState(false);
   const [visibleCount, setVisibleCount] = useState(PAGE_SIZE);
+  const historyExpanded = expanded && !collapsed;
 
   function toggleHistory() {
     if (!expanded) setVisibleCount(PAGE_SIZE);
@@ -33,9 +36,12 @@ export function SidebarChat({
           href="/"
           className={`nav${active ? " active" : ""}`}
           aria-current={active ? "page" : undefined}
+          aria-label="Chat"
+          title="Chat"
           aria-controls="chat-history"
-          aria-expanded={expanded}
+          aria-expanded={historyExpanded}
           onClick={() => {
+            if (collapsed) { onNavigate(); return; }
             if (active) toggleHistory();
             else {
               setVisibleCount(PAGE_SIZE);
@@ -49,9 +55,10 @@ export function SidebarChat({
         <button
           type="button"
           className="history-toggle"
+          hidden={collapsed}
           aria-label="Lịch sử chat"
           aria-controls="chat-history"
-          aria-expanded={expanded}
+          aria-expanded={historyExpanded}
           onClick={toggleHistory}
         >
           <Icon name="chevron" />
@@ -59,9 +66,9 @@ export function SidebarChat({
       </div>
       <div
         id="chat-history"
-        className={`history-collapse${expanded ? " expanded" : ""}`}
-        inert={!expanded}
-        aria-hidden={!expanded}
+        className={`history-collapse${historyExpanded ? " expanded" : ""}`}
+        inert={!historyExpanded}
+        aria-hidden={!historyExpanded}
       >
         <div className="history-collapse-inner">
           <div className="sidebar-chat-section">

@@ -17,7 +17,7 @@ export function RepositoryExplorer({ files, activeId, dirtyPath, onOpen }: Props
       </button>
     </li>)}</ul>;
   }
-  return <nav className="repository-explorer" aria-label="Explorer">
+  return <nav id="repository-explorer" className="repository-explorer" aria-label="Explorer">
     <div className="repository-explorer-title">EXPLORER <span>{files.length} tệp</span></div>
     {folderItems(repositoryTree(files))}
   </nav>;

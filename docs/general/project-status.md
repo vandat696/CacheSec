@@ -1,5 +1,15 @@
 # Trạng thái dự án
 
+## 2026-11-14 — Sidebar thu gọn và animation
+
+- Thêm nút cuối sidebar desktop để co còn 72 px, giữ logo/icon, tên truy cập/tooltip và trạng thái khi chuyển trang. Chiều rộng/nhãn chuyển động trong 300 ms, tắt theo reduced motion; lịch sử chat thu lại và inert khi gọn. Drawer mobile vẫn mở đầy đủ, giữ Escape/focus; trạng thái chưa lưu sau reload.
+- Lint/typecheck/production build đạt. Edge thật kiểm độ rộng trung gian khi animation, phần không gian tăng, chuyển Báo giá/Workspace giữ trạng thái và nội dung editor, mobile drawer, bàn phím và reduced motion; hồi quy ba thanh kéo/Agent UI doubles và bố cục 390/820/1440 đạt. Đã xem ảnh desktop/mobile, profile tự xóa còn 0; frontend local 3000 đã chạy bản mới. Cập nhật thiết kế UI/setup, không chạy lại unit/backend suite hoặc gọi model thật; cảnh báo Node module detection có sẵn còn.
+
+## 2026-11-14 — Kéo kích thước các pane IDE
+
+- Workspace thật thêm thanh kéo Explorer/editor, editor/Agent và editor/bảng kết quả; hỗ trợ pointer capture, phím mũi tên/Shift/Home/End, Enter/nhấp đúp đặt lại và giới hạn theo vùng chứa. Giữ editor mounted khi kéo/ẩn pane; kích thước chỉ trong bộ nhớ. Màn nhỏ xếp dọc và ẩn thanh kéo ngang tương ứng.
+- Lint/typecheck, 106 test frontend và production build đạt. Lượt test trong sandbox ban đầu bị chặn child process ở Studio test; chạy lại ngoài sandbox đạt toàn bộ. Edge thật với model/run/executor doubles đạt kéo ba pane, giới hạn/bàn phím/nhấp đúp/ẩn hiện, giữ nội dung editor và bố cục 390/820/1440; đã xem ảnh desktop/mobile. Profile test tự xóa, còn 0 profile. Frontend local 3000 đã khởi động lại với bản mới; cập nhật thiết kế UI/source map/setup. Không đổi backend hoặc gọi model thật; cảnh báo Node module detection có sẵn còn.
+
 ## 2026-11-14 — Dọn profile trình duyệt test
 
 - Xóa 144 profile test cũ trong `frontend/test-results/browser/`, giải phóng khoảng 5,9 GiB; giữ ảnh và kết quả kiểm chứng. Browser smoke chờ process thoát rồi xóa profile riêng, có retry khi file còn bị khóa; lỗi khởi động trình duyệt cũng đi qua cleanup.

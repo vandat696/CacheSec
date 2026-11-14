@@ -3,7 +3,7 @@ import { fileURLToPath } from "node:url";
 import { LocalSessionStore } from "../src/features/local-workspace/localSessionStore.ts";
 
 // All Agent run/config endpoints here are marked transport doubles. No model or test executor is called.
-export async function checkAgentRuns({ cdp, navigate, evaluate, waitFor, click, fill, screenshot }) {
+export async function checkAgentRuns({ cdp, navigate, evaluate, waitFor, click, fill, key, screenshot }) {
   const store = new LocalSessionStore(fileURLToPath(new URL("../../backend/.local", import.meta.url)));
   const injection = await cdp("Page.addScriptToEvaluateOnNewDocument", { source: `(() => {
     const original = window.fetch.bind(window);
@@ -71,11 +71,93 @@ export async function checkAgentRuns({ cdp, navigate, evaluate, waitFor, click, 
     await click(stop);
     await waitFor("document.querySelector('.agent-run')?.dataset.status === 'cancelled'");
     assert.ok(await evaluate("document.querySelector('.agent-run').innerText.includes('Job Docker đã nhận')"));
+    await waitFor("!!document.querySelector('.pane-resize-repository-console')");
+    const editorText = await evaluate("document.querySelector('.source-editor:not([hidden]) .cm-content').textContent");
+    for (const [id, dimension, dx, dy, delta] of [
+      ['repository-explorer', 'width', 40, 0, 40],
+      ['workspace-agent', 'width', -40, 0, 40],
+      ['repository-console', 'height', 0, -40, 40],
+    ]) {
+      const selector = `.pane-resize-${id}`;
+      const size = () => evaluate(`document.getElementById('${id}').getBoundingClientRect().${dimension}`);
+      const before = await size();
+      const point = await evaluate(`(() => { const r=document.querySelector('${selector}').getBoundingClientRect(); return {x:r.x+r.width/2,y:r.y+r.height/2}; })()`);
+      await cdp('Input.dispatchMouseEvent', {type:'mouseMoved', ...point});
+      await cdp('Input.dispatchMouseEvent', {type:'mousePressed', ...point, button:'left', clickCount:1});
+      await cdp('Input.dispatchMouseEvent', {type:'mouseMoved', x:point.x+dx, y:point.y+dy, button:'left', buttons:1});
+      await cdp('Input.dispatchMouseEvent', {type:'mouseReleased', x:point.x+dx, y:point.y+dy, button:'left', clickCount:1});
+      await waitFor(`document.querySelector('${selector}').dataset.dragging === 'false'`);
+      assert.ok(Math.abs(await size()-before-delta)<3, `${id} responds to pointer drag`);
+      await key('Home');
+      await waitFor(`Math.abs(document.getElementById('${id}').getBoundingClientRect().${dimension}-Number(document.querySelector('${selector}').getAttribute('aria-valuemin')))<2`);
+      await key('End');
+      await waitFor(`Math.abs(document.getElementById('${id}').getBoundingClientRect().${dimension}-Number(document.querySelector('${selector}').getAttribute('aria-valuemax')))<2`);
+      await key('Enter');
+      const reset = await size();
+      await key(dimension === 'height' ? 'ArrowUp' : id === 'workspace-agent' ? 'ArrowLeft' : 'ArrowRight');
+      await waitFor(`document.getElementById('${id}').getBoundingClientRect().${dimension}>${reset+5}`);
+      const resetPoint = await evaluate(`(() => { const r=document.querySelector('${selector}').getBoundingClientRect(); return {x:r.x+r.width/2,y:r.y+r.height/2}; })()`);
+      for (const clickCount of [1, 2]) {
+        await cdp('Input.dispatchMouseEvent', {type:'mousePressed', ...resetPoint, button:'left', clickCount});
+        await cdp('Input.dispatchMouseEvent', {type:'mouseReleased', ...resetPoint, button:'left', clickCount});
+      }
+      await waitFor(`Math.abs(document.getElementById('${id}').getBoundingClientRect().${dimension}-${reset})<2`);
+    }
+    assert.equal(await evaluate("document.querySelector('.source-editor:not([hidden]) .cm-content').textContent"), editorText);
+    await screenshot('workspace-resizable-1440.png');
+    await click('#workspace-agent-toggle');
+    assert.equal(await evaluate("document.querySelector('.pane-resize-workspace-agent').getClientRects().length"), 0);
+    await click('#workspace-agent-toggle');
+    await click('.repository-explorer-toggle');
+    assert.equal(await evaluate("document.querySelector('.pane-resize-repository-explorer').getClientRects().length"), 0);
+    await click('.repository-explorer-toggle');
     for (const [width,height] of [[390,844],[820,1180],[1440,900]]) {
       await cdp("Emulation.setDeviceMetricsOverride", {width,height,deviceScaleFactor:1,mobile:width<768});
       assert.equal(await evaluate("document.documentElement.scrollWidth <= innerWidth"), true);
+      assert.equal(await evaluate("!!document.querySelector('.pane-resize-workspace-agent').getClientRects().length"), width >= 1024);
+      assert.equal(await evaluate("!!document.querySelector('.pane-resize-repository-explorer').getClientRects().length"), width > 700);
       await screenshot('agent-run-'+width+'.png');
     }
+    await cdp('Emulation.setEmulatedMedia', {features:[{name:'prefers-reduced-motion',value:'no-preference'}]});
+    const expandedWidth = await evaluate("document.querySelector('.sidebar').getBoundingClientRect().width");
+    const workspaceWidth = await evaluate("document.querySelector('.workspace').getBoundingClientRect().width");
+    await click('.history-toggle');
+    assert.equal(await evaluate("document.querySelector('#chat-history').inert"), false);
+    const intermediate = await evaluate("new Promise(resolve => { document.querySelector('#sidebar-collapse-toggle').click(); setTimeout(() => resolve(document.querySelector('.sidebar').getBoundingClientRect().width), 80); })");
+    assert.ok(intermediate>72 && intermediate<expandedWidth, 'sidebar width animates between expanded and collapsed');
+    await waitFor("Math.abs(document.querySelector('.sidebar').getBoundingClientRect().width-72)<1");
+    assert.ok(await evaluate("document.querySelector('.workspace').getBoundingClientRect().width")>workspaceWidth+140);
+    assert.equal(await evaluate("document.querySelector('#chat-history').inert"), true);
+    assert.equal(await evaluate("document.querySelector('#sidebar-collapse-toggle').getAttribute('aria-expanded')"), 'false');
+    assert.equal(await evaluate("getComputedStyle(document.querySelector('.sidebar .nav > span')).opacity"), '0');
+    assert.ok(await evaluate("[...document.querySelectorAll('.sidebar a.nav')].every(link => link.getAttribute('aria-label') && link.title)"));
+    await screenshot('sidebar-collapsed-1440.png');
+    await click('.sidebar a[href="/quotations"]');
+    await waitFor("location.pathname === '/quotations'");
+    assert.equal(await evaluate("document.querySelector('.app').dataset.sidebarCollapsed"), 'true');
+    await click('.sidebar a[href="/workspace"]');
+    await waitFor("location.pathname === '/workspace'");
+    assert.equal(await evaluate("document.querySelector('.source-editor:not([hidden]) .cm-content').textContent"), editorText);
+    await cdp('Emulation.setDeviceMetricsOverride', {width:390,height:844,deviceScaleFactor:1,mobile:true});
+    await click('.mobile-toggle');
+    await waitFor("document.querySelector('.sidebar').classList.contains('open')");
+    assert.equal(await evaluate("getComputedStyle(document.querySelector('.sidebar .nav > span')).opacity"), '1');
+    assert.equal(await evaluate("document.querySelector('#chat-history').inert"), false);
+    assert.equal(await evaluate("document.querySelector('#sidebar-collapse-toggle').getClientRects().length"), 0);
+    await screenshot('sidebar-mobile-expanded.png');
+    await key('Escape');
+    await waitFor("!document.querySelector('.sidebar').classList.contains('open')");
+    assert.equal(await evaluate("document.activeElement.classList.contains('mobile-toggle')"), true);
+    await cdp('Emulation.setDeviceMetricsOverride', {width:820,height:1180,deviceScaleFactor:1,mobile:false});
+    await waitFor("Math.abs(document.querySelector('.sidebar').getBoundingClientRect().width-72)<1");
+    await cdp('Emulation.setEmulatedMedia', {features:[{name:'prefers-reduced-motion',value:'reduce'}]});
+    assert.equal(await evaluate("getComputedStyle(document.querySelector('.app')).transitionDuration"), '0s');
+    await evaluate("document.querySelector('#sidebar-collapse-toggle').focus()");
+    await key('Enter');
+    await waitFor("Math.abs(document.querySelector('.sidebar').getBoundingClientRect().width-196)<1");
+    await cdp('Emulation.setDeviceMetricsOverride', {width:1440,height:900,deviceScaleFactor:1,mobile:false});
+    await waitFor("Math.abs(document.querySelector('.sidebar').getBoundingClientRect().width-224)<1");
+    await cdp('Emulation.setEmulatedMedia', {features:[]});
   } finally {
     await cdp("Page.removeScriptToEvaluateOnNewDocument", {identifier:injection.identifier});
   }

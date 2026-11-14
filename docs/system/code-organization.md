@@ -8,6 +8,8 @@ Launcher local ở `scripts/start-local.ps1`, helper cấu hình private ở `sc
 
 ## Frontend
 
+`components/layout/PaneResizeHandle.tsx` sở hữu pointer capture, bàn phím và đo giới hạn của thanh chia pane. `DeveloperWorkspace` sở hữu độ rộng Agent; `RepositoryWorkspace` sở hữu độ rộng Explorer/chiều cao bảng kết quả. CSS layout/developer/repository-workspace áp dụng kích thước và breakpoint; browser smoke `--agent-runs` kiểm kéo/giới hạn/đặt lại/ẩn hiện và responsive, model/run/executor dùng doubles.
+
 File component React dùng PascalCase khớp component chính (ChartFrame.tsx, AppShell.tsx); module nhóm component dùng tên nhóm PascalCase. File hook/helper/model/data TypeScript dùng camelCase (useField.ts, chartFormat.ts, chatState.ts), thư mục feature dùng kebab-case. Giữ tên entry/framework như index.ts, page.tsx và layout.tsx. TypeScript kiểm tra casing import nhất quán; tên JS DOM, bundle JS/CSS và Python giữ quy ước riêng, không đổi theo tên component React.
 
 ```text

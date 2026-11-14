@@ -1,6 +1,7 @@
 "use client";
 
-import { useRef, useState } from "react";
+import { useRef, useState, type CSSProperties } from "react";
+import { PaneResizeHandle } from "@/components/layout/PaneResizeHandle";
 import Link from "next/link";
 import { Button } from "@/components/ui/Button";
 import { Icon } from "@/components/ui/Icon";
@@ -12,6 +13,7 @@ import type { RepositoryWorkspaceHandle } from "@/features/repositories/Reposito
 export function DeveloperWorkspace() {
   const repo = useRepository();
   const [agentOpen, setAgentOpen] = useState(true);
+  const [agentWidth, setAgentWidth] = useState(360);
   const workspace = useRef<RepositoryWorkspaceHandle>(null);
   return <div className="developer-workspace" data-preview-only="false" data-agent-open={agentOpen}>
     <header className="dev-ide-toolbar">
@@ -22,8 +24,11 @@ export function DeveloperWorkspace() {
           onClick={() => setAgentOpen(value => !value)}><Icon name="spark" />Agent</Button>
       </div>
     </header>
-    <div className="dev-workbench">
+    <div className="dev-workbench" style={{ "--agent-width": `${agentWidth}px` } as CSSProperties}>
       <section className="dev-editor" aria-label="Mã nguồn repository"><RepositoryPanel repo={repo} ref={workspace} /></section>
+      <PaneResizeHandle label="Độ rộng Agent" controls="workspace-agent" orientation="vertical"
+        defaultSize={360} min={260} max={600} maxRatio={.5} resizePane="after"
+        onChange={setAgentWidth} hidden={!agentOpen} />
       <AgentPanel key={repo.snapshot?.snapshot_id ?? "disconnected"} repo={repo} hidden={!agentOpen}
         guardAction={action => workspace.current?.requestLeave(action)}
         onOpenProposal={id => workspace.current?.openProposal(id)} />

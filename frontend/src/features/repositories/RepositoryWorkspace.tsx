@@ -1,6 +1,7 @@
 "use client";
 
-import { useEffect, useImperativeHandle, useState, type KeyboardEvent, type Ref } from "react";
+import { useEffect, useImperativeHandle, useState, type CSSProperties, type KeyboardEvent, type Ref } from "react";
+import { PaneResizeHandle } from "@/components/layout/PaneResizeHandle";
 import { usePathname, useRouter } from "next/navigation";
 import { writeViewReference } from "../workbench/viewReferences";
 import { Button } from "@/components/ui/Button";
@@ -31,6 +32,8 @@ export function RepositoryWorkspace({ repo, ref }: { repo: ReturnType<typeof use
   const [pendingAction, setPendingAction] = useState<(() => void) | null>(null);
   const [savedNotice, setSavedNotice] = useState("");
   const [explorerOpen, setExplorerOpen] = useState(true);
+  const [explorerWidth, setExplorerWidth] = useState(240);
+  const [consoleHeight, setConsoleHeight] = useState(210);
   const active = tabs.find(file => file.file_id === activeId);
   const isEditable = active?.path === editablePath && original !== null && original !== undefined;
   const canSave = !!isEditable && !!change.config?.can_propose && change.dirty && !change.busy;
@@ -98,7 +101,8 @@ export function RepositoryWorkspace({ repo, ref }: { repo: ReturnType<typeof use
     event.preventDefault(); if (canSave) void save();
   }
 
-  return <div className="repository-workspace" onKeyDown={keyboard} data-explorer-open={explorerOpen}>
+  return <div className="repository-workspace" onKeyDown={keyboard} data-explorer-open={explorerOpen}
+    style={{ "--explorer-width": `${explorerWidth}px`, "--console-height": `${consoleHeight}px` } as CSSProperties}>
     <div className="repository-workspace-toolbar">
       <Button variant="tertiary" className="repository-explorer-toggle" aria-label="Explorer"
         aria-expanded={explorerOpen} onClick={() => setExplorerOpen(value => !value)}><Icon name="menu" /></Button>
@@ -111,6 +115,9 @@ export function RepositoryWorkspace({ repo, ref }: { repo: ReturnType<typeof use
     <div className="repository-source repository-workspace-body">
       <RepositoryExplorer files={snapshot.files} activeId={activeId}
         dirtyPath={change.dirty ? editablePath : undefined} onOpen={openFile} />
+      <PaneResizeHandle label="Độ rộng Explorer" controls="repository-explorer" orientation="vertical"
+        defaultSize={240} min={140} max={360} maxRatio={.45} resizePane="before"
+        onChange={setExplorerWidth} hidden={!explorerOpen} />
       <div className="repository-file repository-editor-column">
         <EditorTabs files={tabs} activeId={activeId} dirtyPath={change.dirty ? editablePath : undefined}
           onSelect={openFile} onClose={requestClose} />
@@ -130,7 +137,11 @@ export function RepositoryWorkspace({ repo, ref }: { repo: ReturnType<typeof use
           {!repo.busy && active && repo.openedFiles[active.file_id]?.binary &&
             <p className="repository-notice">Tệp nhị phân hoặc không phải UTF-8; không hiển thị dạng văn bản.</p>}
         </div>
-        {original !== null && original !== undefined && <CodeChangesPanel change={change} tab={consoleTab} onTab={setConsoleTab} />}
+        {original !== null && original !== undefined && <>
+          <PaneResizeHandle label="Chiều cao bảng kết quả" controls="repository-console" orientation="horizontal"
+            defaultSize={210} min={90} max={600} maxRatio={.7} reservedSpace={174} resizePane="after" onChange={setConsoleHeight} />
+          <CodeChangesPanel change={change} tab={consoleTab} onTab={setConsoleTab} />
+        </>}
       </div>
     </div>
     <UnsavedChangesDialog open={!!pendingAction} onCancel={() => setPendingAction(null)}
