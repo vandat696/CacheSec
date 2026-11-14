@@ -26,7 +26,7 @@ export function DeveloperWorkspace() {
     </header>
     <div className="dev-workbench" style={{ "--agent-width": `${agentWidth}px` } as CSSProperties}>
       <section className="dev-editor" aria-label="Mã nguồn repository"><RepositoryPanel repo={repo} ref={workspace} /></section>
-      <PaneResizeHandle label="Độ rộng Agent" controls="workspace-agent" orientation="vertical"
+      <PaneResizeHandle key={`resize-${repo.snapshot?.snapshot_id ?? "disconnected"}`} label="Độ rộng Agent" controls="workspace-agent" orientation="vertical"
         defaultSize={360} min={260} max={600} maxRatio={.5} resizePane="after"
         onChange={setAgentWidth} hidden={!agentOpen} />
       <AgentPanel key={repo.snapshot?.snapshot_id ?? "disconnected"} repo={repo} hidden={!agentOpen}

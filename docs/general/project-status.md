@@ -1,5 +1,15 @@
 # Trạng thái dự án
 
+## 2026-11-14 — Sidebar thu gọn mặc định
+
+- Sidebar desktop mặc định 72 px ngay khi mở/reload; vẫn mở rộng được và giữ lựa chọn khi chuyển trang. Đồng bộ vòng đời thanh kéo với khung Agent khi snapshot thay đổi để tránh đo pane cũ. Cập nhật thiết kế và precondition navigation cho smoke UI cũ.
+- ESLint và production build/typecheck đạt. Edge thật xác nhận mặc định thu gọn, mở rộng, pane/sidebar/scrollbar và mobile drawer qua smoke model/run/executor doubles; profile còn 0. Frontend local 3000 chạy bản mới. Không chạy lại unit/backend suite hoặc gọi provider thật; cảnh báo Node module detection có sẵn còn.
+
+## 2026-11-14 — Thanh cuộn code tự ẩn/hiện gần mép
+
+- Editor dùng scrollbar native mảnh, trong suốt khi chuột ở xa; hiện ở vùng 24 px sát mép phải/dưới, mờ lại trong 180 ms khi rời đi. Gutter cố định, không thêm thư viện hoặc đổi cơ chế cuộn; thiết bị không hover giữ thanh hiện, forced colors/reduced motion theo hệ thống.
+- Lint/typecheck/production build đạt. Edge thật đạt ẩn/hiện theo vị trí con trỏ, wheel khi thanh ẩn, kéo thumb native và giữ nguyên chiều rộng vùng code; hồi quy pane/sidebar/Agent UI doubles cùng ba bố cục đạt. Đã xem ảnh ẩn/hiện; profile tự xóa còn 0. Frontend local 3000 chạy bản mới, cập nhật thiết kế UI. Không chạy lại unit/backend suite hoặc gọi model thật; cảnh báo Node module detection có sẵn còn.
+
 ## 2026-11-14 — Sidebar thu gọn và animation
 
 - Thêm nút cuối sidebar desktop để co còn 72 px, giữ logo/icon, tên truy cập/tooltip và trạng thái khi chuyển trang. Chiều rộng/nhãn chuyển động trong 300 ms, tắt theo reduced motion; lịch sử chat thu lại và inert khi gọn. Drawer mobile vẫn mở đầy đủ, giữ Escape/focus; trạng thái chưa lưu sau reload.

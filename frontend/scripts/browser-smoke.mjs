@@ -212,6 +212,11 @@ try {
       `Object.keys(document.querySelector('button')).some(key => key.startsWith('__reactProps'))`,
       "React hydration",
     );
+    // Legacy catalog/chat checks use expanded navigation; Workspace checks verify the real default.
+    if (!repositoryOnly && await evaluate("innerWidth >= 768 && document.querySelector('.app')?.dataset.sidebarCollapsed === 'true'")) {
+      await click('#sidebar-collapse-toggle');
+      await waitFor("document.querySelector('.app').dataset.sidebarCollapsed === 'false'");
+    }
   };
   const setChatMode = async (mode) => {
     await click('.chat-settings button[aria-label="Cài đặt chat"]');

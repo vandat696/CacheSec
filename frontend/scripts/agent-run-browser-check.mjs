@@ -49,6 +49,13 @@ export async function checkAgentRuns({ cdp, navigate, evaluate, waitFor, click, 
   try {
     await navigate("/workspace#local-launch=" + await store.issueLaunch());
     await waitFor("document.querySelector('.repository-panel')?.dataset.connected === 'true'");
+    assert.equal(await evaluate("document.querySelector('.topbar').getClientRects().length"), 0);
+    assert.equal(await evaluate("document.querySelector('.developer-workspace').getBoundingClientRect().top"), 0);
+    assert.ok(await evaluate("document.querySelector('.dev-workbench').getBoundingClientRect().top <= 42"));
+    assert.equal(await evaluate("document.querySelector('.app').dataset.sidebarCollapsed"), 'true');
+    assert.equal(await evaluate("document.querySelector('.sidebar').getBoundingClientRect().width"), 72);
+    await click('#sidebar-collapse-toggle');
+    await waitFor("Math.abs(document.querySelector('.sidebar').getBoundingClientRect().width-224)<1");
     await waitFor("!document.querySelector('.agent-run-option input')?.disabled");
     await click(".agent-run-option input");
     assert.ok(await evaluate("document.querySelector('.dev-composer').innerText.includes('3 tệp source')"));
@@ -91,7 +98,7 @@ export async function checkAgentRuns({ cdp, navigate, evaluate, waitFor, click, 
       await key('Home');
       await waitFor(`Math.abs(document.getElementById('${id}').getBoundingClientRect().${dimension}-Number(document.querySelector('${selector}').getAttribute('aria-valuemin')))<2`);
       await key('End');
-      await waitFor(`Math.abs(document.getElementById('${id}').getBoundingClientRect().${dimension}-Number(document.querySelector('${selector}').getAttribute('aria-valuemax')))<2`);
+      await waitFor(`Math.abs(document.getElementById('${id}').getBoundingClientRect().${dimension}-Number(document.querySelector('${selector}').getAttribute('aria-valuemax')))<2`, `${id} reaches its measured maximum`);
       await key('Enter');
       const reset = await size();
       await key(dimension === 'height' ? 'ArrowUp' : id === 'workspace-agent' ? 'ArrowLeft' : 'ArrowRight');
@@ -114,6 +121,7 @@ export async function checkAgentRuns({ cdp, navigate, evaluate, waitFor, click, 
     for (const [width,height] of [[390,844],[820,1180],[1440,900]]) {
       await cdp("Emulation.setDeviceMetricsOverride", {width,height,deviceScaleFactor:1,mobile:width<768});
       assert.equal(await evaluate("document.documentElement.scrollWidth <= innerWidth"), true);
+      assert.equal(await evaluate("!!document.querySelector('.mobile-toggle').getClientRects().length"), width < 768);
       assert.equal(await evaluate("!!document.querySelector('.pane-resize-workspace-agent').getClientRects().length"), width >= 1024);
       assert.equal(await evaluate("!!document.querySelector('.pane-resize-repository-explorer').getClientRects().length"), width > 700);
       await screenshot('agent-run-'+width+'.png');
@@ -158,6 +166,35 @@ export async function checkAgentRuns({ cdp, navigate, evaluate, waitFor, click, 
     await cdp('Emulation.setDeviceMetricsOverride', {width:1440,height:900,deviceScaleFactor:1,mobile:false});
     await waitFor("Math.abs(document.querySelector('.sidebar').getBoundingClientRect().width-224)<1");
     await cdp('Emulation.setEmulatedMedia', {features:[]});
+    const scroll = "document.querySelector('.source-editor:not([hidden]) .cm-scroller')";
+    const scrollHost = "document.querySelector('.source-editor:not([hidden]) .source-editor-host')";
+    const scrollRect = await evaluate(`(() => { const s=${scroll}, r=s.getBoundingClientRect(); return {x:r.x,y:r.y,width:r.width,height:r.height,gutter:s.offsetWidth-s.clientWidth}; })()`);
+    const center = {x:scrollRect.x+scrollRect.width/2,y:scrollRect.y+scrollRect.height/2};
+    await cdp('Input.dispatchMouseEvent', {type:'mouseMoved', ...center});
+    await waitFor(`${scrollHost}.dataset.scrollbarsVisible === 'false' && getComputedStyle(${scroll}).scrollbarColor === 'rgba(0, 0, 0, 0) rgba(0, 0, 0, 0)'`);
+    const contentWidth = await evaluate(`${scroll}.clientWidth`);
+    await screenshot('editor-scrollbars-hidden.png');
+    await cdp('Input.dispatchMouseEvent', {type:'mouseWheel', ...center, deltaX:0, deltaY:140});
+    await waitFor(`${scroll}.scrollTop > 0`);
+    await evaluate(`${scroll}.scrollTop=0`);
+    await cdp('Input.dispatchMouseEvent', {type:'mouseMoved', x:scrollRect.x+scrollRect.width-20,y:center.y});
+    await waitFor(`${scrollHost}.dataset.scrollbarsVisible === 'true' && getComputedStyle(${scroll}).scrollbarColor.startsWith('rgb(129, 145, 168)')`);
+    assert.equal(await evaluate(`${scroll}.clientWidth`), contentWidth, 'revealing scrollbars does not shift code');
+    await screenshot('editor-scrollbars-visible.png');
+    assert.ok(scrollRect.gutter>0, 'native scrollbar keeps its draggable gutter');
+    const thumb = {x:scrollRect.x+scrollRect.width-scrollRect.gutter/2,y:scrollRect.y+24};
+    await cdp('Input.dispatchMouseEvent', {type:'mouseMoved', ...thumb});
+    await cdp('Input.dispatchMouseEvent', {type:'mousePressed', ...thumb, button:'left',clickCount:1});
+    await cdp('Input.dispatchMouseEvent', {type:'mouseMoved', x:thumb.x,y:thumb.y+70,button:'left',buttons:1});
+    await cdp('Input.dispatchMouseEvent', {type:'mouseReleased', x:thumb.x,y:thumb.y+70,button:'left',clickCount:1});
+    await waitFor(`${scroll}.scrollTop > 0`, 'native scrollbar thumb remains draggable');
+    await cdp('Input.dispatchMouseEvent', {type:'mouseMoved', ...center});
+    await waitFor(`${scrollHost}.dataset.scrollbarsVisible === 'false'`);
+    await cdp('Input.dispatchMouseEvent', {type:'mouseMoved', x:center.x,y:scrollRect.y+scrollRect.height-20});
+    await waitFor(`${scrollHost}.dataset.scrollbarsVisible === 'true'`);
+    await cdp('Input.dispatchMouseEvent', {type:'mouseMoved',x:10,y:10});
+    await waitFor(`${scrollHost}.dataset.scrollbarsVisible === 'false'`);
+    await evaluate(`${scroll}.scrollTop=0`);
   } finally {
     await cdp("Page.removeScriptToEvaluateOnNewDocument", {identifier:injection.identifier});
   }

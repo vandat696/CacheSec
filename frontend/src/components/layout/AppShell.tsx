@@ -24,7 +24,7 @@ export function AppShell({ children }: { children: ReactNode }) {
   const pathname = usePathname();
   const chat = useChat();
   const [drawerOpen, setDrawerOpen] = useState(false);
-  const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
+  const [sidebarCollapsed, setSidebarCollapsed] = useState(true);
   const sidebar = useRef<HTMLElement>(null);
   const toggle = useRef<HTMLButtonElement>(null);
 
@@ -142,7 +142,7 @@ export function AppShell({ children }: { children: ReactNode }) {
           </button>
         </aside>
         <div
-          className={`workspace${pathname === "/" ? " chat-workspace-shell" : ""}`}
+          className={`workspace${pathname === "/" ? " chat-workspace-shell" : pathname === "/workspace" ? " ide-workspace-shell" : ""}`}
           inert={drawerOpen}
         >
           <header className={`topbar${pathname === "/" ? " chat-topbar" : ""}`}>

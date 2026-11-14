@@ -40,6 +40,14 @@
 .source-editor { height: 100%; display: flex; flex-direction: column; min-height: 0; }
 .source-editor[hidden] { display: none; }
 .source-editor-host { flex: 1; min-height: 0; overflow: hidden; }
+.source-editor-host .cm-scroller { scrollbar-width: thin; scrollbar-gutter: stable; scrollbar-color: transparent transparent; transition: scrollbar-color 180ms ease; }
+.source-editor-host[data-scrollbars-visible="true"] .cm-scroller { scrollbar-color: #8191a8 transparent; }
+@media (hover: none) {
+  .source-editor-host .cm-scroller { scrollbar-color: #8191a8 transparent; }
+}
+@media (forced-colors: active) {
+  .source-editor-host .cm-scroller { scrollbar-color: auto; }
+}
 .source-editor-status { display: flex; justify-content: flex-end; gap: 14px; padding: 5px 10px; border-top: 1px solid #edf0f5; color: var(--nui-muted); font-size: 10px; background: #f8fafc; flex: none; }
 .source-editor-status > .source-editor-access { margin-right: auto; }
 .repository-editor-empty { margin: 40px 20px; text-align: center; color: var(--nui-muted); }

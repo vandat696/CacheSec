@@ -1,6 +1,12 @@
 @import "./repository-workspace.css";
 
 .developer-workspace { height: calc(100dvh - 48px); min-height: 480px; padding: 0 24px 16px; display: flex; flex-direction: column; font-size: 13px; }
+.ide-workspace-shell .developer-workspace[data-preview-only="false"] { height: calc(100dvh - 60px); padding: 0 12px 8px; }
+.ide-workspace-shell .dev-ide-toolbar { min-height: 40px; padding-bottom: 0; }
+@media (min-width: 768px) {
+  .ide-workspace-shell > .topbar { display: none; }
+  .ide-workspace-shell .developer-workspace[data-preview-only="false"] { height: 100dvh; }
+}
 .developer-workspace code { font-family: Consolas, "Cascadia Code", monospace; font-size: .92em; }
 .dev-source-mode { display: flex; gap: 4px; flex-wrap: wrap; }
 .dev-source-mode button { border: 1px solid var(--nui-border); background: var(--nui-surface); padding: 5px 8px; border-radius: 5px; cursor: pointer; font: inherit; }

@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useRef, useState, type PointerEvent } from "react";
 import { basicSetup, EditorView } from "codemirror";
 import { Compartment, EditorState, Transaction } from "@codemirror/state";
 import { keymap } from "@codemirror/view";
@@ -18,6 +18,15 @@ export function SourceEditor(props: Props) {
   const callbacks = useRef(props);
   const permission = useRef(new Compartment());
   const [cursor, setCursor] = useState({ line: 1, column: 1 });
+  const [scrollbarsVisible, setScrollbarsVisible] = useState(false);
+  function revealScrollbars(event: PointerEvent<HTMLDivElement>) {
+    if (event.pointerType !== "mouse") return;
+    const bounds = view.current?.scrollDOM.getBoundingClientRect();
+    if (!bounds) return;
+    const inside = event.clientX >= bounds.left && event.clientX <= bounds.right
+      && event.clientY >= bounds.top && event.clientY <= bounds.bottom;
+    setScrollbarsVisible(inside && (bounds.right - event.clientX <= 24 || bounds.bottom - event.clientY <= 24));
+  }
   useEffect(() => { callbacks.current = props; }, [props]);
   useEffect(() => {
     if (!host.current) return;
@@ -63,7 +72,8 @@ export function SourceEditor(props: Props) {
     if (props.active) { view.current?.requestMeasure(); view.current?.focus(); }
   }, [props.active]);
   return <div className="source-editor" hidden={!props.active}>
-    <div className="source-editor-host" ref={host} />
+    <div className="source-editor-host" ref={host} data-scrollbars-visible={props.active && scrollbarsVisible}
+      onPointerMoveCapture={revealScrollbars} onPointerLeave={() => setScrollbarsVisible(false)} />
     <div className="source-editor-status">{props.readOnly && <span className="source-editor-access">Chỉ đọc</span>}
       <span>Ln {cursor.line}, Col {cursor.column}</span><span>UTF-8</span><span>Python</span></div>
   </div>;
