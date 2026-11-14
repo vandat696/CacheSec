@@ -90,7 +90,7 @@ Không tự chọn thay người dùng/giảng viên các giá trị ảnh hư�
 
 ### T09 — Nối LLM và embedding qua adapter riêng
 
-- **Lát cắt đã có:** người dùng chuyển sang Gemini `gemini-3.5-flash-lite`; generateContent adapter, API assistance đọc ba file có quyền/freshness và UI đề xuất → người dùng áp dụng/test đã có implementation. OpenAI Responses adapter giữ riêng, không tự fallback. Key private do người dùng cấu hình; xem project-status cho kiểm chứng model thật, không coi provider double là kết nối thật. Chưa embedding/cache hoặc Agent tự điều phối; chưa hoàn thành toàn T09/T14.
+- **Lát cắt đã có:** người dùng chuyển sang Gemini `gemini-3.5-flash-lite`; generateContent adapter, API assistance đọc ba file có quyền/freshness và UI đề xuất → người dùng áp dụng/test đã có implementation. OpenAI Responses adapter giữ riêng, không tự fallback. Key private do người dùng cấu hình; xem project-status cho kiểm chứng model thật, không coi provider double là kết nối thật. Đã có thêm vòng Agent local giới hạn ở T14 bên dưới; chưa embedding/cache hoặc toàn bộ T09/T14.
 
 - [ ] Hoàn thành T09. **Phụ thuộc:** T01–T02, T06 và T08.
 - **Làm:** chọn provider/model/config đã xác nhận, tách generation khỏi embedding; chuẩn hóa usage, timeout, retry, lỗi và provenance đầu vào. Chỉ kết nối embedding khi lát cắt cần; không thêm nhiều provider hoặc SDK ngoài nhu cầu.
@@ -146,6 +146,8 @@ Kết thúc mốc khi demo được cả lưu/sửa/test thành công, sai quy�
 
 ### T14 — Agent tạo đúng một thay đổi và hoàn tất luồng thật
 
+- **Lát cắt kỹ thuật đã có:** [vòng Agent local](../system/agent-workflow.md) tự đọc source, tạo revision riêng, queue test T12 và sửa tiếp từ feedback, tối đa ba lượt/mười phút. API/state/UI/cancel, test doubles/DB integration và một run Gemini → Docker thật chỉ thêm chú thích đã đạt; dev đã được cấp hai quyền workflow theo xác nhận tường minh. Không activation hoặc rule ngày trong baseline; chưa phải toàn bộ T14, không bỏ qua phụ thuộc gate/oracle/cache của mốc nghiên cứu. Chi tiết kiểm chứng và giới hạn ở project-status.
+
 - [ ] Hoàn thành T14. **Phụ thuộc:** T08–T13.
 - **Làm:** nối request → context/cache → model/Agent tools → proposal/diff → test → xin duyệt → activation qua control. Chỉ giao một thay đổi flag ngày hết hạn; Agent không có quyền approve/deploy hoặc sửa control/cache/policy.
 - **Đầu ra:** workflow dùng prompt thật tạo bản sửa source thật trong snapshot riêng; hành vi báo giá đổi sau đúng quyết định của reviewer. Các thao tác approve/activate được thực hiện bởi actor/control có quyền, không do Agent tự quyết.
@@ -154,7 +156,7 @@ Kết thúc mốc khi demo được cả lưu/sửa/test thành công, sai quy�
 ### T15 — Nối giao diện IDE và màn báo giá với backend
 
 - [ ] Hoàn thành T15. **Phụ thuộc:** API ở T07 và workflow T14.
-- **Trạng thái:** đã nối app báo giá, phiên Workspace local, editor/revision/test Docker và Agent assistance cần key. Workspace chỉ một màn chính, mô phỏng chuyển vào UI phụ; review/deploy thật và Agent tự điều phối chưa có, T15 chưa hoàn thành toàn bộ.
+- **Trạng thái:** đã nối app báo giá, phiên Workspace local, editor/revision/test Docker, Agent assistance và UI run tự sửa/test có giới hạn cần key/quyền riêng. Workspace chỉ một màn chính, mô phỏng chuyển vào UI phụ; review/deploy thật và workflow T14 đầy đủ chưa có, T15 chưa hoàn thành toàn bộ.
 - **Làm:** tái sử dụng code/chat IDE, thay fixture bằng source/diff/message/status thật; nối hộp thoại test/approval. Thêm màn báo giá tối giản dùng API app để nhập/xem/validation và quan sát trước/sau activation; route cụ thể theo contract đã chốt, không dựng ERP hoặc IDE đầy đủ.
 - **Đầu ra:** demo sử dụng được từ trình duyệt: prompt → diff/test → reviewer duyệt → kích hoạt → báo giá phản ánh rule mới.
 - **Nghiệm thu:** UI không tự bịa hit/test/approval; loading/error/reconnect và stale revision rõ; thao tác chưa được phép không thành công qua API. Code/chat vẫn là hai vùng chính, giữ UI ít chữ, accessibility/responsive và các màn cũ.

@@ -4,9 +4,12 @@ const uuid = "[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-
 const routes: Record<string, RegExp[]> = {
   GET: [new RegExp(`^/api/v1/repository(?:/snapshots/${uuid}(?:/files/${uuid})?)?$`),
     /^\/api\/v1\/agent\/config$/,
+    new RegExp(`^/api/v1/agent/runs/${uuid}$`),
     new RegExp(`^/api/v1/changes/(?:config|proposals/${uuid}|tests/${uuid})$`)],
   POST: [/^\/api\/v1\/repository\/snapshots$/,
     /^\/api\/v1\/agent\/messages$/,
+    /^\/api\/v1\/agent\/runs$/,
+    new RegExp(`^/api/v1/agent/runs/${uuid}/cancel$`),
     new RegExp(`^/api/v1/changes/proposals(?:/${uuid}/(?:revisions|tests))?$`)],
 };
 const quotationRoutes: Record<string, RegExp[]> = {

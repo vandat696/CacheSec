@@ -14,6 +14,7 @@ Hồ sơ thiết kế và trạng thái hệ thống. Nội dung dự kiến kh�
 | System | [Tổ chức source](system/code-organization.md) | Đặt tên/module frontend/backend, UI kit/catalog, template source và bundle |
 | System | [Contract backend và cache](system/api.md) | T02 v0.2; API tạo/đọc/validate nền báo giá và health/readiness đã triển khai, HTTP snapshot/file và revision/test kỹ thuật đã có, Agent/cache/gate còn là thiết kế |
 | System | [Workflow sửa/test T12](system/change-workflow.md) | Revision/diff/evidence, quyền, profile image, worker Docker và sandbox kỹ thuật đã triển khai |
+| System | [Agent tự sửa/test local](system/agent-workflow.md) | Run có giới hạn, quyền workflow riêng, vòng sửa/test, cancel và registry trong một process |
 | System | [Cache](system/cache.md) | Answer/Context Cache, Hit/Miss/Rejected, verification, metadata và lifecycle |
 | System | [Phân quyền](system/authorization.md) | Quyền app, registry control và HTTP repository đã có; gate local v0.1/dispatch/recovery chưa triển khai, threat model |
 | Frontend | [Thiết kế](frontend/design.md) | Báo giá nối API thật, Workspace snapshot/revision/diff/test Docker thật, review/approval mô phỏng và các màn cũ |

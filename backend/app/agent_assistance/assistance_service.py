@@ -43,7 +43,7 @@ class AgentAssistanceService:
         ] != [(f.path, f.blob) for f in base.files]:
             raise AgentError("STALE_SNAPSHOT", 409)
 
-    def ask(self, token, snapshot_id, prompt, history):
+    def ask(self, token, snapshot_id, prompt, history, candidate_content=None):
         repository = self.access.describe_current(token)
         if self.snapshots is None or not self.model.configured():
             raise AgentError("MODEL_NOT_CONFIGURED")
@@ -56,6 +56,20 @@ class AgentAssistanceService:
             files = tuple((f.path, f.content.decode("utf-8-sig")) for f in bundle.files)
         except UnicodeError:
             raise AgentError("AGENT_SOURCE_NOT_TEXT", 422) from None
+        if candidate_content is not None:
+            if (
+                type(candidate_content) is not str
+                or "\x00" in candidate_content
+                or len(candidate_content.encode("utf-8")) > 65536
+            ):
+                raise AgentError("AGENT_CONTEXT_TOO_LARGE", 413)
+            # Internal run input, read from the verified candidate revision; never an HTTP field.
+            files = tuple(
+                (path, candidate_content if path == EDITABLE_PATH else content)
+                for path, content in files
+            )
+            if sum(len(content.encode("utf-8")) for _, content in files) > 131072:
+                raise AgentError("AGENT_CONTEXT_TOO_LARGE", 413)
         self._fresh(token, repository.scope, bundle.snapshot)
         result = self.model.generate(prompt, files, history)
         # A slow model response cannot restore revoked permission or stale source.

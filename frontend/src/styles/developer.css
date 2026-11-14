@@ -134,6 +134,11 @@
 .dev-message.developer { align-self: flex-end; background: var(--nui-tint); }
 .dev-message p { font-size: 12px; line-height: 1.8; color: #44536a; white-space: pre-wrap; overflow-wrap: anywhere; }
 .dev-composer { padding: 10px 12px 12px; }
+.agent-run-option { display: flex; align-items: center; gap: 6px; margin-bottom: 8px; font-size: 11px; }
+.agent-run-option input { accent-color: var(--nui-primary); }
+.agent-run { padding: 10px; border: 1px solid var(--nui-border); border-radius: 6px; }
+.agent-run ol { margin: 6px 0; padding-left: 18px; }
+.dev-composer > .agent-information-note { margin-bottom: 8px; font-size: 10px; }
 .dev-composer > div { display: flex; gap: 6px; align-items: flex-end; padding: 8px; border: 1px solid #bccbe0; border-radius: 7px; background: #fff; }
 .dev-composer > div:focus-within { border-color: var(--nui-primary); box-shadow: 0 0 0 2px var(--nui-tint); }
 .dev-composer textarea { width: 100%; min-width: 0; border: 0; padding: 2px 3px; resize: vertical; min-height: 54px; max-height: 140px; background: transparent; font-size: 12px; color: var(--nui-text); outline: none; }

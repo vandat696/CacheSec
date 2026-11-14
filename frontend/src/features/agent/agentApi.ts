@@ -1,10 +1,11 @@
 import { ChangeApiError, editablePath } from "../code-changes/changeWorkflowApi.ts";
+import { isAgentAutomation, isAgentRun, type AgentAutomation, type AgentRun } from "./agentRunModel.ts";
 
 export const agentModels = {
   "gemini-3.5-flash-lite": { label: "Gemini 3.5 Flash-Lite", keyVariable: "GEMINI_API_KEY", keyFile: "gemini.env" },
   "gpt-6.1-sol": { label: "GPT-6.1 Sol", keyVariable: "OPENAI_API_KEY", keyFile: "openai.env" },
 } as const;
-export type AgentConfig = { model: keyof typeof agentModels; configured: boolean; mode: "assisted" };
+export type AgentConfig = { model: keyof typeof agentModels; configured: boolean; mode: "assisted"; automation?: AgentAutomation };
 export type AgentReply = { snapshot_id: string; manifest_digest: string; repository_identity: string;
   editable_path: string; answer: string; content: string | null; model: string;
   usage: { input_tokens: number; output_tokens: number; total_tokens: number } | null };
@@ -20,6 +21,8 @@ const errors: Record<string, string> = {
   MODEL_UNAVAILABLE: "Chưa kết nối được nhà cung cấp model. Bạn có thể thử lại.", MODEL_INCOMPLETE: "Model chưa trả lời đầy đủ. Hãy thử yêu cầu ngắn hơn.",
   MODEL_INVALID_RESPONSE: "Model trả kết quả không hợp lệ.", MODEL_REFUSED: "Model từ chối yêu cầu này.",
   STALE_SNAPSHOT: "Source đã đổi. Hãy mở lại mã nguồn trước khi hỏi Agent.",
+  AGENT_BUSY: "Đang có một lượt Agent chạy. Hãy chờ hoặc dừng lượt hiện tại.",
+  AGENT_RUN_LIMIT: "Đã đạt giới hạn lưu phiên Agent local. Cần khởi động lại control.",
 };
 export class AgentApiError extends ChangeApiError {
   constructor(status: number, code?: string) { super(status, code); this.message = errors[code ?? ""] ?? this.message; }
@@ -33,11 +36,12 @@ export class AgentHttpClient {
     if (token === null && baseUrl !== "/api/local-control") throw new Error("INVALID_LOCAL_TRANSPORT");
     this.baseUrl = baseUrl; this.token = token; this.fetcher = fetcher;
   }
-  private async request(path: string, signal: AbortSignal, body?: unknown): Promise<unknown> {
+  private async request(path: string, signal: AbortSignal, body?: unknown, key?: string): Promise<unknown> {
     const response = await this.fetcher(this.baseUrl.replace(/\/$/, "") + "/api/v1/agent" + path, {
       method: body === undefined ? "GET" : "POST", signal, credentials: this.token === null ? "same-origin" : "omit",
       redirect: "error", cache: "no-store", headers: { "Content-Type": "application/json",
-        ...(this.token === null ? { "X-CacheSec-Workspace": "1" } : { Authorization: `Bearer ${this.token}` }) },
+        ...(this.token === null ? { "X-CacheSec-Workspace": "1" } : { Authorization: `Bearer ${this.token}` }),
+        ...(key ? { "Idempotency-Key": key } : {}) },
       body: body === undefined ? undefined : JSON.stringify(body),
     });
     const value: unknown = await response.json().catch(() => null);
@@ -51,7 +55,8 @@ export class AgentHttpClient {
   async config(signal: AbortSignal): Promise<AgentConfig> {
     const value = await this.request("/config", signal);
     if (!object(value) || typeof value.model !== "string" || !Object.hasOwn(agentModels, value.model)
-      || typeof value.configured !== "boolean" || value.mode !== "assisted") throw new AgentApiError(502);
+      || typeof value.configured !== "boolean" || value.mode !== "assisted"
+      || (value.automation !== undefined && !isAgentAutomation(value.automation))) throw new AgentApiError(502);
     return value as AgentConfig;
   }
   async ask(snapshotId: string, prompt: string, history: AgentMessage[], signal: AbortSignal): Promise<AgentReply> {
@@ -66,5 +71,20 @@ export class AgentHttpClient {
         .every(k => Number.isSafeInteger(value.usage && (value.usage as Record<string, unknown>)[k])
           && ((value.usage as Record<string, number>)[k] >= 0))))) throw new AgentApiError(502);
     return value as AgentReply;
+  }
+  async startRun(snapshotId: string, prompt: string, key: string, signal: AbortSignal): Promise<AgentRun> {
+    const value = await this.request("/runs", signal, { snapshot_id: snapshotId, prompt, provider_consent: true }, key);
+    if (!isAgentRun(value) || value.snapshot_id !== snapshotId || !supportedModelVersion(value.model)) throw new AgentApiError(502);
+    return value;
+  }
+  async getRun(id: string, signal: AbortSignal): Promise<AgentRun> {
+    const value = await this.request("/runs/" + id, signal);
+    if (!isAgentRun(value) || value.run_id !== id || !supportedModelVersion(value.model)) throw new AgentApiError(502);
+    return value;
+  }
+  async cancelRun(id: string, signal: AbortSignal): Promise<AgentRun> {
+    const value = await this.request("/runs/" + id + "/cancel", signal, null);
+    if (!isAgentRun(value) || value.run_id !== id || !supportedModelVersion(value.model)) throw new AgentApiError(502);
+    return value;
   }
 }

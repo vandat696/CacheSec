@@ -1,5 +1,8 @@
 """ASGI composition root: uvicorn app.control.control_api:app."""
 
+from concurrent.futures import ThreadPoolExecutor
+from contextlib import asynccontextmanager
+
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
@@ -7,6 +10,10 @@ from app.agent_assistance.assistance_http import configure_assistance_http
 from app.agent_assistance.assistance_service import AgentAssistanceService
 from app.agent_assistance.gemini_generation import GeminiContentGeneration
 from app.agent_assistance.openai_generation import OpenAIResponsesGeneration
+from app.agent_assistance.run_http import configure_run_http
+from app.agent_assistance.run_service import AgentRunService
+from app.agent_assistance.run_store import LocalAgentRunStore
+from app.agent_assistance.workflow_run_tools import WorkflowRunAccess, WorkflowRunTools
 from app.artifacts.filesystem_blob_store import FileSystemBlobStore
 from app.change_workflow.postgres_workflow_transactions import PostgresWorkflowTransactions
 from app.change_workflow.proposal_service import ProposalService
@@ -35,7 +42,17 @@ def create_app(configuration: Settings = settings) -> FastAPI:
     if configuration.control_repository_config is not None:
         binding = load_repository_binding(configuration.control_repository_config)
         snapshots = create_repository_snapshot_service(configuration, (binding,))
-    app = FastAPI(title="CacheSec API", version="0.2.0")
+    runs = None
+    executor = ThreadPoolExecutor(max_workers=1, thread_name_prefix="cachesec-agent")
+
+    @asynccontextmanager
+    async def lifespan(app):
+        yield
+        if runs is not None:
+            runs.shutdown()
+        executor.shutdown(wait=False, cancel_futures=True)
+
+    app = FastAPI(title="CacheSec API", version="0.2.0", lifespan=lifespan)
     app.dependency_overrides[get_database] = lambda: database
     app.include_router(health_router)
     configure_repository_http(
@@ -57,16 +74,23 @@ def create_app(configuration: Settings = settings) -> FastAPI:
         )
         jobs = TestJobService(proposals, binding.profile.scope)
     configure_workflow_http(app, proposals, jobs, configuration.control_test_worker_token)
-    configure_assistance_http(
-        app,
-        AgentAssistanceService(
-            RepositoryAccessService(PostgresControlAuthorityTransactions(database)),
-            snapshots,
-            GeminiContentGeneration(configuration.control_agent_config)
-            if configuration.control_agent_provider == "gemini"
-            else OpenAIResponsesGeneration(configuration.control_agent_config),
-        ),
+    assistance = AgentAssistanceService(
+        RepositoryAccessService(PostgresControlAuthorityTransactions(database)),
+        snapshots,
+        GeminiContentGeneration(configuration.control_agent_config)
+        if configuration.control_agent_provider == "gemini"
+        else OpenAIResponsesGeneration(configuration.control_agent_config),
     )
+    if proposals is not None:
+        runs = AgentRunService(
+            WorkflowRunAccess(proposals),
+            assistance,
+            WorkflowRunTools(proposals),
+            LocalAgentRunStore(),
+            executor,
+        )
+        configure_run_http(app, runs)
+    configure_assistance_http(app, assistance, runs)
     app.add_middleware(
         CORSMiddleware,
         allow_origins=configuration.cors_origins,

@@ -34,7 +34,7 @@ class AssistanceRequest(BaseModel):
         return self
 
 
-def configure_assistance_http(app, service):
+def configure_assistance_http(app, service, runs=None):
     async def error(request, exc: AgentError):
         return JSONResponse(
             status_code=exc.status,
@@ -54,7 +54,11 @@ def configure_assistance_http(app, service):
 
     @router.get("/config")
     async def config(request: Request, authorization: credential = None):
-        return envelope(request, await run_in_threadpool(service.config, bearer(authorization)))
+        token = bearer(authorization)
+        data = await run_in_threadpool(service.config, token)
+        if runs is not None:
+            data["automation"] = await run_in_threadpool(runs.config, token)
+        return envelope(request, data)
 
     @router.post("/messages")
     async def message(body: AssistanceRequest, request: Request, authorization: credential = None):

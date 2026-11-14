@@ -15,6 +15,8 @@ import { checkRepositoryDev } from "./repository-dev-browser-check.mjs";
 import { checkCodeChanges } from "./code-changes-browser-check.mjs";
 import { checkLocalWorkspace } from "./local-workspace-browser-check.mjs";
 import { checkAgent, checkAgentLive } from "./agent-browser-check.mjs";
+import { checkAgentRuns } from "./agent-run-browser-check.mjs";
+import { checkAgentRunLive } from "./agent-run-live-browser-check.mjs";
 import { checkWorkbench } from "./workbench-browser-check.mjs";
 
 const frontend = fileURLToPath(new URL("..", import.meta.url));
@@ -23,8 +25,10 @@ const repositoryDev = process.argv.includes("--repository-dev") || codeChanges;
 const localWorkspace = process.argv.includes("--local-workspace");
 const agentOnly = process.argv.includes("--agent");
 const agentLive = process.argv.includes("--agent-live");
+const agentRuns = process.argv.includes("--agent-runs");
+const agentRunLive = process.argv.includes("--agent-run-live");
 const workbenchOnly = process.argv.includes("--workbench");
-const repositoryOnly = process.argv.includes("--repository-only") || repositoryDev || localWorkspace || agentOnly || agentLive || workbenchOnly;
+const repositoryOnly = process.argv.includes("--repository-only") || repositoryDev || localWorkspace || agentOnly || agentLive || agentRuns || agentRunLive || workbenchOnly;
 if (repositoryDev) {
   // This private file contains only the dedicated read credential, never the backend DSN.
   process.loadEnvFile(join(frontend, "../backend/.local/control-access.env"));
@@ -278,6 +282,12 @@ try {
   }
   if (agentLive) {
     await checkAgentLive({ navigate, evaluate, waitFor, click, fill, screenshot });
+  }
+  if (agentRuns) {
+    await checkAgentRuns({ cdp, navigate, evaluate, waitFor, click, fill, screenshot });
+  }
+  if (agentRunLive) {
+    await checkAgentRunLive({ cdp, navigate, evaluate, waitFor, click, fill, screenshot });
   }
   if (workbenchOnly) {
     await checkWorkbench({ cdp, navigate, evaluate, waitFor, click, fill, screenshot });
@@ -1167,6 +1177,8 @@ try {
   assert.deepEqual(errors, [], "Lỗi runtime/React trên trình duyệt");
   console.log(
     workbenchOnly ? "Đạt: hai trang tự kết nối, không nhập token/ID, giữ bản sửa và báo giá qua điều hướng/reload."
+      : agentRunLive ? "Đạt: Workspace → Gemini → revision → Docker/evidence thật; chỉ chú thích, source gốc và nghiệp vụ giữ nguyên."
+      : agentRuns ? "Đạt: UI Agent tự động, kết quả và hủy ở ba bố cục; model/run/executor là double có nhãn."
       : agentLive ? "Đạt: Workspace gọi Gemini thật qua phiên local và hiển thị phản hồi; không áp dụng bản sửa."
       : agentOnly ? "Đạt: Workspace/Agent một màn, đề xuất/apply/test và ba bố cục; model response là test double."
       : localWorkspace ? "Đạt: Workspace local mở tự động, token ở server, sửa/lưu/test và vòng đời phiên."

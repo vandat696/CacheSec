@@ -210,6 +210,8 @@ class ProposalService:
         key: str | None,
         proposal_id: UUID | None = None,
         expected_revision: int = 0,
+        *,
+        required_capabilities: frozenset[ControlCapability] = frozenset(),
     ):
         try:
             raw = content.encode("utf-8")
@@ -228,7 +230,9 @@ class ProposalService:
             },
         )
         with self.transactions.open() as session:
-            caller, repository = self.authorize(session, token, ControlCapability.PROPOSAL_CREATE)
+            caller, repository = self.authorize(
+                session, token, ControlCapability.PROPOSAL_CREATE, *required_capabilities
+            )
             replay = session.workflow.get_request(caller.scope, caller.principal_id, key_hash)
             if replay:
                 if replay[0] != payload:
@@ -330,12 +334,22 @@ class ProposalService:
             result = self.revision_view(session, caller.scope, repository.identity, record)
         return result
 
-    def request_test(self, token, proposal_id: UUID, revision: int, key: str | None):
+    def request_test(
+        self,
+        token,
+        proposal_id: UUID,
+        revision: int,
+        key: str | None,
+        *,
+        required_capabilities: frozenset[ControlCapability] = frozenset(),
+    ):
         key_hash, payload = request_identity(
             key, {"operation": "test", "proposal_id": str(proposal_id), "revision": revision}
         )
         with self.transactions.open() as session:
-            caller, _ = self.authorize(session, token, ControlCapability.TEST_RUN)
+            caller, _ = self.authorize(
+                session, token, ControlCapability.TEST_RUN, *required_capabilities
+            )
             replay = session.workflow.get_request(caller.scope, caller.principal_id, key_hash)
             if replay:
                 if replay[0] != payload:
