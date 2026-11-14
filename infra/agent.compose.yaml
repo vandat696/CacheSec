@@ -2,7 +2,8 @@
 services:
   control:
     environment:
-      CONTROL_AGENT_CONFIG: /run/agent/openai.env
+      CONTROL_AGENT_PROVIDER: gemini
+      CONTROL_AGENT_CONFIG: /run/agent/gemini.env
     volumes:
       - type: bind
         source: ${CACHESEC_ROOT:?Set CACHESEC_ROOT}/backend/.local/agent-config

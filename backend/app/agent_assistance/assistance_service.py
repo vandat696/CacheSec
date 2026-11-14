@@ -30,7 +30,11 @@ class AgentAssistanceService:
 
     def config(self, token):
         self.access.describe_current(token)
-        return {"model": "gpt-6.1-sol", "configured": self.model.configured(), "mode": "assisted"}
+        return {
+            "model": self.model.model_id,
+            "configured": self.model.configured(),
+            "mode": "assisted",
+        }
 
     def _fresh(self, token, scope, base):
         current = self.snapshots.capture(token, scope)

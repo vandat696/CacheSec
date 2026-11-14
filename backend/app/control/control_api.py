@@ -5,6 +5,7 @@ from fastapi.middleware.cors import CORSMiddleware
 
 from app.agent_assistance.assistance_http import configure_assistance_http
 from app.agent_assistance.assistance_service import AgentAssistanceService
+from app.agent_assistance.gemini_generation import GeminiContentGeneration
 from app.agent_assistance.openai_generation import OpenAIResponsesGeneration
 from app.artifacts.filesystem_blob_store import FileSystemBlobStore
 from app.change_workflow.postgres_workflow_transactions import PostgresWorkflowTransactions
@@ -61,7 +62,9 @@ def create_app(configuration: Settings = settings) -> FastAPI:
         AgentAssistanceService(
             RepositoryAccessService(PostgresControlAuthorityTransactions(database)),
             snapshots,
-            OpenAIResponsesGeneration(configuration.control_agent_config),
+            GeminiContentGeneration(configuration.control_agent_config)
+            if configuration.control_agent_provider == "gemini"
+            else OpenAIResponsesGeneration(configuration.control_agent_config),
         ),
     )
     app.add_middleware(

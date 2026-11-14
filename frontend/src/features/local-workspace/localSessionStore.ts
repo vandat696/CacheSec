@@ -1,5 +1,5 @@
 import { createHash, randomBytes } from "node:crypto";
-import { mkdir, readFile, rename, unlink, writeFile } from "node:fs/promises";
+import { mkdir, readFile, unlink, writeFile } from "node:fs/promises";
 import { join } from "node:path";
 import { parseEnv } from "node:util";
 
@@ -67,9 +67,10 @@ export class LocalSessionStore {
   async consumeLaunch(value: string, origin: string, now = Date.now()) {
     const result = await this.read("launch", value, origin, now);
     const path = this.file("launch", value);
-    // Atomic rename is the single-use claim, including across Next.js workers.
-    await rename(path, path + ".claimed");
-    await unlink(path + ".claimed");
+    // Exclusive creation elects one worker, including concurrent Windows consumers.
+    // Keep the empty claim: a delayed reader must never re-claim the same capability.
+    await writeFile(path + ".claimed", "", { flag: "wx", mode: 0o600 });
+    await unlink(path);
     return result;
   }
   async createSession(origin: string, credential: string, now = Date.now(), quotation: string | null = null) {

@@ -1,5 +1,19 @@
 # Trạng thái dự án
 
+## 2026-11-14 — Chuyển Agent sang Gemini
+
+- Theo yêu cầu người dùng, thêm adapter Gemini generateContent, provider mặc định `gemini`, key private `gemini.env`; giữ adapter/key OpenAI riêng và chỉ chọn qua cấu hình backend. Prompt/schema, validation kết quả và transport giới hạn dùng chung; service lấy model ID từ adapter, UI hiển thị đúng model/key setup và lỗi trung lập provider. Không thêm SDK, quyền, schema hoặc tự fallback.
+- Gemini 3.8 Flash có trong danh sách model của key nhưng các lượt generation trả 503 quá tải. Chọn cố định `gemini-3.5-flash-lite` cho bản tích hợp cuối: lượt phân tích qua assistance API thật trả 200, tiếng Việt, content=null, usage 1973 input/110 output/2083 total. Đây là smoke kết nối, không phải benchmark; source validation gốc không đổi. Không tuyên bố model đã kiểm chứng khả năng sửa rule ngày hoặc correctness nghiên cứu.
+- **Kiểm chứng:** 398 test backend với PostgreSQL Docker tạm cô lập và 103 test frontend đạt; Ruff lint/format, ESLint, typecheck/production build đạt. Edge bản cuối đạt UI Agent với generation double có nhãn, proposal/revision/test Docker thật, draft/disconnect và ba cỡ 390/820/1440. API/Workspace local đã restart bản mới. Còn cảnh báo TestClient/httpx và Node module detection có sẵn; chưa kiểm browser/OS khác.
+- Hồi quy phát hiện claim launch bằng rename có thể cho hai consumer cùng thành công trên Windows. Đổi sang tạo claim rỗng exclusive `wx`, giữ tombstone và xóa launch record; regression 20 lượt × 8 consumer trên hai store instance đạt. Claim/session cũ vẫn chưa GC tự động. Các lượt test lỗi sandbox/quyền file và race trước sửa không được tính là đạt.
+- Smoke `--agent-live` qua browser đã chuẩn bị nhưng chưa chạy: automatic approval review chặn gửi ba source file tới Google vì yêu cầu chấp thuận rõ payload/đích bên ngoài. Không lách bằng lệnh khác; bước này chờ người dùng cho phép. Đã nhắc thu hồi key từng gửi vào hội thoại và lưu key mới trực tiếp; không ghi key vào repo/log/tài liệu. Cập nhật setup/API/bảo mật/kiến trúc/frontend/source map/lộ trình/README. Cache/gate và điều kiện nghiên cứu giữ nguyên.
+
+## 2026-11-14 — Khởi động lại stack để dùng Agent thật
+
+- Đã mở Docker Desktop và chạy launcher local hiện có: PostgreSQL, control API, app báo giá, worker và Workspace khởi động thành công. Control readiness và Workspace trả HTTP 200; sau khi người dùng lưu key private, API Agent được xác thực trả model `gpt-6.1-sol`, mode `assisted`, `configured=true`.
+- Ba test frontend của Agent đạt; còn cảnh báo Node module detection có sẵn. Không đổi code ứng dụng, quyền hoặc schema và không chạy lại toàn bộ suite/backend/browser.
+- Snapshot thật trả 201; yêu cầu phân tích qua assistance API gọi provider thật nhưng trả `MODEL_RATE_LIMIT`. Một probe Responses tối thiểu xác định OpenAI trả HTTP 429, `credit_balance_exhausted` / `insufficient_quota`: tổ chức của key không còn prepaid credits. Chưa có phản hồi model thành công; bước tiếp theo là người dùng xử lý credits trên OpenAI Platform rồi kiểm lại một lượt assistance thật. Không ghi key/nội dung lỗi provider vào tài liệu hoặc thay model để né lỗi. Cache/gate và điều kiện nghiên cứu giữ nguyên.
+
 ## 2026-11-12 — Một phiên local cho Workspace và Báo giá
 
 - Theo yêu cầu bỏ nhập lại token/ID, owner launcher mới mở cả hai màn bằng cùng phiên HttpOnly tối đa 8 giờ. Next dùng riêng credential dev control và fixture operator báo giá đã có, chỉ ở server; helper sinh `quotation-access.json` private, không đổi grants/registry/DB schema. Cookie control cũ phải mở lại bằng launcher một lần, không tự nhận quyền mới; rotation/revoke báo giá không chuyển danh tính control, logout local đóng hai màn.

@@ -62,6 +62,18 @@ test("session survives a server restart, expires at 8 hours and cannot adopt rot
   await assert.rejects(store.consumeLaunch(launch, localOrigin, now));
 });
 
+test("concurrent Windows launch claims allow exactly one consumer across store instances", async t => {
+  const { store } = await fixture(t);
+  const other = new LocalSessionStore(join(store.root, ".."));
+  for (let round = 0; round < 20; round++) {
+    const launch = await store.issueLaunch();
+    const results = await Promise.allSettled(Array.from({ length: 8 }, (_, index) =>
+      (index % 2 ? store : other).consumeLaunch(launch, localOrigin)));
+    assert.equal(results.filter(result => result.status === "fulfilled").length, 1);
+    await assert.rejects(other.consumeLaunch(launch, localOrigin));
+  }
+});
+
 test("cookie alone, cross-origin, same-site different port, DNS rebinding and missing metadata fail before upstream", async t => {
   let calls = 0;
   const { store, server } = await fixture(t, async () => { calls++; return Response.json({}); });

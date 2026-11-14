@@ -24,7 +24,7 @@ Bối cảnh đã cập nhật ngày **2026-11-02**. Frontend có thêm **Develo
 
 | Thành phần | Hiện có | Giới hạn |
 | --- | --- | --- |
-| Workspace `/workspace` | Editor/revision/diff/test Docker và khung Agent GPT-6.1 Sol | Model cần key private; chỉ đề xuất file validation, người dùng áp dụng/test; chưa cache/Agent tự trị/gate |
+| Workspace `/workspace` | Editor/revision/diff/test Docker và khung Agent Gemini 3.5 Flash-Lite | Model cần key private; chỉ đề xuất file validation, người dùng áp dụng/test; chưa cache/Agent tự trị/gate |
 | Thiết lập `/setup` | Chín nhóm mode/dataset/embedding/threshold/eviction/quyền/training/logging/export; snapshot trong phiên, validation và xuất JSON cấu hình | Bản nháp; results null, chưa áp dụng vào Chat hoặc chạy benchmark/training/logging thật |
 | Chat `/` | Lịch sử, bản nháp, Không cache/Cache/Cả hai với prompt chung; modal thông số từng lượt | Phản hồi mô phỏng, chưa AI/RAG hoặc cache thật |
 | Số liệu `/metrics` | Ba tab, biểu đồ/bảng/chi tiết; mặc định 24 truy vấn giả, nguồn phiên riêng tại `/metrics?source=session` | Fixture xem UI, không phải kết quả thực nghiệm |
@@ -33,7 +33,7 @@ Bối cảnh đã cập nhật ngày **2026-11-02**. Frontend có thêm **Develo
 | Báo giá `/quotations` | Form nhập, danh sách/chi tiết và validation nền nối API/PostgreSQL thật; Bearer fixture reader/operator, retry idempotent | Một dataset dùng chung; validator nền chưa có quy tắc nghiệp vụ, chưa rule ngày hoặc artifact/gate |
 | Hạ tầng | PostgreSQL 17.11/pgvector 0.8.7 qua Compose; đã áp dụng migration báo giá và kiểm chứng DB thật | Control có index blob thô; chưa schema approval/deployment hoặc artifact-ready |
 
-App báo giá chạy HTTP độc lập với quyền fixture được backend kiểm tra tại /quotations. Control HTTP lấy scope từ principal và kiểm quyền hiện tại theo tenant/repo; profile dev giữ ba file business, dev có read/propose/test. API chạy bằng Docker local vì DLL psycopg Windows bị chặn. [Setup](docs/general/setup.md#2e-control-dev-trong-docker-khi-python-windows-bị-chặn) có hướng dẫn; [Agent GPT-6.1 Sol](docs/general/setup.md#agent-gpt-61-sol) dùng key private và generation adapter riêng, cần key hợp lệ để gọi model. Chưa fixture báo giá đóng băng, Local Semantic Cache/embedding/matching/verification, Agent tự trị, approval/deployment control, audit nghiên cứu đầy đủ hoặc runner. Review/Phê duyệt/Nhật ký mẫu giữ trong trang UI phụ, không phải bằng chứng quyền. Hội thoại/draft mất khi reload; UI không tự cấp quyền.
+App báo giá chạy HTTP độc lập với quyền fixture được backend kiểm tra tại /quotations. Control HTTP lấy scope từ principal và kiểm quyền hiện tại theo tenant/repo; profile dev giữ ba file business, dev có read/propose/test. API chạy bằng Docker local vì DLL psycopg Windows bị chặn. [Setup](docs/general/setup.md#2e-control-dev-trong-docker-khi-python-windows-bị-chặn) có hướng dẫn; [Agent Gemini](docs/general/setup.md#agent-gemini) dùng key private và generation adapter riêng, cần key hợp lệ để gọi model. Chưa fixture báo giá đóng băng, Local Semantic Cache/embedding/matching/verification, Agent tự trị, approval/deployment control, audit nghiên cứu đầy đủ hoặc runner. Review/Phê duyệt/Nhật ký mẫu giữ trong trang UI phụ, không phải bằng chứng quyền. Hội thoại/draft mất khi reload; UI không tự cấp quyền.
 
 Đã có [luồng sửa/test kỹ thuật T12](docs/system/change-workflow.md) từ Workspace tới Docker/DB test cô lập. Test pass không cấp quyền triển khai hoặc chứng minh correctness của rule ngày; chưa có binding ready cho gate.
 

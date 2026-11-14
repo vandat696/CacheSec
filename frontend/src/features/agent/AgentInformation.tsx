@@ -3,12 +3,13 @@
 import { useEffect, useId, useRef, useState } from "react";
 import { Button } from "@/components/ui/Button";
 import { Icon } from "@/components/ui/Icon";
-import type { AgentConfig } from "./agentApi";
+import { agentModels, type AgentConfig } from "./agentApi";
 
 export function AgentInformation({ config, connected, fileCount, busy, onRefresh }: {
   config: AgentConfig | null; connected: boolean; fileCount: number; busy: boolean; onRefresh: () => void;
 }) {
   const [open, setOpen] = useState(false);
+  const model = agentModels[config?.model ?? "gemini-3.5-flash-lite"];
   const id = useId();
   const root = useRef<HTMLDivElement>(null);
   const trigger = useRef<HTMLButtonElement>(null);
@@ -35,10 +36,10 @@ export function AgentInformation({ config, connected, fileCount, busy, onRefresh
       <Icon name="info" />
     </Button>
     <div id={id} className="agent-information-panel" hidden={!open} role="region" aria-label="Thông tin Agent">
-      <strong>GPT-6.1 Sol</strong>
+      <strong>{model.label}</strong>
       {!connected ? <p>Mở project để bắt đầu.</p> : <>
-        <p>{config ? config.configured ? "Đã cấu hình API key." : "Chưa cấu hình API key OpenAI." : "Đang đọc cấu hình…"}</p>
-        {config && !config.configured && <p>Đặt <code>OPENAI_API_KEY</code> trong <code>backend/.local/agent-config/openai.env</code>, rồi tải lại cấu hình.</p>}
+        <p>{config ? config.configured ? "Đã cấu hình API key." : "Chưa cấu hình API key." : "Đang đọc cấu hình…"}</p>
+        {config && !config.configured && <p>Đặt <code>{model.keyVariable}</code> trong <code>backend/.local/agent-config/{model.keyFile}</code>, rồi tải lại cấu hình.</p>}
         <p>Source gốc · {fileCount} tệp</p>
         <Button variant="secondary" onClick={onRefresh} disabled={busy} aria-label="Tải lại cấu hình Agent">
           <Icon name="refresh" />Tải lại cấu hình

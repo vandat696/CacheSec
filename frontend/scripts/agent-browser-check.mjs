@@ -4,6 +4,24 @@ import { fileURLToPath } from "node:url";
 import { LocalSessionStore } from "../src/features/local-workspace/localSessionStore.ts";
 import { editableSource, replaceEditor, visibleEditorText } from "./editor-browser-actions.mjs";
 
+// Opt-in only: one real provider call, which consumes the configured project's quota.
+export async function checkAgentLive({ navigate, evaluate, waitFor, click, fill, screenshot }) {
+  const store = new LocalSessionStore(fileURLToPath(new URL("../../backend/.local", import.meta.url)));
+  await navigate("/workspace#local-launch=" + await store.issueLaunch());
+  await waitFor("document.querySelector('.repository-panel')?.dataset.connected === 'true'");
+  await waitFor("document.querySelector('.dev-assistant')?.dataset.agentReady === 'true'");
+  await click('button[aria-label="Thông tin Agent"]');
+  assert.ok(await evaluate("document.querySelector('.agent-information-panel').innerText.includes('Gemini 3.5 Flash-Lite')"));
+  await fill("#agent-prompt", "Analyze only: briefly explain quotation_validation.py in Vietnamese. Do not suggest changes; return content=null. Do not claim tests were run.");
+  await click('.dev-composer button[type="submit"]');
+  await waitFor("document.querySelectorAll('.dev-message').length === 2 || !!document.querySelector('.dev-assistant [role=alert]')",
+    "real Gemini response", 900);
+  assert.equal(await evaluate("document.querySelectorAll('.dev-message').length"), 2);
+  assert.ok((await evaluate("document.querySelector('.dev-message.assistant').innerText")).trim().length > 0);
+  assert.equal(await evaluate("document.querySelectorAll('.agent-proposal').length"), 0);
+  await screenshot("workspace-gemini-live.png");
+}
+
 // Generation only is a marked transport double; repository/revisions/test run against real dev APIs.
 export async function checkAgent({ cdp, navigate, evaluate, waitFor, click, fill, key, screenshot }) {
   const store = new LocalSessionStore(fileURLToPath(new URL("../../backend/.local", import.meta.url)));
@@ -15,7 +33,7 @@ export async function checkAgent({ cdp, navigate, evaluate, waitFor, click, fill
     window.fetch = async (url, init) => {
       if (String(url).endsWith('/api/v1/agent/config')) return Response.json({
         meta:{request_id:'aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa',contract_version:'v0.2',identity_mode:'fixture'},
-        data:{model:'gpt-6.1-sol',configured:window.__agentMode !== 'missing',mode:'assisted'} });
+        data:{model:'gemini-3.5-flash-lite',configured:window.__agentMode !== 'missing',mode:'assisted'} });
       if (String(url).endsWith('/api/v1/agent/messages')) {
         const request = JSON.parse(init.body);
         const response = await original('/api/local-control/api/v1/repository/snapshots/'+request.snapshot_id,
@@ -25,7 +43,7 @@ export async function checkAgent({ cdp, navigate, evaluate, waitFor, click, fill
         return Response.json({meta:{request_id:'aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa',contract_version:'v0.2',identity_mode:'fixture'},
           data:{snapshot_id:request.snapshot_id,manifest_digest:snapshot.manifest_digest,repository_identity:snapshot.repository_identity,
             editable_path:'backend/app/quotation_demo/business/quotation_validation.py',
-            answer:'Test-only model response: <img src=x onerror=alert(1)>',content:${JSON.stringify(content)},model:'gpt-6.1-sol',usage:null} });
+            answer:'Test-only model response: <img src=x onerror=alert(1)>',content:${JSON.stringify(content)},model:'gemini-3.5-flash-lite',usage:null} });
       }
       return original(url, init);
     };
@@ -39,7 +57,7 @@ export async function checkAgent({ cdp, navigate, evaluate, waitFor, click, fill
   assert.equal(await evaluate("document.querySelector('.agent-context')"), null);
   await click('button[aria-label="Thông tin Agent"]');
   await waitFor("!document.querySelector('.agent-information-panel').hidden");
-  assert.ok(await evaluate("document.querySelector('.agent-information-panel').innerText.includes('OPENAI_API_KEY')"));
+  assert.ok(await evaluate("document.querySelector('.agent-information-panel').innerText.includes('GEMINI_API_KEY')"));
   await click(".agent-information-panel p");
   assert.equal(await evaluate("document.querySelector('.agent-information-panel').hidden"), false);
   await screenshot("agent-information-desktop.png");

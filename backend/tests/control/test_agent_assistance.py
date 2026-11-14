@@ -8,6 +8,7 @@ from fastapi.testclient import TestClient
 
 from app.agent_assistance.assistance_http import configure_assistance_http
 from app.agent_assistance.assistance_service import AgentAssistanceService
+from app.agent_assistance.gemini_generation import MODEL as GEMINI_MODEL
 from app.agent_assistance.generation import AgentError, GenerationResult
 from app.agent_assistance.openai_generation import MODEL, OpenAIResponsesGeneration, decode_response
 from app.change_workflow.test_profiles import EDITABLE_PATH, OVERLAY_PATHS
@@ -24,7 +25,10 @@ from tests.control.test_change_workflow_integration import workflow as workflow
 
 
 class FakeGeneration:
-    def __init__(self, action=lambda: None, configured=True):
+    model_id = MODEL
+
+    def __init__(self, action=lambda: None, configured=True, model_id=MODEL):
+        self.model_id = model_id
         self.action, self.enabled, self.calls = action, configured, []
 
     def configured(self):
@@ -33,7 +37,12 @@ class FakeGeneration:
     def generate(self, prompt, files, history):
         self.calls.append((prompt, files, history))
         self.action()
-        return GenerationResult("test-only model answer", "test-only source", MODEL, None)
+        return GenerationResult("test-only model answer", "test-only source", self.model_id, None)
+
+
+@pytest.fixture(params=[MODEL, GEMINI_MODEL])
+def model_id(request):
+    return request.param
 
 
 def service(env, model):
@@ -41,8 +50,8 @@ def service(env, model):
     return AgentAssistanceService(access, env.snapshots, model)
 
 
-def test_authorized_context_is_exact_and_generation_never_writes_or_executes(workflow):
-    env, model = workflow, FakeGeneration()
+def test_authorized_context_is_exact_and_generation_never_writes_or_executes(workflow, model_id):
+    env, model = workflow, FakeGeneration(model_id=model_id)
     result = service(env, model).ask(TOKEN, env.snapshot.snapshot_id, "explain", [])
     assert tuple(path for path, _ in model.calls[0][1]) == OVERLAY_PATHS
     assert result["snapshot_id"] == str(env.snapshot.snapshot_id)
@@ -54,8 +63,8 @@ def test_authorized_context_is_exact_and_generation_never_writes_or_executes(wor
         )
 
 
-def test_denied_or_unknown_snapshot_never_reaches_provider(workflow):
-    env, model = workflow, FakeGeneration()
+def test_denied_or_unknown_snapshot_never_reaches_provider(workflow, model_id):
+    env, model = workflow, FakeGeneration(model_id=model_id)
     svc = service(env, model)
     with pytest.raises(ControlResourceUnavailable):
         svc.ask(TOKEN, uuid4(), "explain", [])
@@ -65,22 +74,24 @@ def test_denied_or_unknown_snapshot_never_reaches_provider(workflow):
     assert model.calls == []
 
 
-def test_revocation_during_generation_discards_response(workflow):
+def test_revocation_during_generation_discards_response(workflow, model_id):
     env = workflow
-    model = FakeGeneration(lambda: grants(env, frozenset()))
+    model = FakeGeneration(lambda: grants(env, frozenset()), model_id=model_id)
     with pytest.raises(ControlAccessDenied):
         service(env, model).ask(TOKEN, env.snapshot.snapshot_id, "explain", [])
     assert len(model.calls) == 1
 
 
 @pytest.mark.parametrize("during_generation", [False, True])
-def test_source_changes_before_or_during_generation_discard_suggestion(workflow, during_generation):
+def test_source_changes_before_or_during_generation_discard_suggestion(
+    workflow, during_generation, model_id
+):
     env = workflow
 
     def modify():
         (env.root / EDITABLE_PATH).write_text("changed", encoding="utf-8")
 
-    model = FakeGeneration(modify if during_generation else lambda: None)
+    model = FakeGeneration(modify if during_generation else lambda: None, model_id=model_id)
     if not during_generation:
         modify()
     with pytest.raises(AgentError, match="STALE_SNAPSHOT"):
@@ -88,8 +99,8 @@ def test_source_changes_before_or_during_generation_discard_suggestion(workflow,
     assert len(model.calls) == int(during_generation)
 
 
-def test_http_auth_body_limits_and_errors_do_not_echo_source_or_secret(workflow):
-    env, model = workflow, FakeGeneration(configured=False)
+def test_http_auth_body_limits_and_errors_do_not_echo_source_or_secret(workflow, model_id):
+    env, model = workflow, FakeGeneration(configured=False, model_id=model_id)
     svc = service(env, model)
     app = FastAPI()
     configure_repository_http(app, svc.access, env.snapshots)
@@ -99,7 +110,7 @@ def test_http_auth_body_limits_and_errors_do_not_echo_source_or_secret(workflow)
         headers = {"Authorization": "Bearer " + TOKEN}
         assert client.get("/api/v1/agent/config").status_code == 401
         config = client.get("/api/v1/agent/config", headers=headers)
-        assert config.json()["data"] == {"model": MODEL, "configured": False, "mode": "assisted"}
+        assert config.json()["data"] == {"model": model_id, "configured": False, "mode": "assisted"}
         payload = {"snapshot_id": str(env.snapshot.snapshot_id), "prompt": "explain"}
         result = client.post("/api/v1/agent/messages", json=payload, headers=headers)
         assert (

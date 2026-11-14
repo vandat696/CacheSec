@@ -90,7 +90,7 @@ Không tự chọn thay người dùng/giảng viên các giá trị ảnh hư�
 
 ### T09 — Nối LLM và embedding qua adapter riêng
 
-- **Lát cắt đã có:** người dùng chọn OpenAI `gpt-6.1-sol`; Responses generation adapter, API assistance đọc ba file có quyền/freshness và UI đề xuất → người dùng áp dụng/test đã có implementation. Key private do người dùng cấu hình; xem project-status cho kiểm chứng model thật, không coi provider double là kết nối thật. Chưa embedding/cache hoặc Agent tự điều phối; chưa hoàn thành toàn T09/T14.
+- **Lát cắt đã có:** người dùng chuyển sang Gemini `gemini-3.5-flash-lite`; generateContent adapter, API assistance đọc ba file có quyền/freshness và UI đề xuất → người dùng áp dụng/test đã có implementation. OpenAI Responses adapter giữ riêng, không tự fallback. Key private do người dùng cấu hình; xem project-status cho kiểm chứng model thật, không coi provider double là kết nối thật. Chưa embedding/cache hoặc Agent tự điều phối; chưa hoàn thành toàn T09/T14.
 
 - [ ] Hoàn thành T09. **Phụ thuộc:** T01–T02, T06 và T08.
 - **Làm:** chọn provider/model/config đã xác nhận, tách generation khỏi embedding; chuẩn hóa usage, timeout, retry, lỗi và provenance đầu vào. Chỉ kết nối embedding khi lát cắt cần; không thêm nhiều provider hoặc SDK ngoài nhu cầu.

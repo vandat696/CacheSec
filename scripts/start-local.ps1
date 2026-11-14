@@ -69,9 +69,9 @@ try {
     New-Item -ItemType Directory -Path $logs -Force | Out-Null
     $agentConfig = Join-Path $localRoot 'agent-config'
     New-Item -ItemType Directory -Path $agentConfig -Force | Out-Null
-    $agentKeyFile = Join-Path $agentConfig 'openai.env'
+    $agentKeyFile = Join-Path $agentConfig 'gemini.env'
     if (-not (Test-Path -LiteralPath $agentKeyFile)) {
-        [IO.File]::WriteAllText($agentKeyFile, "OPENAI_API_KEY=`n", [Text.UTF8Encoding]::new($false))
+        [IO.File]::WriteAllText($agentKeyFile, "GEMINI_API_KEY=`n", [Text.UTF8Encoding]::new($false))
     }
     $launcherLock = [IO.File]::Open((Join-Path $logs 'launcher.lock'), 'OpenOrCreate', 'ReadWrite', 'None')
     & $python -X utf8 $helper prepare

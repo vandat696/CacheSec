@@ -1,4 +1,5 @@
 from pathlib import Path
+from typing import Literal
 
 from pydantic import Field, SecretStr, field_validator
 from pydantic_settings import BaseSettings, SettingsConfigDict
@@ -17,6 +18,7 @@ class Settings(BaseSettings):
     control_test_profile_config: Path | None = Field(default=None, repr=False)
     control_test_worker_token: SecretStr | None = Field(default=None, repr=False)
     control_agent_config: Path | None = Field(default=None, repr=False)
+    control_agent_provider: Literal["gemini", "openai"] = "gemini"
 
     @field_validator("database_url", mode="before")
     @classmethod
