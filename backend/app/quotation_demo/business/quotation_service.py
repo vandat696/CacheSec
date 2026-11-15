@@ -1,3 +1,4 @@
+from datetime import date
 from uuid import UUID
 
 from app.quotation_demo.business.quotation_models import (
@@ -34,12 +35,14 @@ class QuotationService:
         access: QuotationAccess,
         *,
         max_page_size: int,
+        reference_date: date | None = None,
     ) -> None:
         if type(max_page_size) is not int or max_page_size < 1:
             raise ValueError("Maximum page size must be a positive integer.")
         self._transactions = transactions
         self._access = access
         self._max_page_size = max_page_size
+        self._reference_date = reference_date
 
     def create(self, data: QuotationCreate, *, idempotency_key: str) -> QuotationRecord:
         self._access.require(QuotationCapability.CREATE)
@@ -61,7 +64,10 @@ class QuotationService:
     def validate(self, quotation_id: UUID) -> QuotationValidation:
         self._access.require(QuotationCapability.READ)
         self._access.require(QuotationCapability.VALIDATE)
-        return validate_quotation(self._read_record(quotation_id))
+        quotation = self._read_record(quotation_id)
+        if self._reference_date is None:
+            return validate_quotation(quotation)
+        return validate_quotation(quotation, reference_date=self._reference_date)
 
     def _read_record(self, quotation_id: UUID) -> QuotationRecord:
         with self._transactions.open() as repository:

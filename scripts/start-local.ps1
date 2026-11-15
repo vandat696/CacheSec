@@ -79,6 +79,10 @@ try {
     $profile = Get-Content -LiteralPath (Join-Path $localRoot 'test-profile.json') -Raw | ConvertFrom-Json
     $env:CACHESEC_ROOT = $workspaceRoot
     $env:CACHESEC_QUOTATION_RUNTIME_IMAGE = $profile.runtime_image
+    $bootstrapImageFile = Join-Path $localRoot 'bootstrap-runtime-image.txt'
+    if (Test-Path -LiteralPath $bootstrapImageFile) {
+        $env:CACHESEC_QUOTATION_RUNTIME_IMAGE = (Get-Content -LiteralPath $bootstrapImageFile -Raw).Trim()
+    }
     $image = & docker image inspect $profile.runtime_image | ConvertFrom-Json
     if ($LASTEXITCODE -ne 0 -or $image[0].Id -ne $profile.runtime_image -or
             "$($image[0].Os)/$($image[0].Architecture)" -ne $profile.platform) {
@@ -89,7 +93,7 @@ try {
     if ($LASTEXITCODE -ne 0) { throw 'Cannot inspect the existing baseline API.' }
     foreach ($containerId in $existingQuotation) {
         $baseline = & docker inspect $containerId | ConvertFrom-Json
-        if ($LASTEXITCODE -ne 0 -or $baseline[0].Config.Image -ne $profile.runtime_image) {
+        if ($LASTEXITCODE -ne 0 -or $baseline[0].Config.Image -ne $env:CACHESEC_QUOTATION_RUNTIME_IMAGE) {
             throw 'The test runtime differs from the existing baseline API. Its image has not been replaced.'
         }
     }
@@ -102,8 +106,12 @@ try {
         'up', '-d', '--no-build', '--wait', 'control')
     & $python -X utf8 $helper probe-control
     if ($LASTEXITCODE -ne 0) { throw 'The local profile does not match the configured control workflow.' }
-    Invoke-Docker -DockerArgs @('compose', '-f', (Join-Path $workspaceRoot 'infra\quotation.compose.yaml'),
-        'up', '-d', '--no-build', '--wait', 'quotation')
+    $runtimeState = & $python -X utf8 $helper runtime-state
+    if ($LASTEXITCODE -ne 0) { throw 'Runtime state needs reconciliation. The baseline has not been restarted.' }
+    if ($runtimeState -eq 'baseline') {
+        Invoke-Docker -DockerArgs @('compose', '-f', (Join-Path $workspaceRoot 'infra\quotation.compose.yaml'),
+            'up', '-d', '--no-build', '--wait', 'quotation')
+    } elseif ($runtimeState -ne 'active') { throw 'Unknown runtime state; no app was started.' }
     & $python -X utf8 $helper probe
     if ($LASTEXITCODE -ne 0) { throw 'API/database probe failed. Existing credentials and schema were not changed.' }
 

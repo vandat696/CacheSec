@@ -10,6 +10,7 @@ from app.identity.control_authority import RepositoryScope
 from app.repositories.repository_snapshots import SnapshotSession
 from app.repositories.snapshot_bundles import SnapshotBundle
 from app.repositories.snapshot_models import CapturedSourceFile, RepositorySnapshot
+from app.workspace_runtime.operation_repository import OperationRepository
 
 
 class WorkflowError(Exception):
@@ -49,6 +50,7 @@ class WorkflowRepository(Protocol):
 class WorkflowSession:
     snapshot: SnapshotSession
     workflow: WorkflowRepository
+    workspace: OperationRepository | None = None
 
 
 class WorkflowTransactions(Protocol):

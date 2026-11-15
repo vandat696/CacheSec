@@ -37,6 +37,7 @@ class TechnicalTestProfile:
     protected_files: tuple[tuple[str, str], ...]
     deadline_seconds: int = 120
     platform: str = "linux/amd64"
+    validation_task: str = "regression"
 
     def __post_init__(self):
         for image in (self.runtime_image, self.harness_image, self.database_image):
@@ -54,9 +55,19 @@ class TechnicalTestProfile:
             or not 5 <= self.deadline_seconds <= 120
         ):
             raise ValueError("Invalid technical test limits.")
+        if self.validation_task not in {"regression", "expiration-review-v1"}:
+            raise ValueError("Unknown validation task")
+
+    @property
+    def checks(self):
+        if self.validation_task == "regression":
+            return CHECK_NAMES
+        from app.testing.expiration_checks import CASES
+
+        return (*CHECK_NAMES, *(case[0] for case in CASES))
 
     def metadata(self) -> dict:
-        return {
+        metadata = {
             "kind": "quotation-technical-test-profile",
             "schema_version": 1,
             "runtime_image": self.runtime_image,
@@ -75,9 +86,12 @@ class TechnicalTestProfile:
             "pids": 128,
             "tmpfs_mib": 64,
             "output_bytes_per_stream": 1048576,
-            "checks": list(CHECK_NAMES),
+            "checks": list(self.checks),
             "purpose": "technical-smoke",
         }
+        if self.validation_task != "regression":
+            metadata.update(validation_task=self.validation_task, reference_date="2026-11-07")
+        return metadata
 
     @property
     def digest(self) -> str:
@@ -100,6 +114,7 @@ class TechnicalTestProfile:
                 )
             },
             protected_files=tuple(sorted(data["protected_files"].items())),
+            validation_task=data.get("validation_task", "regression"),
         )
         if encode_metadata(data) != encode_metadata(profile.metadata()):
             raise ValueError("Profile does not match the registered recipe.")

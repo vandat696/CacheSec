@@ -34,20 +34,8 @@ services:
         bind:
           create_host_path: false
       - type: bind
-        source: ${CACHESEC_ROOT:?Set CACHESEC_ROOT}/backend/app/quotation_demo/business/quotation_models.py
-        target: /source/backend/app/quotation_demo/business/quotation_models.py
-        read_only: true
-        bind:
-          create_host_path: false
-      - type: bind
-        source: ${CACHESEC_ROOT:?Set CACHESEC_ROOT}/backend/app/quotation_demo/business/quotation_service.py
-        target: /source/backend/app/quotation_demo/business/quotation_service.py
-        read_only: true
-        bind:
-          create_host_path: false
-      - type: bind
-        source: ${CACHESEC_ROOT:?Set CACHESEC_ROOT}/backend/app/quotation_demo/business/quotation_validation.py
-        target: /source/backend/app/quotation_demo/business/quotation_validation.py
+        source: ${CACHESEC_ROOT:?Set CACHESEC_ROOT}/backend/app/quotation_demo/business
+        target: /source/backend/app/quotation_demo/business
         read_only: true
         bind:
           create_host_path: false

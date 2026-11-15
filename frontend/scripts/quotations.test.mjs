@@ -114,7 +114,7 @@ test("validation rejects mismatched quotation IDs, missing metadata and fabricat
     { ...baselineValidation, quotation_id: "bbbbbbbb-bbbb-4bbb-8bbb-bbbbbbbbbbbb" },
     { ...baselineValidation, evaluated_rules: undefined },
     { ...baselineValidation, flags: [{ code: "x", field: "expires_on" }] },
-    { ...baselineValidation, reference_date: "2026-11-07" },
+    { ...baselineValidation, reference_date: "2026-02-30" },
     { ...baselineValidation, active_artifact: { id: "pretend", digest: "client value" } },
   ]) {
     const api = new QuotationHttpClient("http://local.test", "test-only-token", async () =>
@@ -126,6 +126,12 @@ test("validation rejects mismatched quotation IDs, missing metadata and fabricat
       Response.json({ error: { message: "do-not-echo" }, meta }, { status }));
     await assert.rejects(api.validate(id, signal()), (error) => error.status === status && !error.message.includes("do-not-echo"));
   }
+});
+
+test("validation accepts the real configured reference date without inventing an active artifact", async () => {
+  const data = { ...baselineValidation, reference_date: "2026-11-07" };
+  const api = new QuotationHttpClient("http://local.test", "test-only-token", async () => Response.json({ data, meta }));
+  assert.equal((await api.validate(id, signal())).data.reference_date, "2026-11-07");
 });
 
 test("does not echo untrusted server errors or treat an invalid response as success", async () => {

@@ -2,9 +2,9 @@
 
 ## Trạng thái và ranh giới
 
-Mốc hoàn tất 2026-11-12 đã thêm kiểm quyền hiện tại cho lưu proposal/chạy test, kiểm lại credential/grants/source/artifact tại dispatch và private worker report. Dev chỉ có read/propose/test; [workflow T12](change-workflow.md) sở hữu chi tiết sandbox/recovery. Permit test không phải permit deployment; chưa có reviewer hoặc approval gate thực thi.
+Cập nhật 2026-11-15: ngoài proposal/test và Agent, đã có [source write và gate local](workspace-runtime.md) với quyền repository.write/change.review/deployment.read/deployment.activate riêng. Dev được cấu hình tường minh các quyền này theo yêu cầu Workspace thật; startup không tự cấp quyền. Approval cần human click cho chính artifact/evidence, không có tool approve/deploy trong Agent. Permit test vẫn không phải permit deployment. Phần nghiên cứu đầy đủ và cache verification còn theo các điều kiện mở bên dưới.
 
-Phần quyền API báo giá, registry control và snapshot có kiểm quyền đã có implementation nội bộ; cache verification, reviewer workflow và approval/deployment gate bên dưới vẫn là **thiết kế mục tiêu**. UI RBAC/ABAC không thực thi quyền. Safety property duy nhất từ giảng viên là: **không triển khai thay đổi quy tắc validation nếu chưa có người có thẩm quyền phê duyệt tường minh chính xác thay đổi đó**.
+Quyền app/registry/snapshot, source write và gate local đã có implementation; cache verification và các phần nghiên cứu/mở rộng chưa được xác nhận vẫn là thiết kế mục tiêu. Các mục đề xuất bên dưới không thay bằng chứng/giới hạn của [runtime local](workspace-runtime.md). UI RBAC/ABAC không thực thi quyền. Safety property duy nhất từ giảng viên: **không triển khai thay đổi quy tắc validation nếu chưa có người có thẩm quyền phê duyệt tường minh chính xác thay đổi đó**.
 
 | Cơ chế | Quyết định | Không được suy ra |
 | --- | --- | --- |

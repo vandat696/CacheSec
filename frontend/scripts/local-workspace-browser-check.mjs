@@ -38,7 +38,7 @@ export async function checkLocalWorkspace({ cdp, navigate, evaluate, waitFor, cl
   const original = await evaluate(visibleEditorText);
   await replaceEditor({ cdp, evaluate }, original + "\n# Local session browser check.\n");
   await editorShortcut(cdp, "s");
-  await waitFor("document.querySelector('.repository-save-status')?.textContent === 'Đã lưu'");
+  await waitFor("document.querySelector('.repository-save-status')?.textContent.startsWith('Đã lưu')");
   await click("#change-test");
   await waitFor("document.querySelector('.change-test-run')?.dataset.status === 'passed'", "Local session Docker test");
   requests.push(...await evaluate("window.__workspaceRequests"));

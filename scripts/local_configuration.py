@@ -3,6 +3,7 @@
 import argparse
 import errno
 import json
+import subprocess
 import sys
 import urllib.error
 import urllib.request
@@ -125,9 +126,53 @@ def probe():
     print("Control workflow and quotation database: OK")
 
 
+def runtime_state():
+    local = ROOT / "backend/.local"
+    worker = json.loads((local / "test-worker.json").read_text(encoding="utf-8"))
+    if not worker.get("runtime"):
+        print("baseline")
+        return
+    token = dotenv_values(local / "control-access.env")["CONTROL_REPOSITORY_READ_TOKEN"]
+    request = urllib.request.Request(
+        "http://127.0.0.1:8000/api/v1/changes/workspace/config",
+        headers={"Authorization": "Bearer " + token},
+    )
+    opener = urllib.request.build_opener(urllib.request.ProxyHandler({}))
+    with opener.open(request, timeout=5) as response:
+        target = json.load(response)["data"]
+    if not target["configured"] or target["pending_id"]:
+        raise ValueError("Runtime target needs reconciliation")
+    if target["target_version"] == 0:
+        print("baseline")
+        return
+    result = subprocess.run(
+        [
+            "docker",
+            "ps",
+            "--filter",
+            "label=cachesec.local-target=quotations",
+            "--format",
+            "{{.Names}}",
+        ],
+        capture_output=True,
+        check=True,
+    )
+    names = result.stdout.decode("ascii").splitlines()
+    if len(names) != 1 or not target["active_artifact"]:
+        raise ValueError("Do not restart baseline over a registered runtime")
+    info = json.loads(
+        subprocess.run(["docker", "inspect", names[0]], capture_output=True, check=True).stdout
+    )[0]
+    if info["Config"]["Labels"].get("cachesec.local-artifact") != target["active_artifact"]:
+        raise ValueError("Runtime artifact differs")
+    print("active")
+
+
 def main():
     parser = argparse.ArgumentParser(description=__doc__)
-    parser.add_argument("action", choices=("prepare", "worker-state", "probe-control", "probe"))
+    parser.add_argument(
+        "action", choices=("prepare", "worker-state", "probe-control", "probe", "runtime-state")
+    )
     args = parser.parse_args()
     try:
         {
@@ -135,6 +180,7 @@ def main():
             "worker-state": worker_state,
             "probe-control": probe_control,
             "probe": probe,
+            "runtime-state": runtime_state,
         }[args.action]()
     except Exception:
         print(

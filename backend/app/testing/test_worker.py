@@ -9,6 +9,7 @@ from uuid import UUID
 
 from app.testing.docker_test_executor import DockerTestExecutor, result
 from app.testing.worker_client import WorkerApiError, WorkerClient
+from app.workspace_runtime.host_operations import HostWorkspaceOperations
 
 
 def recover_owned(client, executor):
@@ -51,12 +52,26 @@ def main():
     worker_id = UUID(config["worker_id"])
     client = WorkerClient(config["api_url"], credential, worker_id)
     executor = DockerTestExecutor(root, worker_id)
+    workspace = None
+    if config.get("source_root") and config.get("runtime"):
+        workspace = HostWorkspaceOperations(
+            WorkerClient(config["api_url"], credential, worker_id, "workspace-worker"),
+            root,
+            worker_id,
+            config["source_root"],
+            config["runtime"],
+        )
+        workspace.recover()
     recover_owned(client, executor)
     print("Technical test worker ready", flush=True)
     while not lock.stream.closed:
         try:
             # Also reconcile a claim whose HTTP response was lost after backend commit.
             recover_owned(client, executor)
+            if workspace:
+                workspace.recover()
+                if workspace.execute_one():
+                    continue
             job = client.post("claim")
         except (WorkerApiError, OSError):
             time.sleep(2)

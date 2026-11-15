@@ -1,4 +1,5 @@
 from dataclasses import dataclass
+from datetime import date
 from uuid import UUID
 
 from app.quotation_demo.business.quotation_models import QuotationRecord
@@ -17,11 +18,13 @@ class QuotationValidation:
     flags: tuple[QuotationFlag, ...]
     evaluated_rules: tuple[str, ...]
     validation_config_ref: str
-    reference_date: None = None
+    reference_date: date | None = None
     active_artifact: None = None
 
 
-def validate_quotation(quotation: QuotationRecord) -> QuotationValidation:
+def validate_quotation(
+    quotation: QuotationRecord, *, reference_date: date | None = None
+) -> QuotationValidation:
     """Evaluate the original application's business rules, independently of delivery/storage.
 
     This baseline intentionally has no business rules after input-contract validation.
@@ -33,4 +36,5 @@ def validate_quotation(quotation: QuotationRecord) -> QuotationValidation:
         flags=(),
         evaluated_rules=(),
         validation_config_ref="quotation-baseline-v1",
+        reference_date=reference_date,
     )

@@ -1,5 +1,33 @@
 # Chạy môi trường phát triển
 
+## Workspace ghi file và chạy bản đã duyệt
+
+Mở stack bằng `npm --prefix frontend run local`, vào `/workspace`. Phiên dev đã được cấu hình tường minh khả năng ghi source và self-review/chạy local; đăng nhập/cookie không tự cấp quyền. [Luồng và giới hạn](../system/workspace-runtime.md) phân biệt lưu source, test và activation.
+
+1. Sửa code hoặc yêu cầu Agent tự sửa/test rồi mở bản sửa. Chỉ file validation được ghi; Explorer giữ hai file phụ thuộc read-only.
+2. Ctrl+S ghi file project thật và hiện Đã lưu vào project sau ACK worker. Undo rồi Ctrl+S lưu lại bản trước; file đổi ngoài editor sẽ conflict. Nếu nút là Lưu revision, phiên chưa có repository.write.
+3. Chạy test. Profile dev expiration-review-v1 có 5 check nền và 16 check ngày với R=2026-11-07; baseline chưa có rule nên các check ngày thất bại là đúng trạng thái xuất phát. Không coi check kỹ thuật là acceptance nghiên cứu.
+4. Khi test đúng revision đạt, chọn Chạy ứng dụng, đọc diff/artifact rồi Phê duyệt và chạy bản này. Backend mới kích hoạt app tại cổng 8001; mở Báo giá để kiểm hành vi thật. Agent không tự duyệt. Không mount working tree hay bật auto-reload để bỏ gate.
+
+Owner cấu hình lần đầu/đổi profile bằng CLI tường minh, không phải startup:
+
+```powershell
+# Từ thư mục backend; Docker đang chạy, app/control/schema nền đã provisioning.
+docker build -f Dockerfile.quotation-test --target runtime -t cachesec-quotation-runtime:workspace .
+docker build -f Dockerfile.quotation-test --target harness -t cachesec-quotation-harness:workspace .
+.venv/Scripts/python.exe -m app.testing.build_test_profile --runtime cachesec-quotation-runtime:workspace --harness cachesec-quotation-harness:workspace --database pgvector/pgvector:0.8.7-pg17-trixie --validation-task expiration-review-v1 --output C:/absolute/private/new-profile.json
+# Từ root repo, chỉ khi target chưa active/pending; giữ principal/credential và grants cũ.
+backend/.venv/Scripts/python.exe -X utf8 scripts/configure_workspace_runtime.py --profile C:/absolute/private/new-profile.json
+```
+
+CLI áp migration 005, CAS authority, đăng ký profile/target, thêm đúng repository.write/deployment.read/change.review/deployment.activate cho principal dev hiện có, cấu hình DB role app tối thiểu và worker source_root/runtime. Không tạo approval hay activate candidate. Target active/pending chặn ghi đè cấu hình. Cần restart control và đúng worker/frontend của project để nạp file private/image mới; không xóa volume/DB hoặc tự khôi phục baseline lên target đã deploy. Giữ ACL `.local` như hướng dẫn hiện có; không đưa các file private vào Git.
+
+Kiểm chứng không gọi provider: `APP_URL=http://127.0.0.1:3000` và `node scripts/browser-smoke.mjs --workspace-files` từ frontend (PowerShell đặt biến bằng `$env:APP_URL = 'http://127.0.0.1:3000'`). Edge ghi một comment rồi Undo/Ctrl+S và đối chiếu bytes; có đường phục hồi qua backend nếu check UI lỗi. Legacy smoke sửa revision-only (`--code-changes`, `--local-workspace`, `--agent`, `--agent-live`, `--agent-run-live`, `--workbench`) chặn sớm khi dev có source write, tránh sửa file thật theo kỳ vọng cũ. `--agent-runs` dùng doubles vẫn là kiểm UI riêng.
+
+`backend/tests/testing/manual_workspace_runtime.py PROFILE_JSON PRIVATE_ROOT` kiểm toàn luồng source/HTTP/PostgreSQL/Docker/gate trên project/cổng 18000–18001 riêng; cần PostgreSQL test tên cachesec-workspace-check-db trên network cachesec-workspace-check với credential giả được ghi rõ trong helper. Nó không gọi model và không dùng DB dev. Resource cleanup đối chiếu label/operation; lưu result.json private, không commit. Helper là kiểm chứng phát triển, không phải runner nghiên cứu.
+
+Nếu muốn khởi tạo một task rule ngày qua provider thật ngoài UI: đọc prompt trong `scripts/run_workspace_task.py`, rồi chạy `backend/.venv/Scripts/python.exe -X utf8 scripts/run_workspace_task.py --send-to-provider --output backend/.local/new-task-result.json`. Lệnh gửi ba source file/prompt/feedback tới provider đã cấu hình, tạo revision/test, không ghi working tree hoặc approve/deploy. Key vẫn private; source egress cần được người khởi tạo cho phép. File output mới lưu refs/checks/usage, không token/prompt/source. Lượt thật không phải benchmark.
+
 ## Phạm vi hướng dẫn
 
 ### Mở toàn bộ stack local bằng một lệnh

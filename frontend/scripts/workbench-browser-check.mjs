@@ -41,7 +41,7 @@ export async function checkWorkbench({ cdp, navigate, evaluate, waitFor, click, 
   assert.ok((await evaluate(visibleEditorText)).includes("Unsaved navigation draft"));
   await evaluate("document.querySelector('.source-editor:not([hidden]) .cm-content').focus()");
   await editorShortcut(cdp, "s");
-  await waitFor("document.querySelector('.repository-save-status').textContent === 'Đã lưu'");
+  await waitFor("document.querySelector('.repository-save-status').textContent.startsWith('Đã lưu')");
   await click('.dev-quotation-link'); await waitFor("location.pathname === '/quotations'");
   assert.equal(await evaluate("document.querySelector('#quotation-supplier').value"), "Draft retained across views");
   assert.equal(await evaluate("document.querySelector('.quotation-details').dataset.quotationId"), quotationId);
@@ -51,7 +51,7 @@ export async function checkWorkbench({ cdp, navigate, evaluate, waitFor, click, 
   await waitFor(workspaceConnected); await waitFor(quotationConnected);
   await waitFor("document.querySelector('.quotation-details')?.dataset.quotationId === " + JSON.stringify(quotationId));
   await click('.sidebar a[href="/workspace"]'); await waitFor("location.pathname === '/workspace'");
-  await waitFor("document.querySelector('.repository-save-status')?.textContent === 'Đã lưu'");
+  await waitFor("document.querySelector('.repository-save-status')?.textContent.startsWith('Đã lưu')");
   assert.equal(await evaluate("new URL(location.href).searchParams.get('proposal')"), proposalId);
   await evaluate("document.querySelector('.source-editor:not([hidden]) .cm-content').focus()");
   await cdp("Input.dispatchKeyEvent", { type: "keyDown", key: "End", code: "End", windowsVirtualKeyCode: 35, modifiers: 2 });

@@ -40,7 +40,7 @@ export async function checkCodeChanges({ cdp, navigate, evaluate, waitFor, click
   await editorShortcut(cdp, "y");
   await waitFor("!document.querySelector('#change-save').disabled");
   await editorShortcut(cdp, "s");
-  await waitFor("document.querySelector('#change-save').disabled && document.querySelector('.repository-save-status').textContent === 'Đã lưu'");
+  await waitFor("document.querySelector('#change-save').disabled && document.querySelector('.repository-save-status').textContent.startsWith('Đã lưu')");
   assert.equal(await evaluate("document.querySelectorAll('.change-test-run').length"), 0, "Ctrl+S must not run tests");
   await click('[data-console-tab="details"]');
   const proposalId = await evaluate("document.querySelector('.change-reference dd').textContent");

@@ -16,7 +16,7 @@ export type QuotationValidation = {
   flags: QuotationFlag[];
   evaluated_rules: string[];
   validation_config_ref: string;
-  reference_date: null;
+  reference_date: string | null;
   active_artifact: null;
 };
 export type ExpirationMode = "text" | "missing" | "null" | "json";

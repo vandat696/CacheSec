@@ -173,13 +173,18 @@ class DockerTestExecutor:
                 f"QUOTATION_FIXTURE_READER_TOKEN={reader}\n",
                 encoding="utf-8",
             )
+            if profile.validation_task == "expiration-review-v1":
+                with env.open("a", encoding="utf-8") as stream:
+                    stream.write("QUOTATION_REFERENCE_DATE=2026-11-07\n")
             db_env = private / "db.env"
             db_env.write_text(
                 f"POSTGRES_PASSWORD={admin}\nPOSTGRES_DB=cachesec_test\n", encoding="utf-8"
             )
             harness_env = private / "harness.env"
             harness_env.write_text(
-                f"TEST_OPERATOR_TOKEN={operator}\nTEST_READER_TOKEN={reader}\n", encoding="utf-8"
+                f"TEST_OPERATOR_TOKEN={operator}\nTEST_READER_TOKEN={reader}\n"
+                f"TEST_VALIDATION_TASK={profile.validation_task}\n",
+                encoding="utf-8",
             )
             docker(
                 ["network", "create", "--internal", *labels, names["network"]], deadline=deadline

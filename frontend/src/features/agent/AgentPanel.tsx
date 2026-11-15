@@ -58,7 +58,7 @@ export function AgentPanel({ repo, hidden, guardAction, onOpenProposal }: {
   async function send(event: FormEvent) {
     event.preventDefault();
     if (!api || !repo.snapshot || !config?.configured || blocked || !draft.trim()) return;
-    const prompt = draft.trim(), snapshot = repo.snapshot;
+    const prompt = draft.trim(), snapshot = repo.contextSnapshot ?? repo.snapshot;
     if (automatic) {
       if (!config.automation?.can_start) return;
       if (await automation.start(snapshot.snapshot_id, prompt)) setDraft("");
@@ -85,7 +85,7 @@ export function AgentPanel({ repo, hidden, guardAction, onOpenProposal }: {
     const key = attempts.current.get(reply) ?? crypto.randomUUID(); attempts.current.set(reply, key);
     setBusy(true); setError("");
     try {
-      const revision = await repo.changes.save(repo.snapshot.snapshot_id, reply.content, null, key, controller.signal);
+      const revision = await repo.changes.save(reply.snapshot_id, reply.content, null, key, controller.signal);
       if (!controller.signal.aborted) { setSaved({ reply, revision }); onOpenProposal(revision.proposal_id); }
     } catch (value) { if (!controller.signal.aborted) fail(value); }
     finally { if (!controller.signal.aborted) setBusy(false); }

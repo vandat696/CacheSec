@@ -12,6 +12,8 @@ const routes: Record<string, RegExp[]> = {
     new RegExp(`^/api/v1/agent/runs/${uuid}/cancel$`),
     new RegExp(`^/api/v1/changes/proposals(?:/${uuid}/(?:revisions|tests))?$`)],
 };
+routes.GET.push(/^\/api\/v1\/changes\/workspace\/config$/, new RegExp(`^/api/v1/changes/workspace/operations/${uuid}$`));
+routes.POST.push(/^\/api\/v1\/changes\/workspace\/(?:source|approvals|activations)$/);
 const quotationRoutes: Record<string, RegExp[]> = {
   GET: [new RegExp(`^/api/v1/quotations(?:/${uuid})?$`)],
   POST: [new RegExp(`^/api/v1/quotations(?:/${uuid}/validate)?$`)],

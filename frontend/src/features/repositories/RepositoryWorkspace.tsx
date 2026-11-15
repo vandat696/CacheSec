@@ -11,6 +11,7 @@ import { CodeChangesPanel } from "../code-changes/CodeChangesPanel";
 import { SourceEditor } from "../code-changes/SourceEditor";
 import { UnsavedChangesDialog } from "../code-changes/UnsavedChangesDialog";
 import { useCodeChanges } from "../code-changes/useCodeChanges";
+import { LocalRuntimeControls } from "../code-changes/LocalRuntimeControls";
 import { EditorTabs } from "./navigation/EditorTabs";
 import { RepositoryExplorer } from "./navigation/RepositoryExplorer";
 import type { SnapshotFile } from "./repositoryApi";
@@ -25,7 +26,7 @@ export function RepositoryWorkspace({ repo, ref }: { repo: ReturnType<typeof use
   const editable = snapshot.files.find(file => file.path === editablePath);
   const original = editable ? repo.openedFiles[editable.file_id]?.raw : null;
   const change = useCodeChanges(original !== null && original !== undefined ? repo.changes : null,
-    snapshot.snapshot_id, original ?? "", repo.repository!.repository_identity, repo.disconnect, repo.restoredRevision);
+    snapshot.snapshot_id, original ?? "", repo.repository!.repository_identity, repo.disconnect, repo.restoredRevision, repo.sourceSaved);
   const [tabs, setTabs] = useState<SnapshotFile[]>(repo.selected ? [repo.selected] : []);
   const [activeId, setActiveId] = useState<string | null>(repo.selected?.file_id ?? null);
   const [consoleTab, setConsoleTab] = useState<"tests" | "diff" | "details">("tests");
@@ -91,7 +92,7 @@ export function RepositoryWorkspace({ repo, ref }: { repo: ReturnType<typeof use
   async function save() {
     if (!change.dirty || !change.config?.can_propose || change.busy) return false;
     const ok = await change.save();
-    if (ok) setSavedNotice("Đã lưu");
+    if (ok) setSavedNotice(change.workspaceConfig?.can_write ? "Đã lưu vào project" : "Đã lưu revision");
     else setConsoleTab("tests");
     return ok;
   }
@@ -108,9 +109,12 @@ export function RepositoryWorkspace({ repo, ref }: { repo: ReturnType<typeof use
         aria-expanded={explorerOpen} onClick={() => setExplorerOpen(value => !value)}><Icon name="menu" /></Button>
       <strong>CacheSec</strong>
       <span className="repository-save-status" role="status">{change.dirty ? "Chưa lưu" : savedNotice || (change.saved ? "Đã lưu" : "")}</span>
-      <Button id="change-save" variant="secondary" title="Lưu (Ctrl+S)" onClick={() => { void save(); }} disabled={!canSave}>Lưu <kbd>Ctrl S</kbd></Button>
+      <Button id="change-save" variant="secondary" title="Lưu (Ctrl+S)" onClick={() => { void save(); }} disabled={!canSave}>
+        {change.workspaceConfig?.can_write ? "Lưu" : "Lưu revision"} <kbd>Ctrl S</kbd></Button>
       <Button id="change-test" onClick={() => { void runTests(); }} disabled={!canTest} loading={change.busy}
         loadingLabel="Đang gửi…"><Icon name="terminal" />{pending ? "Đang kiểm thử…" : "Chạy test"}</Button>
+      <LocalRuntimeControls api={repo.changes} config={change.workspaceConfig} revision={change.saved}
+        jobs={change.jobs} dirty={change.dirty} disabled={change.busy || pending} />
     </div>
     <div className="repository-source repository-workspace-body">
       <RepositoryExplorer files={snapshot.files} activeId={activeId}

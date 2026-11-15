@@ -1,5 +1,6 @@
 import assert from "node:assert/strict";
 import { fileURLToPath } from "node:url";
+import { readFile } from "node:fs/promises";
 import { LocalSessionStore } from "../src/features/local-workspace/localSessionStore.ts";
 
 // All Agent run/config endpoints here are marked transport doubles. No model or test executor is called.
@@ -195,6 +196,54 @@ export async function checkAgentRuns({ cdp, navigate, evaluate, waitFor, click, 
     await cdp('Input.dispatchMouseEvent', {type:'mouseMoved',x:10,y:10});
     await waitFor(`${scrollHost}.dataset.scrollbarsVisible === 'false'`);
     await evaluate(`${scroll}.scrollTop=0`);
+    // Test-only revision/runtime transport: inspect/cancel/confirm the review dialog.
+    // The real source/worker/runtime path is verified separately by --workspace-files and manual_workspace_runtime.py.
+    const sourceText = await readFile(fileURLToPath(new URL("../../backend/app/quotation_demo/business/quotation_validation.py", import.meta.url)), 'utf8');
+    await evaluate(`(() => {
+      const original=window.fetch.bind(window), id='aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa', hash='sha256:'+'a'.repeat(64);
+      const meta={request_id:id,contract_version:'v0.2',identity_mode:'fixture'};
+      const content=${JSON.stringify(sourceText)};
+      window.__runtimeUIRequests=[];
+      window.fetch=async (url, init={}) => {
+        const path=String(url);
+        if(path.endsWith('/changes/proposals/'+id)) {
+          const config=(await (await original('/api/local-control/api/v1/changes/config',{headers:{'X-CacheSec-Workspace':'1'},credentials:'same-origin'})).json()).data;
+          const profile=config.profile_digest;
+          window.__runtimeUIProfile=profile;
+          return Response.json({meta,data:{proposal_id:id,revision:1,base_snapshot_id:window.__agentRun.snapshot_id,
+            candidate_snapshot_id:window.__agentRun.snapshot_id,artifact_digest:hash,patch_digest:hash,profile_digest:profile,
+            created_at:'test-only timestamp',path:'backend/app/quotation_demo/business/quotation_validation.py',
+            base_text:content,content,diff:'Test-only review dialog fixture; no project file changes.',tests:[{
+              job_id:id,proposal_id:id,revision:1,artifact_digest:hash,profile_digest:profile,status:'passed',evidence_digest:hash,
+              result:{outcome:'passed',reason:'COMPLETED',elapsed_ms:1,checks:['identity_required','record_round_trip','reader_write_denied','idempotent_retry','validation_contract'].map(name=>({name,passed:true}))}
+            }]}});
+        }
+        if(path.endsWith('/workspace/approvals') || path.endsWith('/workspace/activations')) {
+          const activation=path.endsWith('/activations');
+          window.__runtimeUIRequests.push({path,body:JSON.parse(init.body)});
+          return Response.json({meta,data:{id,kind:activation?'activation':'approval',status:activation?'succeeded':'approved',
+            proposal_id:id,revision:1,artifact_digest:hash,profile_digest:window.__runtimeUIProfile,job_id:id,evidence_digest:hash,
+            created_at:1,reason:null,source_digest:null,container_name:null,target_version:activation?0:null,approval_id:activation?id:null}});
+        }
+        return original(url,init);
+      };
+    })()`);
+    await click('[data-console-tab="details"]');
+    await fill('#change-proposal-id', 'aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa');
+    await click('.change-open button');
+    await waitFor("!document.querySelector('#workspace-run').disabled");
+    await click('#workspace-run');
+    await waitFor("!!document.querySelector('.workspace-review-dialog[open]')");
+    assert.ok(await evaluate("document.querySelector('[aria-label=\"Diff cần phê duyệt\"]').textContent.includes('Test-only')"));
+    assert.equal(await evaluate("window.__runtimeUIRequests.length"), 0, 'opening a diff cannot approve/deploy');
+    await screenshot('workspace-review-dialog-test-double.png');
+    await click('.workspace-review-dialog .nui-button:first-of-type');
+    assert.equal(await evaluate("window.__runtimeUIRequests.length"), 0, 'cancel cannot approve/deploy');
+    await click('#workspace-run');
+    await click('#workspace-approve-run');
+    await waitFor("!!document.querySelector('.workspace-runtime-controls a')");
+    assert.equal(await evaluate("window.__runtimeUIRequests.length"), 2);
+    assert.equal(await evaluate("window.__runtimeUIRequests[0].body.artifact_digest"), 'sha256:'+'a'.repeat(64));
   } finally {
     await cdp("Page.removeScriptToEvaluateOnNewDocument", {identifier:injection.identifier});
   }

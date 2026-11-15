@@ -25,7 +25,7 @@ class NoRedirect(urllib.request.HTTPRedirectHandler):
 
 
 class WorkerClient:
-    def __init__(self, api_url: str, credential: str, worker_id: UUID):
+    def __init__(self, api_url: str, credential: str, worker_id: UUID, channel="test-worker"):
         url = urllib.parse.urlsplit(api_url)
         if (
             url.scheme != "http"
@@ -38,6 +38,9 @@ class WorkerClient:
         ):
             raise ValueError("Worker requires a trusted loopback control URL.")
         self.url, self._credential, self.worker_id = api_url.rstrip("/"), credential, worker_id
+        if channel not in {"test-worker", "workspace-worker"}:
+            raise ValueError("Unknown worker channel")
+        self.channel = channel
         self.opener = urllib.request.build_opener(urllib.request.ProxyHandler({}), NoRedirect())
 
     def post(self, path, *, ticket=None, result=None):
@@ -47,7 +50,7 @@ class WorkerClient:
         if result is not None:
             body["result"] = result
         request = urllib.request.Request(
-            self.url + "/_internal/test-worker/" + path,
+            self.url + "/_internal/" + self.channel + "/" + path,
             data=json.dumps(body).encode(),
             method="POST",
             headers={"Content-Type": "application/json", "X-Control-Worker-Key": self._credential},

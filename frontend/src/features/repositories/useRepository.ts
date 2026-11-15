@@ -22,6 +22,7 @@ function decodeFile(bytes: Uint8Array): RepositoryFileContent {
 export function useRepository() {
   const [repository, setRepository] = useState<Repository | null>(null);
   const [snapshot, setSnapshot] = useState<RepositorySnapshot | null>(null);
+  const [contextSnapshot, setContextSnapshot] = useState<RepositorySnapshot | null>(null);
   const [selected, setSelected] = useState<SnapshotFile | null>(null);
   const [content, setContent] = useState<string | null>(null);
   const [binary, setBinary] = useState(false);
@@ -55,7 +56,7 @@ export function useRepository() {
   }, []);
 
   function clearFile() { setSelected(null); setContent(null); setRawContent(null); setBinary(false); }
-  function clearSource() { setSnapshot(null); setOpenedFiles({}); setRestoredRevision(null); clearFile(); }
+  function clearSource() { setSnapshot(null); setContextSnapshot(null); setOpenedFiles({}); setRestoredRevision(null); clearFile(); }
   function clearConnection() {
     current.current?.abort(); current.current = null; client.current = null;
     setChanges(null); setAgent(null);
@@ -105,7 +106,7 @@ export function useRepository() {
       const data = await api.describe(signal);
       const proposalId = readViewReference("proposal");
       const revision = proposalId ? await workflow.open(proposalId, signal) : null;
-      const opened = await prepareSnapshot(api, data.repository_identity, signal, revision?.base_snapshot_id);
+      const opened = await prepareSnapshot(api, data.repository_identity, signal);
       return () => { client.current = api; setRepository(data); setChanges(workflow);
         setAgent(new AgentHttpClient(baseUrl, token)); setRestoredRevision(revision); opened(); };
     });
@@ -116,7 +117,7 @@ export function useRepository() {
     const file = data.files.find(item => item.path === editablePath);
     const bytes = file ? await api.readFile(data.snapshot_id, file, signal) : null;
     const content = bytes ? decodeFile(bytes) : null;
-    return () => { setSnapshot(data);
+    return () => { setSnapshot(data); setContextSnapshot(data);
       if (file && content) { setSelected(file); setContent(content.text); setBinary(content.binary);
         setRawContent(content.raw); setOpenedFiles({ [file.file_id]: content }); }
     };
@@ -139,6 +140,12 @@ export function useRepository() {
         setRawContent(content.raw); setOpenedFiles(previous => ({ ...previous, [file.file_id]: content })); };
     });
   }
-  return { repository, snapshot, selected, content, rawContent, changes, agent, restoredRevision, openedFiles, binary, busy: busy || checkingSession, error, requestId,
-    connect, disconnect, load, select };
+  async function sourceSaved(revision: Revision) {
+    const api = client.current;
+    if (!api) return;
+    const data = await api.get(revision.candidate_snapshot_id, new AbortController().signal);
+    if (client.current === api && data.repository_identity === repository?.repository_identity) setContextSnapshot(data);
+  }
+  return { repository, snapshot, contextSnapshot, selected, content, rawContent, changes, agent, restoredRevision, openedFiles, binary, busy: busy || checkingSession, error, requestId,
+    connect, disconnect, load, select, sourceSaved };
 }

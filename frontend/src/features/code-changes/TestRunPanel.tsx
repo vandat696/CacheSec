@@ -5,7 +5,14 @@ const labels: Record<string, string> = { queued: "Đang chờ chạy", preparing
   timed_out: "Hết thời gian", blocked: "Đã chặn", unknown: "Chưa xác định" };
 const checks: Record<string, string> = { identity_required: "Yêu cầu danh tính",
   record_round_trip: "Tạo và đọc báo giá", reader_write_denied: "Chặn reader ghi dữ liệu",
-  idempotent_retry: "Thử lại không tạo trùng", validation_contract: "API validation" };
+  idempotent_retry: "Thử lại không tạo trùng", validation_contract: "API validation",
+  expiration_missing: "Thiếu ngày", expiration_null: "Ngày null", expiration_empty: "Ngày rỗng",
+  expiration_past: "Ngày trước mốc", expiration_equal: "Ngày bằng mốc", expiration_future: "Ngày sau mốc",
+  expiration_invalid_calendar: "Ngày không tồn tại", expiration_invalid_leap: "Ngày nhuận sai",
+  expiration_valid_leap: "Ngày nhuận hợp lệ", expiration_strict_format: "Định dạng ngày",
+  expiration_whitespace: "Không tự bỏ khoảng trắng", expiration_timestamp: "Không nhận timestamp",
+  expiration_number: "Không ép số thành ngày", expiration_boolean: "Không ép boolean",
+  expiration_array: "Không nhận mảng", expiration_object: "Không nhận object" };
 const reasons: Record<string, string> = { CHECK_FAILED: "Có kiểm tra chưa đạt.",
   APP_START_FAILED: "Bản sửa không khởi động được.", APP_START_TIMEOUT: "Bản sửa khởi động quá lâu.",
   HTTP_TIMEOUT: "Bản sửa phản hồi quá lâu.", TEST_DEADLINE: "Đã hết thời gian kiểm thử.",

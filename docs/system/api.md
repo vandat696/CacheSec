@@ -2,7 +2,25 @@
 
 ## Trạng thái và phạm vi
 
-**Đặc tả T02 v0.2 ngày 2026-11-07; đã triển khai tạo/danh sách/chi tiết và validation nền báo giá, GET /health và GET /ready.** Validation nền chưa có rule ngày; HTTP snapshot/file đã triển khai; revision/test kỹ thuật T12 đã có, các workflow Agent/cache và validation gắn runtime artifact vẫn là thiết kế. API báo giá có entrypoint và quyền fixture riêng, được mô tả bên dưới; [domain/storage](architecture.md#lưu-trữ-báo-giá-đã-triển-khai) có migration riêng. Contract này cụ thể hóa [kiến trúc](architecture.md#bản-nháp-t02-module-và-contract), không phải SDK đã phát hành hoặc workflow Agent đang chạy. Các ví dụ JSON đều là dữ liệu giả minh họa, không phải fixture hoặc kết quả đo.
+Đặc tả T02 v0.2; cập nhật 2026-11-15: đã có API báo giá, snapshot, revision/test, Agent và [source write/local runtime](workspace-runtime.md). Cache và artifact-ready/audit nghiên cứu còn là thiết kế. Source nền chưa có rule ngày; runtime binding do launcher/control xác nhận, không tin trường active_artifact do candidate trả. Ví dụ JSON là dữ liệu giả minh họa, không phải kết quả đo hoặc SDK đã phát hành.
+
+## Workspace source và local runtime
+
+HTTP thực thi tại `/api/v1/changes/workspace`, envelope v0.2, body tối đa 64 KiB; mutation cần Idempotency-Key. Tất cả refs được kiểm trong tenant/repo của credential, không nhận path/command/image/role từ client.
+
+| Route | Request | Quyền ngoài repository.read |
+| --- | --- | --- |
+| GET /config | Không body/query | Không; trả capability hiện tại. Target version/artifact/pending chỉ cho deployment.read |
+| POST /source | proposal_id, revision, artifact_digest, expected_snapshot_id | repository.write |
+| POST /approvals | proposal_id, revision, artifact_digest, job_id | change.review, deployment.read |
+| POST /activations | approval_id, expected_version | deployment.activate, deployment.read |
+| GET /operations/{UUID} | Không body | Write thuộc requester; approval/activation cần deployment.read |
+
+Source và activation trả 202 với operation ID/status; không coi 202 là đã ghi file hoặc app đã chạy. Approval trả 201/approved, chưa activation. Operation có kind/status, proposal/revision/artifact/profile, source_digest hoặc job/evidence, reason và container/target refs khi có; không trả credential/ticket. Pending queued/preparing/running, terminal succeeded/failed/blocked/unknown; approval có trạng thái riêng approved. Unknown không tự retry side effect.
+
+Kênh `/_internal/workspace-worker` dùng credential worker riêng, không Bearer human: claim/owned và `{UUID}/bundle|permit|result`, gắn worker ID/ticket. Permit sau commit mới cho host side effect, kiểm lại authority/binding/source. [Workflow](workspace-runtime.md) sở hữu expiry/single-use/reservation/recovery và sandbox.
+
+API báo giá giữ contract v0.2: `reference_date` nay là null hoặc YYYY-MM-DD do cấu hình backend truyền vào validator; `active_artifact` vẫn null trong response candidate, không thành bằng chứng deployment. Local runtime status từ control/launcher là nguồn artifact thực thi.
 
 Đầu vào đã được người dùng chọn nằm tại [hồ sơ T01](../general/overview.md#hồ-sơ-đầu-vào-t01--đang-thực-hiện): sáu trường báo giá; ngày YYYY-MM-DD có thật và d >= 2026-11-07 trong fixture; Context Cache/browser trước; identity fixture backend quản lý; Developer được duyệt nếu có quyền Reviewer hiện tại. Acceptance vẫn chờ cô quy định, không mặc định 100%.
 

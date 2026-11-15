@@ -18,6 +18,8 @@ import { checkAgent, checkAgentLive } from "./agent-browser-check.mjs";
 import { checkAgentRuns } from "./agent-run-browser-check.mjs";
 import { checkAgentRunLive } from "./agent-run-live-browser-check.mjs";
 import { checkWorkbench } from "./workbench-browser-check.mjs";
+import { checkWorkspaceFiles } from "./workspace-files-browser-check.mjs";
+import { LocalSessionStore } from "../src/features/local-workspace/localSessionStore.ts";
 
 const frontend = fileURLToPath(new URL("..", import.meta.url));
 const codeChanges = process.argv.includes("--code-changes");
@@ -28,13 +30,23 @@ const agentLive = process.argv.includes("--agent-live");
 const agentRuns = process.argv.includes("--agent-runs");
 const agentRunLive = process.argv.includes("--agent-run-live");
 const workbenchOnly = process.argv.includes("--workbench");
-const repositoryOnly = process.argv.includes("--repository-only") || repositoryDev || localWorkspace || agentOnly || agentLive || agentRuns || agentRunLive || workbenchOnly;
+const workspaceFiles = process.argv.includes("--workspace-files");
+const repositoryOnly = process.argv.includes("--repository-only") || repositoryDev || localWorkspace || agentOnly || agentLive || agentRuns || agentRunLive || workbenchOnly || workspaceFiles;
 if (repositoryDev) {
   // This private file contains only the dedicated read credential, never the backend DSN.
   process.loadEnvFile(join(frontend, "../backend/.local/control-access.env"));
 }
 const output = join(frontend, "test-results", "browser");
 const baseUrl = process.env.APP_URL ?? "http://127.0.0.1:3100";
+if (codeChanges || localWorkspace || agentOnly || agentLive || agentRunLive || workbenchOnly) {
+  const store = new LocalSessionStore(join(frontend, "../backend/.local"));
+  const { token } = await store.credential();
+  const response = await fetch("http://127.0.0.1:8000/api/v1/changes/workspace/config", {
+    headers: { Authorization: "Bearer " + token }, signal: AbortSignal.timeout(5000),
+  });
+  if (response.ok) assert.equal((await response.json()).data.can_write, false,
+    "Legacy smoke requires revision-only mode. Use --workspace-files for real project writes; this check stopped before editing source.");
+}
 const browserPath =
   process.env.BROWSER_PATH ??
   [
@@ -303,6 +315,9 @@ try {
   if (workbenchOnly) {
     await checkWorkbench({ cdp, navigate, evaluate, waitFor, click, fill, screenshot });
     console.log("Đạt: một phiên local cho Workspace/Báo giá, giữ draft khi đổi trang, reload khôi phục IDs có quyền và logout cả hai.");
+  }
+  if (workspaceFiles) {
+    await checkWorkspaceFiles({ cdp, navigate, evaluate, waitFor, click, fill, screenshot });
   }
   if (!repositoryOnly && !process.argv.includes("--developer-only") && !process.argv.includes("--quotations-only")) {
   await navigate("/ui");
@@ -1187,7 +1202,8 @@ try {
   }
   assert.deepEqual(errors, [], "Lỗi runtime/React trên trình duyệt");
   console.log(
-    workbenchOnly ? "Đạt: hai trang tự kết nối, không nhập token/ID, giữ bản sửa và báo giá qua điều hướng/reload."
+    workspaceFiles ? "Đạt: Edge Ctrl+S/source thật, sửa tiếp → tự lưu → Docker test đúng revision, giữ draft Agent, Undo phục hồi bytes gốc, reload/mobile; không gọi provider hoặc activate."
+      : workbenchOnly ? "Đạt: hai trang tự kết nối, không nhập token/ID, giữ bản sửa và báo giá qua điều hướng/reload."
       : agentRunLive ? "Đạt: Workspace → Gemini → revision → Docker/evidence thật; chỉ chú thích, source gốc và nghiệp vụ giữ nguyên."
       : agentRuns ? "Đạt: UI Agent tự động, kết quả và hủy ở ba bố cục; model/run/executor là double có nhãn."
       : agentLive ? "Đạt: Workspace gọi Gemini thật qua phiên local và hiển thị phản hồi; không áp dụng bản sửa."

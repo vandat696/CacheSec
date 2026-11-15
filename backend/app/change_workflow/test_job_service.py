@@ -5,7 +5,6 @@ from uuid import UUID, uuid4
 
 from app.artifacts.metadata_encoding import encode_metadata
 from app.change_workflow.proposal_service import ProposalService
-from app.change_workflow.test_profiles import CHECK_NAMES
 from app.change_workflow.workflow_models import TERMINAL_STATUSES, job_view
 from app.change_workflow.workflow_repository import WorkflowError
 from app.identity.control_authority import (
@@ -155,7 +154,10 @@ class TestJobService:
                     repository.identity,
                 )
                 self.proposals.verify_revision(session, self.scope, record, base, candidate)
-                if not self.proposals.snapshots.matches_working_tree(base):
+                if not (
+                    self.proposals.snapshots.matches_working_tree(base)
+                    or self.proposals.snapshots.matches_working_tree(candidate)
+                ):
                     raise WorkflowError("STALE_SNAPSHOT")
             except (ControlAccessDenied, ControlIdentityRequired, WorkflowError):
                 self._blocked(session, job, "REQUESTER_OR_SOURCE_CHANGED")
@@ -172,6 +174,7 @@ class TestJobService:
         }
 
     def report(self, job_id, worker_id, ticket, result):
+        check_names = self.proposals.profile.checks
         if (
             type(result) is not dict
             or set(result) != {"outcome", "reason", "elapsed_ms", "checks"}
@@ -180,7 +183,7 @@ class TestJobService:
             or type(result["elapsed_ms"]) is not int
             or not 0 <= result["elapsed_ms"] <= 3600000
             or type(result["checks"]) is not list
-            or len(result["checks"]) > len(CHECK_NAMES)
+            or len(result["checks"]) > len(check_names)
         ):
             raise WorkflowError("INVALID_TEST_RESULT", 400)
         names = []
@@ -188,14 +191,14 @@ class TestJobService:
             if (
                 type(check) is not dict
                 or set(check) != {"name", "passed"}
-                or check["name"] not in CHECK_NAMES
+                or check["name"] not in check_names
                 or type(check["passed"]) is not bool
                 or check["name"] in names
             ):
                 raise WorkflowError("INVALID_TEST_RESULT", 400)
             names.append(check["name"])
         if result["outcome"] == "passed" and (
-            tuple(names) != CHECK_NAMES
+            tuple(names) != check_names
             or not all(c["passed"] for c in result["checks"])
             or result["reason"] != "COMPLETED"
         ):

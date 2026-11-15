@@ -16,5 +16,12 @@ services:
       interval: 5s
       timeout: 5s
       retries: 10
+    networks:
+      - default
+      - quotation_runtime
+networks:
+  quotation_runtime:
+    name: cachesec_quotation_runtime
+    internal: true
 volumes:
   postgres_data:

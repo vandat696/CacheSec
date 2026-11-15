@@ -2,7 +2,7 @@
 
 ## Trạng thái và nguyên tắc
 
-Lập ngày 2026-11-02; cập nhật tiến độ ngày **2026-11-11**. Trạng thái từng gói T01–T17 nằm ở checklist; dấu chọn chỉ xác nhận đầu ra và kiểm chứng thuộc gói đó. **T02 đã hoàn thành đặc tả thiết kế v0.2**; T01 còn chờ điều kiện nghiên cứu. Đã có nền PostgreSQL/readiness và API báo giá tạo/đọc/phân trang độc lập, quyền Bearer fixture, application/ports và retry idempotent; UI /quotations đã nối API. Đây là lát cắt app T03–T07 và phần UI app T15; chưa hoàn thành toàn bộ gói hoặc chọn thay policy/control còn mở. Workspace đã đọc snapshot có quyền qua control HTTP; workflow IDE còn mô phỏng; chưa có workflow backend/cache/gate hoặc chạy thực nghiệm.
+Lập ngày 2026-11-02; cập nhật **2026-11-15**. T02 đã hoàn thành đặc tả v0.2; T01 còn điều kiện nghiên cứu. Đã có app báo giá/API/DB, Workspace editor/revision/test Docker và Agent thật. [Source write/runtime local](../system/workspace-runtime.md) thêm Ctrl+S ghi file host, 21 check kỹ thuật ngày và human approval/activation đúng artifact. Đây là lát cắt kỹ thuật T03–T15, chưa hoàn thành toàn các gói, cache hoặc nghiên cứu; dấu chọn chỉ xác nhận đầu ra/kiểm chứng của từng gói.
 
 Phạm vi và câu hỏi mở do [tổng quan](overview.md) sở hữu; module/runtime do [kiến trúc](../system/architecture.md) sở hữu, request/response/thao tác do [contract API](../system/api.md) sở hữu; quyền/gate do [phân quyền](../system/authorization.md) sở hữu; protocol/fixture/acceptance do [đánh giá](../evaluation/design.md) sở hữu. Kế hoạch này quản lý việc cần làm và điều kiện nghiệm thu, không thay đặc tả của các tài liệu đó.
 
@@ -138,6 +138,8 @@ Mục tiêu là hoàn thành một luồng dùng được trên Workspace: chọ
 Kết thúc mốc khi demo được cả lưu/sửa/test thành công, sai quyền/path/base stale bị chặn, candidate lỗi/timeout trả kết quả thật và revision mới không nhận verdict cũ. Phải chứng minh không truy cập DB dev/control hoặc chạy source ngoài sandbox; kiểm API/DB/UI tích hợp và hướng dẫn chạy trong cùng mốc. Oracle/one-fixture contract, trusted R, acceptance và protocol nghiên cứu vẫn chờ xác nhận; không tự tạo nhãn hoặc chạy so sánh để hoàn thành mốc kỹ thuật.
 
 ### T13 — Approval gate và kích hoạt đúng artifact
+
+- **Lát cắt local đã có 2026-11-15:** approval/evidence/artifact binding, TTL/single-use, target reservation/version, recheck authority tại permit, worker singleton, Docker app/ingress và unknown/recovery. [Luồng local](../system/workspace-runtime.md) dùng test profile kỹ thuật, không tuyên bố hoàn thành artifact-ready/audit/threat matrix hoặc fixture/gate nghiên cứu.
 
 - [ ] Hoàn thành T13. **Phụ thuộc:** T04–T07 và T12.
 - **Làm:** lưu quyết định tường minh từ reviewer có authority; gate kiểm tra source/patch/artifact/test/fixture/config binding và hiệu lực tại activation. Kích hoạt đúng artifact đã duyệt cho runtime app tách biệt; ghi deployed/blocked/failed, không rebuild bytes khác sau duyệt.

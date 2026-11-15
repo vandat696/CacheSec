@@ -200,6 +200,7 @@ def test_upgrade_from_blob_only_schema_preserves_bytes_metadata(control_database
             "002_control_authority.sql",
             "003_repository_snapshots.sql",
             "004_change_workflow.sql",
+            "005_workspace_runtime.sql",
         )
         assert connection.execute("SELECT byte_size FROM control.artifact_blobs").fetchall() == [
             (0,)

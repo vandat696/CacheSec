@@ -107,6 +107,16 @@ def run():
             and isinstance(result.get("flags"), list)
             and isinstance(result.get("evaluated_rules"), list),
         )
+        if os.environ.get("TEST_VALIDATION_TASK") == "expiration-review-v1":
+            from expiration_checks import run_expiration_checks
+
+            run_expiration_checks(
+                request,
+                operator,
+                lambda name, success: checks.append({"name": name, "passed": bool(success)}),
+            )
+            if not all(item["passed"] for item in checks):
+                raise ValueError("Validation task check failed")
     except (TimeoutError, socket.timeout):
         outcome, reason = "timed_out", "HTTP_TIMEOUT"
     except urllib.error.URLError as error:

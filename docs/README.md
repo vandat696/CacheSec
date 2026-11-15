@@ -12,9 +12,10 @@ Hồ sơ thiết kế và trạng thái hệ thống. Nội dung dự kiến kh�
 | General | [Cài đặt](general/setup.md) | Môi trường, lệnh chạy và kiểm tra |
 | System | [Kiến trúc](system/architecture.md) | As-Is, ba ranh giới, storage báo giá/blob, registry và HTTP snapshot; thiết kế T03 v0.1 cho artifact |
 | System | [Tổ chức source](system/code-organization.md) | Đặt tên/module frontend/backend, UI kit/catalog, template source và bundle |
-| System | [Contract backend và cache](system/api.md) | T02 v0.2; API tạo/đọc/validate nền báo giá và health/readiness đã triển khai, HTTP snapshot/file và revision/test kỹ thuật đã có, Agent/cache/gate còn là thiết kế |
+| System | [Contract backend và cache](system/api.md) | T02 v0.2; API app/snapshot/revision/test/Agent/source-write/runtime local đã có; cache và nghiên cứu còn mở |
 | System | [Workflow sửa/test T12](system/change-workflow.md) | Revision/diff/evidence, quyền, profile image, worker Docker và sandbox kỹ thuật đã triển khai |
 | System | [Agent tự sửa/test local](system/agent-workflow.md) | Run có giới hạn, quyền workflow riêng, vòng sửa/test, cancel và registry trong một process |
+| System | [Workspace source/runtime local](system/workspace-runtime.md) | Ctrl+S ghi file host thật, kiểm rule ngày, human approval và kích hoạt đúng artifact bằng worker Docker |
 | System | [Cache](system/cache.md) | Answer/Context Cache, Hit/Miss/Rejected, verification, metadata và lifecycle |
 | System | [Phân quyền](system/authorization.md) | Quyền app, registry control và HTTP repository đã có; gate local v0.1/dispatch/recovery chưa triển khai, threat model |
 | Frontend | [Thiết kế](frontend/design.md) | Báo giá nối API thật, Workspace snapshot/revision/diff/test Docker thật, review/approval mô phỏng và các màn cũ |

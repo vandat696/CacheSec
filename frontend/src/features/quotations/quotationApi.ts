@@ -40,13 +40,19 @@ function page(value: unknown): value is QuotationPage {
   return object(value) && Array.isArray(value.items) && value.items.every(record)
     && (value.next_cursor === null || (typeof value.next_cursor === "string" && uuid.test(value.next_cursor)));
 }
+function referenceDate(value: unknown) {
+  if (value === null) return true;
+  if (typeof value !== "string" || !/^\d{4}-\d{2}-\d{2}$/.test(value) || value.startsWith("0000")) return false;
+  const parsed = new Date(value + "T00:00:00Z");
+  return !Number.isNaN(parsed.getTime()) && parsed.toISOString().slice(0, 10) === value;
+}
 function validation(value: unknown): value is QuotationValidation {
   return object(value) && typeof value.quotation_id === "string" && uuid.test(value.quotation_id)
     && Array.isArray(value.flags) && value.flags.every((flag) => object(flag)
       && typeof flag.code === "string" && typeof flag.field === "string" && typeof flag.message === "string")
     && Array.isArray(value.evaluated_rules) && value.evaluated_rules.every((rule) => typeof rule === "string")
     && typeof value.validation_config_ref === "string" && value.validation_config_ref.length > 0
-    && value.reference_date === null && value.active_artifact === null;
+    && referenceDate(value.reference_date) && value.active_artifact === null;
 }
 
 export class QuotationHttpClient {

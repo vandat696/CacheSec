@@ -1,6 +1,13 @@
+import io
+import json
+import tempfile
 import unittest
+from contextlib import redirect_stdout
+from pathlib import Path
+from types import SimpleNamespace
+from unittest.mock import patch
 
-from scripts.local_configuration import quotation_environment
+from scripts.local_configuration import quotation_environment, runtime_state
 
 
 class LocalConfigurationTests(unittest.TestCase):
@@ -63,6 +70,78 @@ class LocalConfigurationTests(unittest.TestCase):
                 quotation_environment(
                     self.app | {"QUOTATION_FIXTURE_OPERATOR_TOKEN": replacement}, self.database
                 )
+
+    def test_pending_or_unknown_target_never_falls_back_to_baseline(self):
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            local = root / "backend/.local"
+            local.mkdir(parents=True)
+            (local / "test-worker.json").write_text(json.dumps({"runtime": {"port": 8001}}))
+            (local / "control-access.env").write_text("CONTROL_REPOSITORY_READ_TOKEN=" + "t" * 40)
+            for configured, pending in [(False, None), (True, "pending-operation")]:
+                with (
+                    patch("scripts.local_configuration.ROOT", root),
+                    patch("scripts.local_configuration.urllib.request.build_opener") as opener,
+                    patch("scripts.local_configuration.subprocess.run") as docker_call,
+                ):
+                    opener.return_value.open.return_value = io.BytesIO(
+                        json.dumps(
+                            {
+                                "data": {
+                                    "configured": configured,
+                                    "pending_id": pending,
+                                    "target_version": 0,
+                                }
+                            }
+                        ).encode()
+                    )
+                    with self.assertRaises(ValueError), redirect_stdout(io.StringIO()) as output:
+                        runtime_state()
+                    self.assertNotIn("baseline", output.getvalue())
+                    docker_call.assert_not_called()
+
+    def test_registered_runtime_must_match_observed_artifact(self):
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            local = root / "backend/.local"
+            local.mkdir(parents=True)
+            (local / "test-worker.json").write_text(json.dumps({"runtime": {"port": 8001}}))
+            (local / "control-access.env").write_text("CONTROL_REPOSITORY_READ_TOKEN=" + "t" * 40)
+            artifact = "sha256:" + "a" * 64
+            for observed in (artifact, "sha256:" + "b" * 64):
+                with (
+                    patch("scripts.local_configuration.ROOT", root),
+                    patch("scripts.local_configuration.urllib.request.build_opener") as opener,
+                    patch("scripts.local_configuration.subprocess.run") as docker_call,
+                ):
+                    opener.return_value.open.return_value = io.BytesIO(
+                        json.dumps(
+                            {
+                                "data": {
+                                    "configured": True,
+                                    "pending_id": None,
+                                    "target_version": 1,
+                                    "active_artifact": artifact,
+                                }
+                            }
+                        ).encode()
+                    )
+                    docker_call.side_effect = [
+                        SimpleNamespace(stdout=b"cachesec-local-test\n"),
+                        SimpleNamespace(
+                            stdout=json.dumps(
+                                [{"Config": {"Labels": {"cachesec.local-artifact": observed}}}]
+                            ).encode()
+                        ),
+                    ]
+                    with redirect_stdout(io.StringIO()) as output:
+                        if observed == artifact:
+                            runtime_state()
+                            self.assertEqual(output.getvalue().strip(), "active")
+                        else:
+                            with self.assertRaises(ValueError):
+                                runtime_state()
+                            self.assertNotIn("baseline", output.getvalue())
 
 
 if __name__ == "__main__":

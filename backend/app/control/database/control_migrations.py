@@ -15,6 +15,7 @@ def load_migrations() -> tuple[Migration, ...]:
             "002_control_authority.sql",
             "003_repository_snapshots.sql",
             "004_change_workflow.sql",
+            "005_workspace_runtime.sql",
         ),
     )
 

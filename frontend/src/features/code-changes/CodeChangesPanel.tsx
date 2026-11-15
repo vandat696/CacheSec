@@ -20,6 +20,8 @@ export function CodeChangesPanel({ change, tab, onTab }: {
     <div className="repository-console-content" role="tabpanel">
       {change.error && <p role="alert" className="repository-error">{change.error}
         {change.requestId && <small>Mã yêu cầu: {change.requestId}</small>}</p>}
+      {change.busy && change.sourceOperation && ["queued", "preparing", "running"].includes(change.sourceOperation.status)
+        && <p className="repository-notice" role="status">{change.sourceOperation.status === "queued" ? "Chờ ghi file…" : "Đang ghi file vào project…"}</p>}
       <div hidden={tab !== "tests"}>
         {change.saved ? <TestRunPanel jobs={change.jobs} revision={change.saved.revision} dirty={change.dirty} /> : null}
         {!change.jobs.length && <p className="repository-notice">Chưa chạy kiểm thử.</p>}

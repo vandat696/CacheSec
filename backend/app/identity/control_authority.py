@@ -31,6 +31,7 @@ class AuthorityConflict(Exception):
 
 class ControlCapability(StrEnum):
     REPOSITORY_READ = "repository.read"
+    REPOSITORY_WRITE = "repository.write"
     WORKFLOW_RUN = "workflow.run"
     WORKFLOW_READ = "workflow.read"
     PROPOSAL_CREATE = "proposal.create"

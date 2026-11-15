@@ -20,22 +20,24 @@ Theo lựa chọn người dùng ngày **2026-11-07**, PoC bắt đầu bằng *
 
 Máy dev đã cấu hình: bật Docker Desktop rồi chạy `npm --prefix frontend run local` để mở stack; Workspace và Báo giá tự kết nối, không dán token. Đổi giữa hai trang giữ bản sửa và báo giá đang chọn, không nhập lại ID. Nếu dịch vụ đang chạy, `npm --prefix frontend run workspace` chỉ mở project. Phiên local tối đa 8 giờ; [hướng dẫn](docs/general/setup.md#mở-toàn-bộ-stack-local-bằng-một-lệnh) có tùy chọn Studio và giới hạn.
 
-Bối cảnh đã cập nhật ngày **2026-11-02**. Frontend có thêm **Developer Workspace tại `/workspace`** để xem thử workflow mới; các màn chatbot nội bộ cũ tiếp tục được giữ để tái sử dụng.
+Workspace `/workspace` làm việc với source/revision/test và runtime local thật trong phạm vi file validation. Các màn chatbot nội bộ cũ tiếp tục được giữ để tái sử dụng; không phải kết quả cache/benchmark.
 
 | Thành phần | Hiện có | Giới hạn |
 | --- | --- | --- |
-| Workspace `/workspace` | Editor/revision/diff/test Docker, Gemini và vòng Agent tự sửa/test bản riêng | Cần key và quyền workflow riêng để bật tự động; chỉ file validation, tối đa 3 lượt/10 phút; chưa cache/gate |
+| Workspace `/workspace` | Editor ghi file thật, revision/diff, Docker test, Gemini, human duyệt/chạy app local | Chỉ file validation; Agent tối đa 3 lượt/10 phút, không auto-approve/deploy; chưa cache |
 | Thiết lập `/setup` | Chín nhóm mode/dataset/embedding/threshold/eviction/quyền/training/logging/export; snapshot trong phiên, validation và xuất JSON cấu hình | Bản nháp; results null, chưa áp dụng vào Chat hoặc chạy benchmark/training/logging thật |
 | Chat `/` | Lịch sử, bản nháp, Không cache/Cache/Cả hai với prompt chung; modal thông số từng lượt | Phản hồi mô phỏng, chưa AI/RAG hoặc cache thật |
 | Số liệu `/metrics` | Ba tab, biểu đồ/bảng/chi tiết; mặc định 24 truy vấn giả, nguồn phiên riêng tại `/metrics?source=session` | Fixture xem UI, không phải kết quả thực nghiệm |
 | Tài liệu `/documents` | Chọn/thả, phân loại, tìm/lọc tệp trong phiên | Chờ tải lên; chưa đọc/ingest/upload hoặc authorized retrieval |
-| Backend control | Health/readiness, blob/registry/snapshot và API revision/test/Agent run có quyền; worker Docker riêng | Dev có read/propose/test và workflow.run/read; chưa review/deploy; readiness chỉ kiểm PostgreSQL |
+| Backend control | Blob/registry/snapshot, revision/test/Agent, journal source write và gate runtime local | Dev được cấu hình quyền ghi/review/deploy riêng; chưa artifact-ready/audit nghiên cứu; readiness chỉ PostgreSQL |
 | Báo giá `/quotations` | Form nhập, danh sách/chi tiết và validation nền nối API/PostgreSQL thật; Bearer fixture reader/operator, retry idempotent | Một dataset dùng chung; validator nền chưa có quy tắc nghiệp vụ, chưa rule ngày hoặc artifact/gate |
-| Hạ tầng | PostgreSQL 17.11/pgvector 0.8.7 qua Compose; đã áp dụng migration báo giá và kiểm chứng DB thật | Control có index blob thô; chưa schema approval/deployment hoặc artifact-ready |
+| Hạ tầng | PostgreSQL/pgvector, control migration 005, worker host và Docker app/ingress | Runtime local có binding kỹ thuật; chưa artifact-ready nghiên cứu hoặc distributed fencing |
 
-App báo giá chạy HTTP độc lập với quyền fixture được backend kiểm tra tại /quotations. Control HTTP lấy scope từ principal và kiểm quyền hiện tại theo tenant/repo; profile dev giữ ba file business. API chạy bằng Docker local vì DLL psycopg Windows bị chặn. [Setup](docs/general/setup.md#2e-control-dev-trong-docker-khi-python-windows-bị-chặn) có hướng dẫn; [Agent Gemini](docs/general/setup.md#agent-gemini) dùng key private và generation adapter riêng. [Vòng Agent local](docs/system/agent-workflow.md) đã được bật tường minh trên dev với workflow.run/read cùng read/propose/test và kiểm chứng một run Gemini → revision → Docker thật; trạng thái run chỉ trong một process. Chưa fixture báo giá đóng băng, Local Semantic Cache/embedding/matching/verification, workflow T14 đầy đủ, approval/deployment control, audit nghiên cứu hoặc runner. Review/Phê duyệt/Nhật ký mẫu giữ trong trang UI phụ, không phải bằng chứng quyền. Hội thoại/draft mất khi reload; UI không tự cấp quyền.
+App báo giá chạy HTTP độc lập với quyền fixture; control lấy tenant/repo từ principal và kiểm quyền hiện tại. Profile dev đọc ba file business, chỉ validation được ghi. API dùng Docker vì DLL psycopg Windows bị chặn; [setup](docs/general/setup.md) có cách chạy. [Agent Gemini](docs/general/setup.md#agent-gemini) dùng key private, vòng run trong một process; revision/evidence/source-write/approval/activation đã commit được lưu bền. Chưa có fixture nghiên cứu đóng băng, Local Semantic Cache/embedding/matching/verification, toàn workflow T14, audit nghiên cứu hoặc runner. Các màn review/nhật ký mẫu cũ vẫn là UI phụ; gate thật nằm ở backend và host worker. Hội thoại/draft chưa lưu mất khi reload; UI không tự cấp quyền.
 
-Đã có [luồng sửa/test kỹ thuật T12](docs/system/change-workflow.md) từ Workspace tới Docker/DB test cô lập. Test pass không cấp quyền triển khai hoặc chứng minh correctness của rule ngày; chưa có binding ready cho gate.
+Đã có [luồng sửa/test kỹ thuật T12](docs/system/change-workflow.md) từ Workspace tới Docker/DB test cô lập. Test pass không cấp quyền triển khai hoặc chứng minh đạt acceptance nghiên cứu; research binding-ready vẫn còn mở.
+
+[Workspace source/runtime](docs/system/workspace-runtime.md) có Ctrl+S ghi file host và human approval/activation theo artifact/evidence của recipe kỹ thuật, gồm 16 check ngày bổ sung. Mở bản sửa Agent → Lưu → test đạt → Chạy ứng dụng → duyệt đúng diff/artifact → kiểm Báo giá. App không auto-reload source chưa duyệt; research fixture/acceptance và cache còn mở.
 
 ## Công nghệ và tổ chức
 
@@ -66,7 +68,7 @@ python -m venv .venv
 .\.venv\Scripts\python.exe -m uvicorn app.control.control_api:app --reload --host 127.0.0.1 --port 8000
 ```
 
-Frontend: http://127.0.0.1:3000; bản xem trước mới: http://127.0.0.1:3000/workspace. Health: http://127.0.0.1:8000/health. UI mô phỏng không cần API key/database. API báo giá dùng factory app.quotation_demo.quotation_api:create_app --factory, cổng 8001 sau migration và cấu hình token; [setup](docs/general/setup.md#2b-api-báo-giá-độc-lập) có lệnh đầy đủ. Chưa chạy Agent/cache/gate; setup cũng chứa lệnh kiểm tra.
+Frontend: http://127.0.0.1:3000; Workspace thật: http://127.0.0.1:3000/workspace. Health: http://127.0.0.1:8000/health. API báo giá độc lập tại cổng 8001; [setup](docs/general/setup.md#workspace-ghi-file-và-chạy-bản-đã-duyệt) có cách cấu hình/test/run. UI mô phỏng cũ không cần key/database; Agent thật cần key private. Cache chưa triển khai.
 
 Xem database trên web: sau npm ci và cấu hình QUOTATION_DATABASE_URL trong backend/.env, chạy `npm --prefix frontend run db:studio` từ thư mục gốc, mở http://localhost:5555. [Prisma Studio local](docs/general/setup.md#xem-database-bằng-prisma-studio) dùng trực tiếp PostgreSQL; migration/ứng dụng vẫn thuộc backend Python.
 

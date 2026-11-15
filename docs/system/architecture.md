@@ -2,6 +2,8 @@
 
 ## Phạm vi và trạng thái
 
+Cập nhật 2026-11-15: [Workspace ghi file và runtime local](workspace-runtime.md) đã nối host worker với source thật, PostgreSQL journal và approval/activation/Docker ingress; đây là trạng thái mới hơn các mục khảo sát As-Is bên dưới. App đang chạy không mount working tree; cache và artifact-ready nghiên cứu chưa triển khai.
+
 Kiến trúc nghiên cứu là Secure Local Semantic Cache; bối cảnh mục tiêu là AI-assisted software development trong [kịch bản báo giá duy nhất](../general/overview.md). Các phần Target dưới đây là **thiết kế, chưa triển khai**. Không dùng tài liệu này làm bằng chứng Agent/cache/gate đã hoạt động.
 
 ## As-Is Architecture — khảo sát 2026-11-02

@@ -1,3 +1,4 @@
+from datetime import date
 from typing import Protocol
 
 from app.quotation_demo.auth.fixture_identity import FixtureIdentityRegistry
@@ -22,11 +23,18 @@ class FixtureQuotationServiceFactory:
         transactions: QuotationRepositoryTransactions,
         *,
         max_page_size: int,
+        reference_date: date | None = None,
     ) -> None:
         self._registry = registry
         self._transactions = transactions
         self._max_page_size = max_page_size
+        self._reference_date = reference_date
 
     def for_credential(self, credential: str | None) -> QuotationService:
         access = self._registry.authenticate(credential)
-        return QuotationService(self._transactions, access, max_page_size=self._max_page_size)
+        return QuotationService(
+            self._transactions,
+            access,
+            max_page_size=self._max_page_size,
+            reference_date=self._reference_date,
+        )

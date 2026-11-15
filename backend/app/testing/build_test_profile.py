@@ -13,6 +13,9 @@ def main():
     parser = argparse.ArgumentParser(description=__doc__)
     for name in ("runtime", "harness", "database", "output"):
         parser.add_argument("--" + name, required=True)
+    parser.add_argument(
+        "--validation-task", choices=("regression", "expiration-review-v1"), default="regression"
+    )
     args = parser.parse_args()
     images = [
         json.loads(docker(["image", "inspect", tag]))[0]["Id"]
@@ -26,6 +29,7 @@ def main():
         suite,
         inventory,
         tuple((p, runtime["files"][p.removeprefix("backend/")]) for p in OVERLAY_PATHS[:2]),
+        validation_task=args.validation_task,
     )
     verify_images(profile)
     output = Path(args.output)

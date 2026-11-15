@@ -63,4 +63,4 @@ Lệnh này chạy pass/fail/timeout/output/isolation, không tạo nhãn nghiê
 
 ## Giới hạn còn lại
 
-Chưa Agent tạo patch, cache retrieval hoặc approval/deployment gate. Artifact ở đây chỉ là test candidate, không `binding ready` cho triển khai. Chưa đóng băng oracle/fixture/trusted R và acceptance nghiên cứu; T12 toàn bộ theo điều kiện nghiên cứu còn phụ thuộc các mốc đó. T13 cần thực thi approval gắn đúng artifact tại backend/target, không suy quyền từ test pass hoặc cache.
+Agent đã tạo revision/test thật; ngày 2026-11-15 bổ sung [ghi source và approval/activation local](workspace-runtime.md) cho recipe kỹ thuật. Không suy quyền từ test pass hoặc cache. Cache retrieval, oracle/fixture/trusted R/acceptance nghiên cứu và binding-ready nghiên cứu chưa hoàn tất; không coi test kỹ thuật/local runtime là đã hoàn thành toàn T12–T13.

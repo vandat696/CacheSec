@@ -19,6 +19,7 @@ from app.identity.postgres_control_authority import PostgresControlAuthorityRepo
 from app.repositories.postgres_repository_snapshots import PostgresSnapshotRepository
 from app.repositories.repository_snapshots import SnapshotSession
 from app.shared.postgres_connection import DatabaseNotConfigured, PostgresDatabase
+from app.workspace_runtime.postgres_operations import PostgresOperations
 
 REVISION_FIELDS = (
     "proposal_id",
@@ -213,6 +214,7 @@ class PostgresWorkflowTransactions:
                         PostgresSnapshotRepository(connection),
                     ),
                     PostgresWorkflowRepository(connection),
+                    PostgresOperations(connection),
                 )
         except (psycopg.Error, DatabaseNotConfigured) as error:
             raise WorkflowStorageUnavailable("Workflow storage is unavailable.") from error

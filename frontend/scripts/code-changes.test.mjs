@@ -2,6 +2,7 @@ import assert from "node:assert/strict";
 import test from "node:test";
 import { ChangeWorkflowClient, editorContent, editablePath } from "../src/features/code-changes/changeWorkflowApi.ts";
 import { submitCodeChange } from "../src/features/code-changes/changeSubmission.ts";
+import { waitForOperation } from "../src/features/code-changes/workspaceOperations.ts";
 
 const proposal = "10000000-0000-4000-8000-000000000001";
 const snapshot = "10000000-0000-4000-8000-000000000002";
@@ -15,6 +16,45 @@ const queued = { job_id: jobId, proposal_id: proposal, revision: 1, artifact_dig
   profile_digest: hash, status: "queued", evidence_digest: null, result: null };
 const signal = () => new AbortController().signal;
 const envelope = data => ({ data, meta: { contract_version: "v0.2", identity_mode: "fixture", request_id: proposal } });
+const sourceOperation = { id: jobId, kind: "write", status: "queued", proposal_id: proposal, revision: 1,
+  artifact_digest: hash, profile_digest: hash, job_id: null, evidence_digest: null, created_at: 1,
+  source_digest: hash, reason: null, container_name: null, target_version: null, approval_id: null };
+
+test("real source save binds a revision and expected source snapshot, never a path or shell command", async () => {
+  let body;
+  const api = new ChangeWorkflowClient("http://local", "token", async (_url, init) => {
+    body = JSON.parse(init.body); return Response.json(envelope(sourceOperation));
+  });
+  await api.source(revision, snapshot, "source-key", signal());
+  assert.deepEqual(body, { proposal_id: proposal, revision: 1, artifact_digest: hash, expected_snapshot_id: snapshot });
+  for (const changes of [{ revision: 2 }, { proposal_id: snapshot }, { source_digest: null }, { kind: "approval" }]) {
+    const bad = new ChangeWorkflowClient("http://local", "token", async () => Response.json(envelope({ ...sourceOperation, ...changes })));
+    await assert.rejects(bad.source(revision, snapshot, "key", signal()), e => e.status === 502);
+  }
+});
+
+test("source save is successful only after the worker confirms it; unknown never becomes saved", async () => {
+  let polls = 0;
+  const api = { async operation() { polls++; return { ...sourceOperation, status: "succeeded" }; } };
+  assert.equal((await waitForOperation(api, sourceOperation, signal())).status, "succeeded");
+  assert.equal(polls, 1);
+  await assert.rejects(waitForOperation(api, { ...sourceOperation, status: "unknown" }, signal()), e => e.code === "OPERATION_UNKNOWN");
+  await assert.rejects(waitForOperation(api, { ...sourceOperation, status: "failed", reason: "SOURCE_CONFLICT" }, signal()), e => e.code === "SOURCE_CONFLICT");
+});
+
+test("approval refuses missing evidence before HTTP and rejects a response for another artifact", async () => {
+  let calls = 0;
+  const api = new ChangeWorkflowClient("http://local", "token", async () => { calls++; return Response.json(envelope(sourceOperation)); });
+  await assert.rejects(api.approve(revision, queued, "key", signal()), e => e.code === "PASSED_EVIDENCE_REQUIRED");
+  assert.equal(calls, 0);
+});
+
+test("operation polling cannot substitute a different artifact or operation", async () => {
+  for (const changes of [{ artifact_digest: "sha256:" + "b".repeat(64) }, { id: snapshot }, { revision: 2 }]) {
+    const api = new ChangeWorkflowClient("http://local", "token", async () => Response.json(envelope({ ...sourceOperation, ...changes })));
+    await assert.rejects(api.operation(sourceOperation, signal()), e => e.status === 502);
+  }
+});
 
 test("change requests carry only fixed source content and revision, with explicit idempotency", async () => {
   const calls = [];

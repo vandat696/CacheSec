@@ -29,6 +29,10 @@ from app.control.repository_configuration import load_repository_binding
 from app.identity.control_authority import RepositoryAccessService
 from app.identity.postgres_control_authority import PostgresControlAuthorityTransactions
 from app.shared.postgres_connection import PostgresDatabase
+from app.workspace_runtime.runtime_service import LocalRuntimeService
+from app.workspace_runtime.source_operations import SourceOperationsService
+from app.workspace_runtime.worker_service import WorkspaceWorkerService
+from app.workspace_runtime.workspace_http import configure_workspace_http
 
 
 def create_app(configuration: Settings = settings) -> FastAPI:
@@ -74,6 +78,12 @@ def create_app(configuration: Settings = settings) -> FastAPI:
         )
         jobs = TestJobService(proposals, binding.profile.scope)
     configure_workflow_http(app, proposals, jobs, configuration.control_test_worker_token)
+    operations = SourceOperationsService(proposals, binding.profile.scope) if proposals else None
+    runtime = LocalRuntimeService(operations) if operations else None
+    workspace_worker = WorkspaceWorkerService(operations, runtime) if operations else None
+    configure_workspace_http(
+        app, operations, runtime, workspace_worker, configuration.control_test_worker_token
+    )
     assistance = AgentAssistanceService(
         RepositoryAccessService(PostgresControlAuthorityTransactions(database)),
         snapshots,

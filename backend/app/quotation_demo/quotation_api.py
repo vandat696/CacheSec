@@ -27,7 +27,10 @@ def create_app(settings: QuotationSettings | None = None) -> ASGIApp:
     )
     transactions = PostgresQuotationTransactions(database)
     factory = FixtureQuotationServiceFactory(
-        registry, transactions, max_page_size=settings.max_page_size
+        registry,
+        transactions,
+        max_page_size=settings.max_page_size,
+        reference_date=settings.reference_date,
     )
     # Wrap the whole app so even sanitized 500 responses have CORS headers.
     app = create_quotation_http_app(factory, max_body_bytes=settings.max_body_bytes)

@@ -1,3 +1,5 @@
+import { workspaceConfig, workspaceOperation } from "./workspaceRuntimeModel.ts";
+
 export const editablePath = "backend/app/quotation_demo/business/quotation_validation.py";
 export type ChangeConfig = { editable_path: string; profile_digest: string; purpose: "technical-smoke";
   repository_identity: string; can_propose: boolean; can_test: boolean };
@@ -16,6 +18,8 @@ const hash = (v: unknown): v is string => typeof v === "string" && /^sha256:[0-9
 const positive = (v: unknown) => Number.isSafeInteger(v) && (v as number) > 0;
 const statuses = ["queued", "preparing", "running", "passed", "failed", "error", "timed_out", "blocked", "unknown"];
 const checkNames = ["identity_required", "record_round_trip", "reader_write_denied", "idempotent_retry", "validation_contract"];
+const taskCheckNames = [...checkNames, ...["missing", "null", "empty", "past", "equal", "future", "invalid_calendar",
+  "invalid_leap", "valid_leap", "strict_format", "whitespace", "timestamp", "number", "boolean", "array", "object"].map(n => "expiration_" + n)];
 export const pendingTest = (job: TestJob) => ["queued", "preparing", "running"].includes(job.status);
 
 export class ChangeApiError extends Error {
@@ -28,6 +32,13 @@ export class ChangeApiError extends Error {
       IDEMPOTENCY_CONFLICT: "Yêu cầu thử lại không khớp lần trước.",
       TEST_PROFILE_CHANGED: "Profile test đã đổi. Hãy tạo bản sửa mới.",
       WORKFLOW_NOT_CONFIGURED: "Backend chưa cấu hình luồng sửa và test.",
+      DISPATCH_DENIED: "Quyền, source hoặc phê duyệt đã đổi. Thao tác đã bị chặn.",
+      SOURCE_CONFLICT: "File trên máy đã đổi. Mở lại source trước khi lưu.",
+      APPROVAL_INVALID: "Phê duyệt đã hết hiệu lực hoặc không khớp artifact.",
+      PASSED_EVIDENCE_REQUIRED: "Cần test đạt cho chính bản sửa này.",
+      TARGET_BUSY_OR_CHANGED: "Ứng dụng đang đổi phiên bản hoặc cần đối soát. Hãy tải lại trạng thái.",
+      OPERATION_UNKNOWN: "Chưa xác minh được kết quả trên máy. Không tự chạy lại thao tác.",
+      OPERATION_PENDING: "Worker chưa hoàn tất. Trạng thái thao tác vẫn được giữ trên backend.",
     } as Record<string, string>)[code ?? ""] ?? ({
       401: "Phiên đã hết hiệu lực.", 403: "Bạn không có quyền thực hiện thao tác này.",
       404: "Không tìm thấy bản sửa trong repository này.",
@@ -48,15 +59,16 @@ function job(v: unknown): v is TestJob {
     || !(v.evidence_digest === null || hash(v.evidence_digest))) return false;
   if (v.result === null) return ["queued", "preparing", "running"].includes(v.status as string);
   const r = v.result;
+  const checks = object(r) ? r.checks : null;
   return !["queued", "preparing", "running"].includes(v.status as string)
     && object(r) && r.outcome === v.status && typeof r.reason === "string"
     && Number.isSafeInteger(r.elapsed_ms) && (r.elapsed_ms as number) >= 0
-    && Array.isArray(r.checks) && r.checks.length <= 5
-    && r.checks.every(c => object(c) && checkNames.includes(c.name as string) && typeof c.passed === "boolean")
-    && new Set(r.checks.map(c => c.name)).size === r.checks.length
+    && Array.isArray(checks) && checks.length <= taskCheckNames.length
+    && checks.every(c => object(c) && taskCheckNames.includes(c.name as string) && typeof c.passed === "boolean")
+    && new Set(checks.map(c => c.name)).size === checks.length
     && (v.status !== "passed" || (hash(v.evidence_digest) && r.reason === "COMPLETED"
-      && JSON.stringify(r.checks.map(c => c.name)) === JSON.stringify(checkNames)
-      && r.checks.every(c => c.passed)));
+      && [checkNames, taskCheckNames].some(names => JSON.stringify(checks.map(c => c.name)) === JSON.stringify(names))
+      && checks.every(c => c.passed)));
 }
 function revision(v: unknown): v is Revision {
   return object(v) && id(v.proposal_id) && positive(v.revision) && id(v.base_snapshot_id)
@@ -94,6 +106,39 @@ export class ChangeWorkflowClient {
     return value.data;
   }
   config(signal: AbortSignal) { return this.request("/config", signal, config); }
+  workspaceConfig(signal: AbortSignal) { return this.request("/workspace/config", signal, workspaceConfig); }
+  async source(saved: Revision, expectedSnapshot: string, key: string, signal: AbortSignal) {
+    const value = await this.request("/workspace/source", signal, workspaceOperation,
+      { proposal_id: saved.proposal_id, revision: saved.revision, artifact_digest: saved.artifact_digest,
+        expected_snapshot_id: expectedSnapshot }, key);
+    if (value.kind !== "write" || value.proposal_id !== saved.proposal_id || value.revision !== saved.revision
+      || value.artifact_digest !== saved.artifact_digest || value.profile_digest !== saved.profile_digest) throw new ChangeApiError(502);
+    return value;
+  }
+  async approve(saved: Revision, job: TestJob, key: string, signal: AbortSignal) {
+    if (job.status !== "passed" || job.artifact_digest !== saved.artifact_digest || job.revision !== saved.revision)
+      throw new ChangeApiError(409, "PASSED_EVIDENCE_REQUIRED");
+    const value = await this.request("/workspace/approvals", signal, workspaceOperation,
+      { proposal_id: saved.proposal_id, revision: saved.revision, artifact_digest: saved.artifact_digest, job_id: job.job_id }, key);
+    if (value.kind !== "approval" || value.status !== "approved" || value.proposal_id !== saved.proposal_id
+      || value.revision !== saved.revision || value.artifact_digest !== saved.artifact_digest
+      || value.profile_digest !== saved.profile_digest || value.job_id !== job.job_id || value.evidence_digest !== job.evidence_digest)
+      throw new ChangeApiError(502);
+    return value;
+  }
+  async activate(approvalId: string, version: number, key: string, signal: AbortSignal) {
+    const value = await this.request("/workspace/activations", signal, workspaceOperation,
+      { approval_id: approvalId, expected_version: version }, key);
+    if (value.kind !== "activation" || value.approval_id !== approvalId || value.target_version !== version) throw new ChangeApiError(502);
+    return value;
+  }
+  async operation(expected: import("./workspaceRuntimeModel.ts").WorkspaceOperation, signal: AbortSignal) {
+    const value = await this.request(`/workspace/operations/${expected.id}`, signal, workspaceOperation);
+    if (value.id !== expected.id || value.kind !== expected.kind || value.proposal_id !== expected.proposal_id
+      || value.revision !== expected.revision || value.artifact_digest !== expected.artifact_digest
+      || value.profile_digest !== expected.profile_digest) throw new ChangeApiError(502);
+    return value;
+  }
   save(snapshotId: string, content: string, previous: Revision | null, key: string, signal: AbortSignal) {
     if (!id(snapshotId) || (previous && !id(previous.proposal_id))) throw new ChangeApiError(400);
     return this.request(previous ? `/proposals/${previous.proposal_id}/revisions` : "/proposals",

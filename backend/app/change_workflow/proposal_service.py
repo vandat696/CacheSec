@@ -260,7 +260,16 @@ class ProposalService:
                 )
                 if tuple(f.path for f in base.files) != OVERLAY_PATHS:
                     raise WorkflowError("SOURCE_SCOPE_MISMATCH")
-                if not self.snapshots.matches_working_tree(base):
+                fresh = self.snapshots.matches_working_tree(base)
+                if not fresh and proposal_id is not None:
+                    previous_bundle = self.snapshots.read_in_transaction(
+                        session.snapshot,
+                        caller.scope,
+                        previous["candidate_snapshot_id"],
+                        repository.identity,
+                    )
+                    fresh = self.snapshots.matches_working_tree(previous_bundle)
+                if not fresh:
                     raise WorkflowError("STALE_SNAPSHOT")
                 original = next(f.content for f in base.files if f.path == EDITABLE_PATH)
                 captured = tuple(
