@@ -1,28 +1,22 @@
 # Tài liệu CacheSec
 
-Hồ sơ thiết kế và trạng thái hệ thống. Nội dung dự kiến không đồng nghĩa đã triển khai; xem project-status để biết kiểm chứng thực tế.
+Đọc ba file đầu để nắm dự án. Các tài liệu còn lại dùng khi triển khai hoặc tra cứu.
 
-Định hướng hiện hành từ 2026-11-02: **Secure Local Semantic Cache for AI-Assisted Software Development**, kiểm chứng bằng đúng một thay đổi validation ngày hết hạn báo giá. Có thêm Workspace xem trước tại `/workspace`; UI chatbot nội bộ cũ vẫn được giữ để tái sử dụng. Yêu cầu giảng viên, đề xuất kỹ thuật và hiện trạng được ghi riêng; lịch sử trong project-status không thay phạm vi mới.
+| Tài liệu | Nội dung sở hữu |
+| --- | --- |
+| [Mục tiêu và phạm vi](general/overview.md) | Yêu cầu demo, quyết định đã chốt và câu hỏi mở |
+| [Trạng thái](general/project-status.md) | Hiện trạng có bằng chứng và việc còn thiếu |
+| [Kế hoạch](general/implementation-plan.md) | Sáu gói D1–D6 và điều kiện hoàn thành |
+| [Đánh giá](evaluation/design.md) | Fixture/oracle, chỉ số, nguồn đo và protocol |
+| [Cài đặt](general/setup.md) | Lệnh chạy, môi trường và xử lý lỗi local |
+| [Kiến trúc](system/architecture.md) | Ranh giới module, storage và runtime |
+| [API](system/api.md) | Contract, quyền, retry và trạng thái |
+| [Cache](system/cache.md) | Lookup, verification, metadata và lifecycle |
+| [Phân quyền](system/authorization.md) | Authority, gate, threat boundary và recovery |
+| [Sửa/test](system/change-workflow.md) | Revision, artifact, Docker test và evidence |
+| [Agent](system/agent-workflow.md) | Vòng sửa/test, công cụ và giới hạn |
+| [Source/runtime](system/workspace-runtime.md) | Ghi file thật và human approval/activation |
+| [Tổ chức source](system/code-organization.md) | Vị trí implementation và quy ước |
+| [Frontend](frontend/design.md) | UI hiện có và phần có thể tái sử dụng |
 
-| Nhóm | Tài liệu | Nội dung |
-| --- | --- | --- |
-| General | [Tổng quan](general/overview.md) | Problem statement, yêu cầu giảng viên, FR/NFR, acceptance chưa chốt, giả định/câu hỏi mở |
-| General | [Trạng thái](general/project-status.md) | Đã làm, quyết định, còn mở, bước tiếp theo |
-| General | [Kế hoạch PoC](general/implementation-plan.md) | T01–T17 tuần tự: thiết kế, database/backend, app/cache/Agent/gate, UI, runner và đánh giá; mở rộng X01–X03 riêng |
-| General | [Cài đặt](general/setup.md) | Môi trường, lệnh chạy và kiểm tra |
-| System | [Kiến trúc](system/architecture.md) | As-Is, ba ranh giới, storage báo giá/blob, registry và HTTP snapshot; thiết kế T03 v0.1 cho artifact |
-| System | [Tổ chức source](system/code-organization.md) | Đặt tên/module frontend/backend, UI kit/catalog, template source và bundle |
-| System | [Contract backend và cache](system/api.md) | T02 v0.2; API app/snapshot/revision/test/Agent/source-write/runtime local đã có; cache và nghiên cứu còn mở |
-| System | [Workflow sửa/test T12](system/change-workflow.md) | Revision/diff/evidence, quyền, profile image, worker Docker và sandbox kỹ thuật đã triển khai |
-| System | [Agent tự sửa/test local](system/agent-workflow.md) | Run có giới hạn, quyền workflow riêng, vòng sửa/test, cancel và registry trong một process |
-| System | [Workspace source/runtime local](system/workspace-runtime.md) | Ctrl+S ghi file host thật, kiểm rule ngày, human approval và kích hoạt đúng artifact bằng worker Docker |
-| System | [Cache](system/cache.md) | Answer/Context Cache, Hit/Miss/Rejected, verification, metadata và lifecycle |
-| System | [Phân quyền](system/authorization.md) | Quyền app/control/repository và gate runtime local đã có; threat model và giới hạn freshness/recovery |
-| Frontend | [Thiết kế](frontend/design.md) | Báo giá/Workspace thật, snapshot/revision/diff/test và human review/run local; các màn mô phỏng cũ được giữ riêng |
-| Evaluation | [Thiết kế đánh giá](evaluation/design.md) | So sánh chính năm chiều, phép thử cache phụ, mẫu số/nguồn đo, fixture và threshold |
-
-## Cách đọc và cập nhật
-
-Đọc tổng quan và trạng thái trước, sau đó tài liệu liên quan đến tác vụ. Mỗi chủ đề có một nơi chính; dùng liên kết thay vì chép lặp. Chỉ tách thêm file khi nội dung thực sự khó đọc. Phân biệt định hướng đã thống nhất, đề xuất, chi tiết chưa chốt và tính năng đã kiểm chứng.
-
-Repository chưa có research notes/bản tóm tắt bài báo được tìm thấy trong đợt khảo sát. Không suy diễn tài liệu kiến trúc là bằng chứng đã đọc paper hoặc đã kiểm nghiệm. Kế hoạch PoC là file mới duy nhất để tránh trộn mốc lịch sử với công việc tương lai; yêu cầu, thiết kế và công thức vẫn ở tài liệu sở hữu chủ đề.
+Mỗi nội dung có một nơi chính; dùng liên kết thay vì chép lại. Phân biệt **đã thống nhất**, **đề xuất**, **đã triển khai** và **đã kiểm chứng**. Không coi màn mẫu, test double hoặc đặc tả mục tiêu là kết quả chạy thật. Mã T trong các tài liệu kỹ thuật là tên gói lịch sử, không phải kế hoạch thực hiện song song với D1–D6.

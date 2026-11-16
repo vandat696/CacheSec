@@ -1,201 +1,50 @@
-# Kế hoạch triển khai Proof of Concept
+# Kế hoạch hoàn thiện demo CacheSec
 
-## Trạng thái và nguyên tắc
+Cập nhật 2026-11-17. [Mục tiêu và yêu cầu](overview.md) là phạm vi chuẩn; [trạng thái](project-status.md) ghi phần đã kiểm chứng. Kế hoạch này thay danh sách T01–T17 cũ; mã T trong tài liệu kỹ thuật chỉ còn là tham chiếu các gói lịch sử.
 
-Lập ngày 2026-11-02; cập nhật **2026-11-16**. T02 đã hoàn thành đặc tả v0.2; T01 còn điều kiện nghiên cứu. Đã có app báo giá/API/DB, Workspace editor/revision/test Docker và Agent thật. [Source write/runtime local](../system/workspace-runtime.md) thêm Ctrl+S ghi file host, 21 nhóm check kỹ thuật và human approval/activation đúng artifact. Gemini đã tạo rule ngày, sửa từ feedback thật, lưu/test qua Workspace và human đã duyệt chính xác revision 4; app local target v1 đã chạy/kiểm HTTP và UI thật. Đây là lát cắt kỹ thuật T03–T15, chưa hoàn thành toàn các gói, cache hoặc nghiên cứu; dấu chọn chỉ xác nhận đầu ra/kiểm chứng của từng gói.
+## Điểm xuất phát
 
-Phạm vi và câu hỏi mở do [tổng quan](overview.md) sở hữu; module/runtime do [kiến trúc](../system/architecture.md) sở hữu, request/response/thao tác do [contract API](../system/api.md) sở hữu; quyền/gate do [phân quyền](../system/authorization.md) sở hữu; protocol/fixture/acceptance do [đánh giá](../evaluation/design.md) sở hữu. Kế hoạch này quản lý việc cần làm và điều kiện nghiệm thu, không thay đặc tả của các tài liệu đó.
+Đã có Gemini đọc source, tạo revision, Docker test, Workspace lưu file thật và human approval/activation đúng artifact. Chưa có Context Cache, màn hai nhánh hoặc lịch sử metrics/đánh giá đầy đủ trong database.
 
-Giữ một repo, một fixture cố định, một approval-control implementation và một acceptance rule định trước. Đúng một feature change là flag báo giá thiếu ngày hết hạn hợp lệ. Cache, Agent/tools, gate và trace là hạ tầng chuẩn bị cho cả hai workflow, không phải các feature changes bổ sung trong thí nghiệm. Cache không cấp quyền, bỏ test hoặc thay approval; không tự commit, push hoặc deploy.
+## Thứ tự thực hiện
 
-Mọi bước lập trình tuân thủ [ba ranh giới ứng dụng/Agent/IDE/cache](../system/architecture.md#quy-tắc-độc-lập-giữa-ứng-dụng-agentide-và-cache). App báo giá có source/entrypoint chạy độc lập; Agent coi source là mục tiêu thao tác qua tools có scope; lõi cache không phụ thuộc nghiệp vụ hoặc host. Runtime app và bản sửa/test tách khỏi process control. Không buộc database hoặc Git repository riêng cho từng thành phần/revision.
-
-Bước T02, T08–T11 và T14 phải giữ [contract tích hợp IDE/Agent](../system/architecture.md#tích-hợp-cachesec-vào-ide-và-agent) chung có phiên bản, được tài liệu hóa. Web Workspace là một host tích hợp. SDK/API và adapter là hình thức có thể chọn, không mặc định scaffold cả hai; MCP/VS Code chưa được chọn làm implementation bắt buộc.
-
-## Cách thực hiện
-
-Thực hiện T01 → T17. Mỗi mục là một gói công việc có đầu ra review được, thường gồm một năng lực hoàn chỉnh và kiểm chứng liên quan; không coi từng bảng DB, endpoint hay component là một tác vụ riêng. Khi bắt đầu một mục, đọc lại code/trạng thái rồi mới chia checklist kỹ thuật chi tiết; không scaffold trước toàn bộ hệ thống.
-
-Theo yêu cầu ngày 2026-11-09, triển khai đến đâu nối giao diện sử dụng được đến đó khi contract/quyền tương ứng đã sẵn sàng. Không đợi hoàn thành toàn bộ backend mới nối UI; phần chưa có backend giữ trạng thái mô phỏng rõ ràng. Điều kiện nghiên cứu/bảo mật còn mở vẫn chặn phần phụ thuộc, không dùng mock thành công để nối luồng.
-
-T01–T04 ưu tiên **thiết kế và xác nhận**. Có thể soạn nháp các mục thiết kế khi còn câu hỏi, nhưng đánh dấu phần chưa chốt và dừng phần triển khai phụ thuộc vào chúng. T05–T16 là phát triển/kiểm chứng kỹ thuật, không được ghi thành kết quả thực nghiệm. T17 mới thu thập dữ liệu so sánh chính khi các điều kiện đã khóa. Khi hoàn thành mục nào, ghi ngắn đầu ra, kiểm tra, giới hạn và bước kế tiếp trong [project status](project-status.md).
-
-Không tự chọn thay người dùng/giảng viên các giá trị ảnh hưởng nghiệp vụ, quyền hoặc tính đúng nghiên cứu. Người dùng đã chọn Context Cache/browser trước, ngày YYYY-MM-DD có thật và không trước mốc fixture 2026-11-07, cùng identity fixture backend quản lý cho PoC. Ngày 2026-11-09 đã xác nhận giữ validation nền hiện tại và parse nghiêm ngặt không trim/ép kiểu/nhận timestamp; oracle/fixture, acceptance, mapping authority/freshness, storage engine/model/sandbox/deploy target còn mở. Tên công việc dưới đây không thay quyết định đã được xác nhận trong overview.
-
-## Danh sách công việc tuần tự
-
-### T01 — Khóa phạm vi và các đầu vào cần xác nhận
-
-- [ ] Hoàn thành T01. **Phụ thuộc:** không có.
-- **Trạng thái:** đang thực hiện; [hồ sơ đầu vào T01](overview.md#hồ-sơ-đầu-vào-t01--đang-thực-hiện) đã ghi Context Cache/browser, rule ngày/mốc fixture, bộ sáu trường và identity fixture; ngày 2026-11-09 xác nhận giữ validation nền và parse nghiêm ngặt. Developer có quyền Reviewer được tự duyệt tường minh; acceptance chưa chọn, chờ cô quy định. Fixture/oracle và protocol baseline/số lặp còn mở; chưa đánh dấu hoàn thành T01. Các phần kỹ thuật đã đủ contract được thực hiện theo trạng thái từng gói, không chạy thực nghiệm hoặc triển khai phần phụ thuộc điều kiện còn mở.
-- **Làm:** thống nhất schema báo giá tối thiểu, nghĩa ngày hợp lệ/mốc thời gian; vai trò và quyền cần có; chọn lát cắt Answer Cache hoặc Context Cache, vị trí local và host tích hợp đầu tiên. Xác nhận one-fixture contract, oracle, acceptance threshold, công cụ baseline và protocol lặp; phần chưa xác nhận phải có bước bị chặn rõ ràng.
-- **Đầu ra:** bảng đã thống nhất/đề xuất/còn mở tại overview; protocol nháp tại evaluation, tách acceptance khỏi similarity threshold.
-- **Nghiệm thu:** biết đầu vào, kết quả flag mong đợi và capability được duyệt; không gán quyết định người dùng thành yêu cầu giảng viên đã phê duyệt. Acceptance phải chờ cô quy định, không dùng 100% làm mặc định. T02–T04 có thể soạn nháp, nhưng không triển khai phần phụ thuộc quyết định còn mở.
-
-### T02 — Thiết kế module backend và contract API/cache
-
-- [x] Hoàn thành **đặc tả thiết kế T02 v0.2**. **Phụ thuộc:** các đầu vào kỹ thuật T01 đã chọn; không chốt thay phần nghiên cứu còn chờ.
-- **Trạng thái:** [contract v0.2](../system/api.md) có types, quyền, transitions, retry/lỗi và bảng ca đối chiếu; phần API/schema báo giá đã triển khai sau bước thiết kế. Grants/freshness/limits báo giá đã chốt riêng; mapping/integrity, sandbox/activation/deadlines và giới hạn control/cache vẫn còn mở. Dấu chọn xác nhận đầu ra thiết kế, không xác nhận toàn bộ API mục tiêu đã chạy.
-- **Làm:** phân ranh source/entrypoint ứng dụng báo giá, control Agent/IDE và lõi cache; định nghĩa luồng request/context/proposal/test/approval/deployment. Đặc tả API theo thao tác, request/response, ID/revision, lỗi, trạng thái bất đồng bộ và cách retry không tạo thao tác trùng. Contract cache không chứa kiểu dữ liệu nghiệp vụ hoặc browser session.
-- **Đầu ra:** sơ đồ phụ thuộc/runtime và ranh giới adapter tại architecture; contract dữ liệu/API, ma trận quyền và state transitions tại api.md.
-- **Nghiệm thu:** đi được cả đường thành công, reject/error/timeout và nguồn đổi; frontend không tự ghi Approved/ALLOW, Agent không có tool approve/deploy. Contract chưa phải endpoint đang chạy hoặc SDK đã phát hành.
-
-### T03 — Thiết kế database, artifact storage và vòng đời dữ liệu
-
-- [ ] Hoàn thành T03. **Phụ thuộc:** T01–T02.
-- **Trạng thái:** gói local v0.1 đã được người dùng chọn để triển khai. Ngoài storage báo giá, đã có [nền blob control](../system/architecture.md#nền-blob-control-đã-triển-khai), registry và [snapshot/source profile nội bộ](../system/architecture.md#snapshot-repository-đã-triển-khai); chưa có artifact-ready/binding/approval tables. Thiết kế các phần tiếp theo ở [T03 v0.1](../system/architecture.md#đề-xuất-t03-lưu-trữ-control-và-artifact-v01); retention sau nghiên cứu và các phần cache/workflow còn mở, chưa hoàn thành toàn bộ T03.
-- **Làm:** lập ERD/data dictionary cho dữ liệu báo giá; identity/scope/repo/snapshot; run/proposal/test/artifact/approval/deployment/events. Xác định chủ sở hữu, khóa/quan hệ, ràng buộc revision/digest, transaction, index, retention và reset. Thiết kế nơi lưu bytes source/artifact tách khỏi metadata; dữ liệu app và control không truy cập chéo bảng nội bộ.
-- **Đầu ra:** thiết kế dữ liệu và migration/seed/reset dự kiến trong architecture, phân biệt phương án đã chọn/còn mở. Nếu cache ở browser thì thiết kế storage local và metadata verification tương ứng; chỉ đặc tả bảng/vector phía server theo lựa chọn thực sự cần.
-- **Nghiệm thu:** truy vết được proposal → test → artifact → approval → deployment; không cần DB riêng cho mỗi revision. PostgreSQL/pgvector có cấu hình không có nghĩa mọi cache payload phải lưu ở PostgreSQL. T04 phải rà lại schema/contract nếu trust boundary yêu cầu thay đổi; chỉ khóa thiết kế trước T05.
-
-### T04 — Thiết kế quyền, executor, gate và trace
-
-- [ ] Hoàn thành T04. **Phụ thuộc:** T01–T03.
-- **Trạng thái:** quyền/freshness API báo giá đã triển khai riêng. [Gói gate local v0.1](../system/authorization.md#phương-án-gate-local-v01-để-chốt) đã được người dùng chọn: authority/TTL/single-use, Docker executor/target, reservation/dispatch/reconciliation và failure boundary. Registry quyền control nội bộ đã có scope lock/epoch và kiểm quyền hiện tại; đã nối Bearer HTTP snapshot và CLI read-only; đã cấp principal dev chỉ repository.read; chưa nối gate/launcher, chưa kiểm chứng host isolation. T04 cho cache/retrieval/delegation còn mở; không dùng quyền app báo giá hoặc blob index làm quyền duyệt/deploy.
-- **Làm:** chốt nguồn identity/authority (identity fixture do backend kiểm soát nếu được chọn phải ghi là mô phỏng), repo/path/tool scope, freshness/revoke, offline policy, trusted provenance/integrity; chọn cơ chế cô lập source/test và giới hạn lệnh/tài nguyên/timeout. Đặc tả exact-change approval, artifact bất biến, kiểm tra cùng digest tại activation và mọi đường bypass thuộc PoC. Định nghĩa event/ID/digest/error tối thiểu để instrument ngay từ đầu.
-- **Đầu ra:** control/threat boundary và test matrix trong authorization; event schema/nguồn đo trong evaluation; cập nhật contract/schema ở T02–T03 nếu cần.
-- **Nghiệm thu:** nêu được cách block chưa duyệt, sai quyền, mã/artifact/evidence đổi sau duyệt, verifier lỗi và source stale; gate không thuộc cache. Process riêng chưa được xem là đủ sandbox. Không chạy Agent hoặc kích hoạt artifact trước khi các điều kiện an toàn phụ thuộc đã được khóa.
-
-### T05 — Nối database và nền lưu trữ backend
-
-- [ ] Hoàn thành T05. **Phụ thuộc:** T02–T04 đã đủ điều kiện triển khai.
-- **Trạng thái:** đã có PostgreSQL/metadata retry báo giá, blob control 001, registry 002 và source profile/snapshot 003. Migration local/replay no-op giữ dữ liệu/history báo giá, registry và blob; không seed quyền/profile hoặc capture source thật. 337 test backend với PostgreSQL thật trong container Linux đạt; xem project-status cho giới hạn host. Artifact/test/approval/deployment persistence và toàn T04 còn tiếp tục.
-- **Làm:** cấu hình kết nối, migration/constraints và adapter lưu trữ cần dùng ngay; kiểm chứng PostgreSQL/extension thực tế nếu được chọn. Tách liveness/readiness, transaction/error handling và cấu hình phiên bản. Chưa xây sẵn bảng, service hoặc dependency cho mọi biến thể mở rộng.
-- **Đầu ra:** migration tối thiểu, persistence adapters, hướng dẫn khởi động và reset dữ liệu phát triển trong phạm vi rõ ràng.
-- **Nghiệm thu:** migrate/read/write và lỗi kết nối được kiểm tra trên DB thật; migration rollback/forward hoặc khôi phục theo cách đã thiết kế. Không giả readiness thành công khi DB lỗi; không tự xóa volume/dữ liệu ngoài test được cho phép.
-
-### T06 — Thực thi identity, scope và trace nền
-
-- [ ] Hoàn thành T06. **Phụ thuộc:** T04–T05.
-- **Trạng thái:** API báo giá có registry fixture và request ID backend. Control có registry Python nội bộ, composite tenant/repo/FK, token version, grants tường minh, scope lock/epoch CAS và repository.read use case qua transaction port; đã test quyền/revoke/rotation/concurrency trên DB thật. Đã nối Bearer HTTP lấy scope từ registry và CLI host có epoch CAS; đã cấp principal/scope dev chỉ đọc; chưa policy epoch riêng, delegation hoặc event persistence/audit nghiên cứu; chưa hoàn thành toàn T06.
-- **Làm:** middleware/dependency lấy identity đáng tin cậy, kiểm tra tenant/repo/action; lưu policy/config versions và tạo request/run/event IDs. Bổ sung thời gian thực tế, outcome/reason, lỗi/timeout và redaction cho các thao tác đã có; mỗi năng lực sau phải mở rộng trace của chính nó.
-- **Đầu ra:** authorization service nhỏ, bộ kiểm tra scope và event persistence theo contract; không tạo policy engine tổng quát.
-- **Nghiệm thu:** giả tenant/role/scope, thiếu quyền và authority unavailable bị chặn; trace success/deny/error không lộ secrets. Chưa có nghiệp vụ không được sinh event cache/test/deploy giả.
-
-### T07 — Dựng ứng dụng báo giá nền và fixture duy nhất
-
-- [ ] Hoàn thành T07. **Phụ thuộc:** T01, T05–T06 và contract app ở T02.
-- **Trạng thái:** đã có domain/application/storage và entrypoint API tạo/đọc/phân trang/validate nền độc lập control/Agent/cache; UI /quotations gọi HTTP/PostgreSQL thật. validate_quotation là điểm vào source cho nhiệm vụ sửa code; baseline chưa có quy tắc nghiệp vụ, công bố flags/evaluated_rules rỗng thay vì giả ngày hợp lệ. Operator cần cả read/validate, không ghi DB hoặc tạo evidence/approval. API/UI và lỗi quyền/response đến trễ đã kiểm chứng; [project status](project-status.md) ghi kết quả test mới nhất. [Bảng oracle T07](../evaluation/design.md#bảng-oracle-t07-để-review) vẫn cần review nhãn và one-fixture contract. Chưa có rule ngày, reference-date/artifact từ launcher, manifest đóng băng hoặc revision gốc nghiên cứu; chưa hoàn thành T07.
-- **Làm:** app tiếp nhận/danh sách/chi tiết/validation tối thiểu chạy độc lập, **chưa có rule mới**. Tạo một fixture manifest có nhãn, mốc thời gian, phần ca gate/reuse liên kết và oracle theo contract đã xác nhận; backend đọc schema dùng chung, không import script nghiên cứu.
-- **Đầu ra:** source app nền, entrypoint/API riêng với control, test nền và manifest có version/digest; ghi revision gốc và cách tái tạo trạng thái ban đầu.
-- **Nghiệm thu:** app chạy không import code Agent/IDE/cache; test hành vi cũ pass. Ca kiểm tra rule mới chứng minh thiếu sót có chủ đích, phân biệt expected failure của app gốc với lỗi của workflow đã hoàn thành. Fixture UI cũ không trở thành fixture thực nghiệm; các test double đơn vị không phải tập benchmark thứ hai.
-
-### T08 — Đọc repository được phép và theo dõi provenance
-
-- [ ] Hoàn thành T08. **Phụ thuộc:** T02, T04, T06–T07.
-- **Trạng thái:** đã có service snapshot có quyền, exact-file profile/root tường minh, DB active profile/epoch, manifest/blob refs, hai lượt đọc và get/read_file bằng scoped IDs. Đã test deny, traversal/case/hard-link/junction, source edit, tamper/rollback/COMMIT failure và worker giữ profile cũ. Đã nối HTTP/Workspace và có profile mẫu exact-file/CLI; đã cấu hình profile dev ba file và kiểm HTTP/Workspace thật; chưa Git/base revision, dependency completeness, symbol retrieval/RAG hoặc kiểm source stale tại patch/use; chưa hoàn thành toàn T08.
-- **Làm:** repository adapter đọc source mục tiêu theo repo/path/snapshot; lấy file/symbol/context cần thiết, dependency manifest và hash từ nguồn tin cậy. Xác định snapshot khi working tree chưa commit và cách phát hiện file đổi; chỉ thêm index/RAG cần cho lát cắt.
-- **Đầu ra:** authorized retrieval có provenance, không phụ thuộc trực tiếp vào model nghiệp vụ báo giá.
-- **Nghiệm thu:** tìm đúng validation; deny repo/path ngoài scope, traversal/symlink và secrets theo policy. Mọi dependency cần có bằng chứng; source thay đổi phải phát hiện trước reuse hoặc sửa code. Code control/cache/gate không nằm trong scope Agent được sửa.
-
-### T09 — Nối LLM và embedding qua adapter riêng
-
-- **Lát cắt đã có:** người dùng chuyển sang Gemini `gemini-3.5-flash-lite`; generateContent adapter, API assistance đọc ba file có quyền/freshness và UI đề xuất → người dùng áp dụng/test đã có implementation. OpenAI Responses adapter giữ riêng, không tự fallback. Key private do người dùng cấu hình; xem project-status cho kiểm chứng model thật, không coi provider double là kết nối thật. Đã có thêm vòng Agent local giới hạn ở T14 bên dưới; chưa embedding/cache hoặc toàn bộ T09/T14.
-
-- [ ] Hoàn thành T09. **Phụ thuộc:** T01–T02, T06 và T08.
-- **Làm:** chọn provider/model/config đã xác nhận, tách generation khỏi embedding; chuẩn hóa usage, timeout, retry, lỗi và provenance đầu vào. Chỉ kết nối embedding khi lát cắt cần; không thêm nhiều provider hoặc SDK ngoài nhu cầu.
-- **Đầu ra:** đường hỏi hiểu repo No Cache chạy thật, usage/duration có trace; vector namespace/config khi có embedding.
-- **Nghiệm thu:** provider lỗi/thiếu usage được báo đúng; không fallback sang câu mẫu giả thành công. Test double có nhãn riêng; có kiểm chứng kết nối thật được phép, không phải số đo benchmark. Chưa giao Agent tạo rule mới ở bước này.
-
-### T10 — Cache exact, admission và verification
-
-- [ ] Hoàn thành T10. **Phụ thuộc:** T01–T04, T06, T08–T09.
-- **Làm:** triển khai lát cắt cache đã chọn với storage adapter, contract có phiên bản, exact lookup, admission và verifier. Ràng buộc identity/tenant/repo/intent/scope, mọi dependency/version/hash, policy/config/TTL và toàn vẹn payload; Miss/Rejected fallback vào authorized retrieval/model.
-- **Đầu ra:** Hit/Miss/Rejected và Error/Timeout thật; lõi cache tách nghiệp vụ/host, cache payload và dữ liệu approval tách biệt.
-- **Nghiệm thu:** hit hợp lệ đúng payload; sai scope/tenant/quyền/nguồn, TTL, integrity hoặc verifier unavailable không trả payload. No Cache bỏ lookup/reuse nhưng giữ authorization. Với Answer Cache có thể tránh sinh answer; với Context Cache vẫn có thể gọi LLM, không tự báo tiết kiệm calls/tokens.
-
-### T11 — Semantic matching và lifecycle cache
-
-- [ ] Hoàn thành T11. **Phụ thuộc:** T10 và quyết định embedding/similarity/TTL/eviction/invalidation.
-- **Làm:** semantic candidate matching dùng đúng model/revision/dimension/metric/namespace, verifier dùng chung với exact; thêm capacity/eviction tối thiểu và invalidation khi source/quyền/policy/config đổi. Khóa similarity threshold theo protocol, không chọn bằng nhãn evaluation.
-- **Đầu ra:** candidate/terminal trace, lifecycle và overhead thực; phân vùng hiệu chỉnh/đánh giá trong cùng manifest nếu đã được thống nhất.
-- **Nghiệm thu:** paraphrase tương đương có thể hit; gần nghĩa nhưng sai intent hoặc stale/unauthorized phải reject. Đổi embedding phải re-embed hoặc namespace khác; bỏ lỡ invalidation vẫn bị verifier chặn. Có chi phí lookup/embedding/network/verification; chưa suy ra lợi ích workflow từ probe có chủ đích.
-
-### T12 — Quản lý bản sửa và chạy test tách biệt
-
-- **Mốc tích hợp local đã hoàn tất:** Workspace sửa bản riêng, revision/diff, profile image/inventory, worker Docker/DB test riêng và evidence thật. Chỉ file validation được sửa, không ghi working tree. [Workflow T12](../system/change-workflow.md) có contract và giới hạn; T12 toàn bộ vẫn phụ thuộc oracle/fixture/trusted R nghiên cứu chưa khóa.
-
-- [ ] Hoàn thành T12. **Phụ thuộc:** T02–T08 và cơ chế executor đã chốt tại T04.
-- **Làm:** tạo bản làm việc riêng từ đúng source snapshot; áp patch trong scope, sinh diff thật và proposal revision; chạy allowlist test/build có timeout/giới hạn trong môi trường tách khỏi control. Tạo artifact bất biến và test evidence gắn artifact/fixture/config hashes.
-- **Đầu ra:** executor và artifact/evidence store dùng chung cho Developer-guided và AI-assisted, API trạng thái/lỗi có trace.
-- **Nghiệm thu:** path ngoài app, patch không khớp base, lệnh không được phép và timeout bị chặn/báo đúng. Sửa code không đổi runtime đang dùng; code hiển thị lấy từ snapshot thật. Chỉ kiểm tra hạ tầng bằng ca kiểm soát phù hợp, không bổ sung sẵn rule mới vào baseline để thay phần việc của Agent.
-
-#### Mốc tích hợp T12 — gói đã được người dùng xác nhận
-
-Mục tiêu là hoàn thành một luồng dùng được trên Workspace: chọn snapshot → sửa bản riêng → lưu revision/diff → chạy kiểm thử kỹ thuật thật → xem kết quả gắn đúng revision. Không kết thúc mốc chỉ bằng việc thêm model/helper. Người dùng đã xác nhận trọn gói ngày 2026-11-11; mốc kỹ thuật local đã được triển khai và kiểm chứng, xem project-status. Các điều kiện nghiên cứu vẫn còn mở.
-
-| Phạm vi đã xác nhận | Cách triển khai |
-| --- | --- |
-| Source/runtime | Giữ profile đọc ba file và repository identity hiện có. Image nền riêng cho app báo giá dùng dependency lock đã có, ghim image ID/platform và source inventory; không chạy candidate bằng image control. Rà import tĩnh từ quotation_api hiện cho 23 file Python cùng requirements-dev.lock.txt; inventory image và import động vẫn phải đối chiếu trước đăng ký |
-| Scope sửa | Chỉ modify backend/app/quotation_demo/business/quotation_validation.py trong candidate riêng. Hai file model/service giữ nguyên từ snapshot; các source/dependency nền khác lấy từ image tin cậy. Không add/delete/rename hoặc ghi working tree/control/cache/harness/policy. Artifact tham chiếu cả image nền và overlay bytes/config; không coi ba file là toàn bộ dependencies |
-| Quyền dev | Cần repository.read, proposal.create và test.run; cấp tường minh bằng administration/epoch CAS. Không suy từ token read-only hoặc cấp change.review/deployment.activate; không tự sync grants lúc startup |
-| Test worker | Worker host tin cậy giữ quyền Docker và lấy job qua control; không mount Docker socket vào control/app test. API nhận resource/config refs, không raw command/image/path. Kiểm quyền hiện tại và binding trước dispatch; worker credential riêng không đưa browser hoặc candidate |
-| Cô lập | Mỗi test dùng network nội bộ, app/container và DB test riêng. App chỉ nhận role đủ schema báo giá của DB test, không DB owner/control/reviewer credential. Source read-only, non-root, drop ALL, no-new-privileges, rootfs read-only và tmpfs. Không publish candidate thành app dev hoặc route Internet/host; kiểm chứng đường truy cập thật trước chạy candidate |
-| Giới hạn | Gói local v0.1: 1 CPU, 512 MiB RAM, 128 process, tmpfs 64 MiB, output 1 MiB/stream, test deadline 120 giây. Lỗi/timeout/mất ACK phải có trạng thái thật, không tự kết luận chưa chạy hoặc retry bằng artifact khác |
-| Suite kỹ thuật | Harness tin cậy riêng kiểm HTTP app, round-trip/precision/missing-null, identity/capability app và retry; kết quả gắn job/artifact/revision. Không lấy stdout do candidate ghi làm verdict. Đây là smoke/regression kỹ thuật, chưa đánh giá correctness rule ngày hoặc acceptance nghiên cứu |
-| UI/evidence | Editor chỉ file được phép, diff thật, revision bất biến và test result gắn đúng artifact/revision. Sửa tiếp giữ kết quả trước làm lịch sử, không coi revision mới đã test. Approval/triển khai vẫn khóa; không kích hoạt rule mới trước gate |
-
-Kết thúc mốc khi demo được cả lưu/sửa/test thành công, sai quyền/path/base stale bị chặn, candidate lỗi/timeout trả kết quả thật và revision mới không nhận verdict cũ. Phải chứng minh không truy cập DB dev/control hoặc chạy source ngoài sandbox; kiểm API/DB/UI tích hợp và hướng dẫn chạy trong cùng mốc. Oracle/one-fixture contract, trusted R, acceptance và protocol nghiên cứu vẫn chờ xác nhận; không tự tạo nhãn hoặc chạy so sánh để hoàn thành mốc kỹ thuật.
-
-### T13 — Approval gate và kích hoạt đúng artifact
-
-- **Lát cắt local đã có 2026-11-15:** approval/evidence/artifact binding, TTL/single-use, target reservation/version, recheck authority tại permit, worker singleton, Docker app/ingress và unknown/recovery. [Luồng local](../system/workspace-runtime.md) dùng test profile kỹ thuật, không tuyên bố hoàn thành artifact-ready/audit/threat matrix hoặc fixture/gate nghiên cứu.
-
-- [ ] Hoàn thành T13. **Phụ thuộc:** T04–T07 và T12.
-- **Làm:** lưu quyết định tường minh từ reviewer có authority; gate kiểm tra source/patch/artifact/test/fixture/config binding và hiệu lực tại activation. Kích hoạt đúng artifact đã duyệt cho runtime app tách biệt; ghi deployed/blocked/failed, không rebuild bytes khác sau duyệt.
-- **Đầu ra:** một approval/deployment control chung cho cả hai workflow, kiểm tra qua API/control trực tiếp.
-- **Nghiệm thu:** chưa duyệt, sai quyền, sai artifact/evidence, đổi code sau duyệt hoặc approval hết hiệu lực bị block; chỉ artifact hợp lệ được kích hoạt. Không có đường UI/API/tool thuộc threat boundary bỏ qua gate; cache hit/test pass không cấp quyền. **Chưa deployment nào của rule mới được phép trước mục này.**
-
-### T14 — Agent tạo đúng một thay đổi và hoàn tất luồng thật
-
-- **Lát cắt kỹ thuật đã có:** [vòng Agent local](../system/agent-workflow.md) tự đọc source, tạo revision riêng, queue test T12 và sửa tiếp từ feedback, tối đa ba lượt/mười phút. Ngày 2026-11-16, một run Gemini tạo rule thật; review phát hiện ngày ISO tuần lọt harness, bổ sung regression rồi một request assistance riêng sửa bằng feedback Docker failed. Hai lần gọi model tổng cộng; format giữ AST, Ctrl+S ghi source và test artifact cuối đạt. Đây không phải tự resume run terminal. Sau human phê duyệt chính xác revision 4, rule đã chạy trên app local target v1 và kiểm hành vi HTTP/UI; image baseline giữ nguyên. Cache/fixture/oracle/acceptance nghiên cứu còn mở. Chi tiết bằng chứng ở project-status.
-
-- [ ] Hoàn thành T14. **Phụ thuộc:** T08–T13.
-- **Làm:** nối request → context/cache → model/Agent tools → proposal/diff → test → xin duyệt → activation qua control. Chỉ giao một thay đổi flag ngày hết hạn; Agent không có quyền approve/deploy hoặc sửa control/cache/policy.
-- **Đầu ra:** workflow dùng prompt thật tạo bản sửa source thật trong snapshot riêng; hành vi báo giá đổi sau đúng quyết định của reviewer. Các thao tác approve/activate được thực hiện bởi actor/control có quyền, không do Agent tự quyết.
-- **Nghiệm thu:** flags của artifact đúng oracle, regression pass; diff/test/approval/deploy trỏ cùng artifact. Yêu cầu ngoài scope, nguồn đổi, model/tool lỗi, thiếu duyệt hoặc revision stale có trace và không kích hoạt sai. Chạy kiểm chứng kỹ thuật, chưa thu thập số liệu so sánh chính.
-
-### T15 — Nối giao diện IDE và màn báo giá với backend
-
-- [ ] Hoàn thành T15. **Phụ thuộc:** API ở T07 và workflow T14.
-- **Trạng thái:** đã nối app báo giá, phiên Workspace local, editor/revision/test Docker, Agent assistance và UI run tự sửa/test có giới hạn cần key/quyền riêng. Workspace chỉ một màn chính, mô phỏng chuyển vào UI phụ; review/deploy thật và workflow T14 đầy đủ chưa có, T15 chưa hoàn thành toàn bộ.
-- **Làm:** tái sử dụng code/chat IDE, thay fixture bằng source/diff/message/status thật; nối hộp thoại test/approval. Thêm màn báo giá tối giản dùng API app để nhập/xem/validation và quan sát trước/sau activation; route cụ thể theo contract đã chốt, không dựng ERP hoặc IDE đầy đủ.
-- **Đầu ra:** demo sử dụng được từ trình duyệt: prompt → diff/test → reviewer duyệt → kích hoạt → báo giá phản ánh rule mới.
-- **Nghiệm thu:** UI không tự bịa hit/test/approval; loading/error/reconnect và stale revision rõ; thao tác chưa được phép không thành công qua API. Code/chat vẫn là hai vùng chính, giữ UI ít chữ, accessibility/responsive và các màn cũ.
-
-### T16 — Hoàn thiện runner, reset và nghiệm thu hệ thống
-
-- [ ] Hoàn thành T16. **Phụ thuộc:** T05–T15 và protocol đã xác nhận.
-- **Làm:** runner/API/CLI điều phối hai workflow, ghi nhận phần thao tác người thật của Developer-guided thay vì tự động thay bằng Agent; reset app/source/proposal/approval/deployed/cache state trong vùng cho phép. Lưu run manifest, phiên bản, event links, usage và export JSON/CSV; kiểm tra end-to-end cả success/blocked/error/timeout và khả năng tái tạo từ môi trường sạch.
-- **Đầu ra:** hướng dẫn chạy, runner và báo cáo nghiệm thu kỹ thuật; một fixture/gate/config được khóa trước T17. Nếu fixture/source đổi thì bump version/digest và chạy lại kiểm tra phụ thuộc.
-- **Nghiệm thu:** không rò state/approval giữa lượt; có planned/attempted/completed và phát hiện thiếu trace. Lint/typecheck/test/build/browser/backend/DB phù hợp đạt hoặc nêu blocker; không gọi demo song song là benchmark và không ghi test kỹ thuật thành kết quả nghiên cứu.
-
-### T17 — Chạy so sánh chính và lập báo cáo
-
-- [ ] Hoàn thành T17. **Phụ thuộc:** T01–T16 đạt; repo/fixture/gate/acceptance/protocol và số lặp được xác nhận, khóa trước run.
-- **Làm:** thực hiện Developer-guided / AI-assisted trên cùng trạng thái ban đầu và điều kiện đã định; đo correctness, approval gate, reproducibility, trace completeness, engineering time/failures. Tính cả chuẩn bị theo protocol, errors/timeouts và can thiệp thủ công.
-- **Đầu ra:** artifacts/manifest/báo cáo có nguồn đo và mẫu số, phân biệt quan sát thực, mock/probe và cost estimate.
-- **Nghiệm thu:** mọi run lên lịch được ghi nhận, không chọn lại threshold sau kết quả hoặc chỉ giữ run thành công. Không gán riêng chênh lệch hai workflow cho cache; không có reuse hữu ích phải báo đúng. Chưa đạt điều kiện đầu vào thì chưa chạy thực nghiệm.
-
-## Mở rộng sau PoC — chưa cam kết triển khai
-
-| ID | Việc | Điều kiện và kết quả cần có |
+| Gói | Công việc cốt lõi | Điều kiện hoàn thành |
 | --- | --- | --- |
-| X01 | So sánh riêng AI Cache/No Cache | Chỉ khi phép thử phụ được thống nhất, sau T16–T17; giữ cùng Agent/model/retrieval/quyền/gate, tách cold/warm/preload và probe khỏi workflow tự nhiên. Báo latency/calls/tokens/verification thật, kể cả không có lợi ích |
-| X02 | Adapter cho IDE/Agent bên ngoài, ví dụ MCP hoặc VS Code | Sau contract/cache thật và PoC cốt lõi; chọn một tổ hợp host/Agent/adapter cụ thể trước. Kiểm chứng quyền, provenance, stale/reject/error và tích hợp thật trước công bố tương thích; không mặc định phải viết extension mới hoặc chọn MCP |
-| X03 | Biến thể cache/model/policy | Answer/Context bổ sung ngoài lát cắt đã chọn, server cache, exact/semantic variants, eviction/policy sweeps, nhiều provider hoặc fine-tune/FL chỉ khi có câu hỏi nghiên cứu và protocol riêng được thống nhất; giữ trong thiết kế, chưa thêm dependency/runner cho tất cả |
+| D1 — Khóa thiết kế | Rà đường context của assistance/Agent; chốt cache verification, embedding/storage/lifecycle và schema lịch sử; soạn oracle/ca demo để review | Contract và quyết định đủ cho phần triển khai tương ứng; câu hỏi nghiên cứu còn chờ được ghi riêng |
+| D2 — Context và verifier | Tách context preparation khỏi generation; authorized retrieval, bundle/provenance, admit/verify; ghi trace tại điểm thực thi | Backend chặn tamper, sai scope/quyền, stale/expired/config mismatch; authority lỗi không cấp context |
+| D3 — Browser semantic cache | Storage local, embedding adapter thật, exact/semantic lookup, namespace, TTL/capacity/eviction/invalidation | Browser cold Miss → admit → verified Hit; paraphrase có semantic candidate thật; khác intent không reuse |
+| D4 — Hai nhánh và lịch sử | Một prompt chạy None/Local, candidate/test riêng; PostgreSQL lưu kết quả/metrics/assessment; UI đối chiếu theo revision và export | Reload/restart giữ kết quả đã commit; lịch sử không gọi model lại; hai nhánh không ghi đè repo hoặc dùng approval của nhau |
+| D5 — Demo chạy lại được | Môi trường demo riêng, reset, diễn tập thành công và bị chặn, export evidence, hướng dẫn ngắn | Tái hiện toàn luồng cache → Agent → test → human gate → app thật và mở lại từng phiên bản |
+| D6 — Đánh giá | Khóa fixture/oracle/acceptance/protocol rồi chạy so sánh chính; phép thử riêng cache theo protocol được thống nhất | Dữ liệu/báo cáo có nguồn, mẫu số, lỗi và giới hạn; chấm theo tiêu chí đã khóa |
 
-## Bước tiếp theo ngay lúc này
+D2 phụ thuộc các quyết định kỹ thuật D1; D3 dùng contract D2; D4 dùng D2–D3; D5 dùng D4. Thiết kế persistence của D4 thực hiện từ D1 để instrumentation không bị bổ sung muộn.
 
-Gói local v0.1 đã được chọn; blob, registry và snapshot có quyền đã triển khai nội bộ/kiểm chứng. Đã nối read-only snapshot vào HTTP/Workspace bằng Bearer control và CLI cấu hình host. Profile dev read-only đã đăng ký và kiểm chứng qua Docker/Workspace. Đã có bundle đầy đủ và source staging nội bộ. Tiếp theo khóa source/dependency và runtime/test profiles trước artifact-ready/harness theo dependency; không có API nhận path tùy ý hoặc tự cấp quyền. Artifact/harness, patch scope/stale check và launcher/gate vẫn theo dependency, không dùng snapshot làm approval. App báo giá giữ validator nền chưa có rule expiration_review. T07 vẫn cần review oracle/one-fixture contract; R/config và artifact phải được runtime tin cậy cấp trước đóng băng source gốc/fixture nghiên cứu. Acceptance/protocol nghiên cứu chưa khóa, không bắt đầu run so sánh. Chi tiết trạng thái ở project-status; câu hỏi còn mở ở [overview](overview.md#giả-định-và-câu-hỏi-mở).
+Ước lượng **10–17 ngày công tới D5**, thêm **2–4 ngày chuẩn bị/phân tích D6** và thời gian chạy theo số lặp được chọn. Chưa tính chờ quyết định/provider hoặc sửa sau review; không cam kết lịch hoàn thành.
 
-| Trước bước phụ thuộc | Cần khóa |
-| --- | --- |
-| T07 và nhãn fixture | Review bảng oracle theo schema/validation nền và parse đã xác nhận, chốt one-fixture contract; kiểm chứng tích hợp mới đã đạt |
-| T05–T06, T08 và T12–T13 | Data/API contract, identity/authority, freshness, source integrity, executor/sandbox, artifact binding và deploy target liên quan |
-| T09–T11 | Đã chọn Context Cache/browser cho web đầu tiên; còn model/embedding, storage engine, similarity threshold, TTL/invalidation và phạm vi chia sẻ |
-| T16–T17 | Acceptance rule, baseline tools, số lặp/thứ tự, reset/preload, nguồn đo và expected trace; không điều chỉnh theo kết quả |
+## Ràng buộc khi triển khai
 
-Đường dẫn implementation hiện tại ở [bản đồ source](../system/code-organization.md); backend/app/quotation_demo đã có thật. Giữ định danh/path hiện có trừ khi thay đổi có lý do thiết kế; không đổi package/repository chỉ để đổi bối cảnh. research/datasets/quotation_fixture_v1.json vẫn là ví dụ chưa tạo, không phải fixture nghiên cứu đã chốt.
+- Cả assistance và Agent loop đi qua cùng context resolution; backend kiểm quyền mọi dependency, source/intent/config và toàn vẹn trước reuse. Browser chỉ đề xuất candidate.
+- Miss/Rejected fallback bằng retrieval có quyền. Verifier/authority lỗi trả lỗi/deny; không dùng context local để né kiểm tra. Source đổi giữa verify và dùng phải phát hiện.
+- None không lookup/admit vào namespace Local. Cold/warm/preload ghi trước chạy; không để một nhánh làm ấm nhánh kia ngoài thiết lập.
+- Database lưu cặp/nhánh/turn/model call/revision/test/metrics/assessment, liên kết blob/evidence hiện có. Assessment gắn artifact và phiên bản tiêu chí; đánh giá lại thêm record.
+- Lưu cả failed/cancelled/timed_out/incomplete; retry không nhân bản thao tác. Restart không tự resume hoặc biến trạng thái thiếu bằng chứng thành pass.
+- Hai bản sửa giữ riêng. Khi chọn ghi source phải kiểm freshness; app chỉ chạy đúng artifact đã test và được human duyệt. Cache không cấp quyền, bỏ test hoặc thay approval.
+- Chốt schema/contract và policy tại tài liệu sở hữu trước phần phụ thuộc; không scaffold mọi API hay biến thể mở rộng.
 
-UI Thiết lập cũ còn manifest tài liệu nội bộ và TTL/threshold/training intent nháp; không dùng chúng làm thông số PoC mặc định. Backend không import script nghiên cứu. Không tự commit, push, xóa dữ liệu hoặc kích hoạt/deploy ra môi trường ngoài phạm vi đã được yêu cầu.
+## Kịch bản nghiệm thu demo
+
+| Bước | Thao tác | Bằng chứng cần xem |
+| --- | --- | --- |
+| 1 | Mở baseline riêng chưa có rule, cache rỗng | Source/config digest, HTTP trước thay đổi, Miss và retrieval/admission thật |
+| 2 | Chuẩn bị warm hợp lệ, nhập prompt chung chạy hai nhánh | Cùng snapshot/model/config; diff/test/usage/timing riêng; cache outcome và lý do |
+| 3 | Hỏi paraphrase; thử stale source, tamper, expired, revoke và authority lỗi riêng từng ca | Semantic candidate thật; verifier chấp nhận/từ chối đúng ca; context bị chặn không vào model |
+| 4 | Chọn bản sửa đã test; thử chạy khi chưa duyệt, rồi human duyệt đúng artifact | Block trước approval; activation đúng artifact và báo giá đổi hành vi |
+| 5 | Mở lịch sử sau reload/restart; tạo cặp mới từ baseline | Source/diff/test/metrics/assessment cũ còn nguyên; cặp mới không dùng lại approval hoặc state ngoài thiết lập |
+
+Fault/revoke/reset chỉ tác động tài nguyên test/demo có scope, giữ app dev đang chạy. Source đổi có thể làm cache cũ hết hiệu lực; sau reset không hứa warm Hit nếu provenance không còn khớp. Hai bản sửa có thể giống nhau; demo không đòi cache phải nhanh hơn.
+
+## Kiểm chứng và kết thúc mỗi gói
+
+Chạy test phù hợp thay đổi: authority/integrity/source race, PostgreSQL persistence/retry/restart, browser storage và integration; lint/typecheck/build khi ảnh hưởng frontend. Smoke generation/embedding dùng provider thật trong phạm vi đã được phép; test double có nhãn riêng.
+
+Chỉ sửa docs thì kiểm nội dung, link và diff. Cập nhật [trạng thái](project-status.md) bằng đầu ra/kiểm chứng/giới hạn ngắn; không chép nhật ký từng thao tác. D5 hoàn thành demo kỹ thuật; D6 chỉ bắt đầu khi [điều kiện đánh giá](../evaluation/design.md) đủ.

@@ -22,7 +22,7 @@ Kênh `/_internal/workspace-worker` dùng credential worker riêng, không Beare
 
 API báo giá giữ contract v0.2: `reference_date` nay là null hoặc YYYY-MM-DD do cấu hình backend truyền vào validator; `active_artifact` vẫn null trong response candidate, không thành bằng chứng deployment. Local runtime status từ control/launcher là nguồn artifact thực thi.
 
-Đầu vào đã được người dùng chọn nằm tại [hồ sơ T01](../general/overview.md#hồ-sơ-đầu-vào-t01--đang-thực-hiện): sáu trường báo giá; ngày YYYY-MM-DD có thật và d >= 2026-11-07 trong fixture; Context Cache/browser trước; identity fixture backend quản lý; Developer được duyệt nếu có quyền Reviewer hiện tại. Acceptance vẫn chờ cô quy định, không mặc định 100%.
+Đầu vào đã được người dùng chọn nằm tại [hồ sơ T01](../general/overview.md#các-quyết-định-đã-chốt): sáu trường báo giá; ngày YYYY-MM-DD có thật và d >= 2026-11-07 trong fixture; Context Cache/browser trước; identity fixture backend quản lý; Developer được duyệt nếu có quyền Reviewer hiện tại. Acceptance vẫn chờ cô quy định, không mặc định 100%.
 
 App báo giá và control có entrypoint/base URL riêng. Các route mới dưới đây dùng prefix đề xuất /api/v1; GET /health hiện tại giữ nguyên. Lõi cache chỉ phụ thuộc contract logic; HTTP, browser storage và model provider là adapter. Không tạo service riêng cho mỗi nhóm route.
 

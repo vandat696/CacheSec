@@ -1,147 +1,70 @@
-# Tổng quan, yêu cầu và phạm vi nghiên cứu
+# Mục tiêu và phạm vi CacheSec
 
-## Định hướng hiện hành — 2026-11-02
+Cập nhật 2026-11-17. Hiện trạng chạy thật ở [project-status](project-status.md); công việc tiếp theo ở [kế hoạch](implementation-plan.md).
 
-**CacheSec** nghiên cứu **Secure Local Semantic Cache for AI-Assisted Software Development**: tái sử dụng thông tin AI đã xử lý khi còn đúng, đúng quyền và còn hiệu lực. AI Coding Agent hỗ trợ Developer là bối cảnh ứng dụng; kiến trúc cache vẫn là đóng góp nghiên cứu. Bối cảnh chatbot hỏi đáp tài liệu nội bộ trước đây được thay bằng tìm hiểu và thay đổi code repository trong một quy trình có kiểm soát. Code giao diện cũ được giữ để tái sử dụng, chưa chuyển đổi trong đợt cập nhật tài liệu này.
+## Mục tiêu
 
-Tài liệu này sở hữu problem statement, yêu cầu, giả định và câu hỏi mở. [Project status](project-status.md) ghi hiện trạng có bằng chứng; [kiến trúc](../system/architecture.md) là thiết kế mục tiêu; [đánh giá](../evaluation/design.md) phân biệt yêu cầu giảng viên với đề xuất phương pháp; [kế hoạch](implementation-plan.md) là công việc chưa thực hiện.
+Nghiên cứu **Secure Local Semantic Cache for AI-Assisted Software Development**: tái sử dụng context repository khi đúng ngữ nghĩa, đúng quyền và còn khớp nguồn. Coding Agent là ứng dụng kiểm chứng; đóng góp chính là cache và cơ chế xác minh reuse.
 
-## Bài toán và mục tiêu
-
-Developer cần tìm vị trí validation, hiểu code/nguồn liên quan, đề xuất patch và kiểm thử. Các câu hỏi hoặc ngữ cảnh tương đương có thể khiến việc truy xuất và gọi LLM bị lặp lại. CacheSec nghiên cứu khi nào có thể reuse an toàn để giảm thời gian, lượt gọi và token, tính cả chi phí embedding, xác minh quyền và mạng. Một tác vụ không có reuse thực tế có thể không hưởng lợi; không giả định cache luôn nhanh hơn.
-
-Mục tiêu là xác minh reuse đúng ngữ nghĩa và phiên bản; bảo toàn quyền hiện tại; hỗ trợ hoàn thành một thay đổi phần mềm; giữ approval gate độc lập; và đo kết quả có thể tái lập. Similarity cao không chứng minh tương đương đáp án, quyền hay tính đúng của code.
+Demo dùng source, model, cache, test và runtime thật với dữ liệu báo giá mẫu. Đúng một thay đổi nghiệp vụ: thêm cờ `expiration_review` cho báo giá thiếu ngày hết hạn hợp lệ để con người xem xét. Reviewer duyệt code/artifact, không duyệt báo giá.
 
 ## Yêu cầu trực tiếp từ giảng viên
 
-Nguồn: nội dung yêu cầu người dùng cung cấp ngày 2026-11-02, chưa có tài liệu giảng viên riêng trong repo.
-
-| Ràng buộc | Nội dung phải giữ |
+| Nội dung | Phạm vi |
 | --- | --- |
-| Workflow | Intake and validation of supplier quotations trong hàng đợi mua sắm doanh nghiệp giả lập |
-| Đúng một thay đổi | Thêm quy tắc đánh dấu báo giá đầu vào thiếu ngày hết hạn hợp lệ để con người xem xét |
-| Đúng một safety property | Không triển khai bất kỳ thay đổi quy tắc validation nào nếu chưa có người có thẩm quyền phê duyệt tường minh chính xác thay đổi đó |
-| So sánh chính | Developer-guided baseline và AI-assisted workflow trên cùng tập báo giá ẩn danh hoặc giả lập đã đóng băng |
-| Năm chiều đo | Correctness of flags; preservation of approval gate; reproducibility; completeness of change/decision trace; engineering time và observed failure cases |
-| Giới hạn thực nghiệm | Một repository; một test fixture; một approval-control implementation; một acceptance threshold định trước |
+| So sánh chính | Developer-guided / AI-assisted |
+| Ràng buộc | Một repository, một fixture cố định, một approval-control implementation, một acceptance rule định trước |
+| Safety property | Chỉ triển khai thay đổi validation sau khi người có quyền duyệt tường minh chính xác thay đổi đó |
+| Năm chiều đánh giá | Correctness, approval gate, reproducibility, trace completeness, engineering time/failures |
 
-Giá trị acceptance threshold chưa được giảng viên quy định. Các giá trị, schema, thuật toán và bố cục đề xuất trong docs không phải xác nhận của giảng viên.
+Nguồn: yêu cầu người dùng cung cấp ngày 2026-11-02. Acceptance threshold và protocol cụ thể chưa được giảng viên xác nhận.
 
-## Use case duy nhất
+## Demo cuối đã thống nhất
 
-Ứng dụng báo giá mẫu trong cùng repository đã tiếp nhận, lưu và đọc báo giá giả lập qua API/PostgreSQL và UI /quotations; có luồng validator nền nhưng chưa có quy tắc nghiệp vụ hoặc runtime artifact. Trạng thái gốc chuẩn bị cho thí nghiệm phải chưa có quy tắc ngày hết hạn mới. Developer yêu cầu Agent tìm validation và thêm cờ human review cho báo giá thiếu ngày hợp lệ; contract mục tiêu dùng cờ expiration_review. Cờ không tự từ chối báo giá, không phê duyệt mua hàng và không mở rộng sang quy tắc nghiệp vụ khác.
+Một prompt chung chạy **Không cache / Có Context Cache** song song trên Workspace. Hai nhánh dùng cùng source snapshot, model, prompt, quyền và test profile; tạo candidate/revision/test riêng. Hai bản sửa có thể giống nhau.
 
-CacheSec dự kiến cung cấp workspace, authorized repository retrieval, đề xuất diff, chạy test, duyệt thay đổi và trace. Reviewer duyệt **thay đổi code/artifact**, không duyệt báo giá. Deploy PoC theo gói local v0.1 đã chọn là kích hoạt artifact trên target local có gate thật; host/admin nằm ngoài threat boundary đã công bố, cần kiểm chứng launcher/isolation trước mở runtime. Nút UI mô phỏng không phải deployment control.
+Người dùng xem diff, test, tokens, thời gian, kết quả cache và đánh giá của từng nhánh; chọn một bản để lưu source và duyệt chạy app. Hai nhánh không cùng ghi đè file repo hoặc tự triển khai. Cache Hit vẫn có thể cần gọi model và gửi cùng số tokens.
 
-## Yêu cầu chức năng mục tiêu
+Cache đầu tiên lưu trong browser, hỗ trợ exact/semantic lookup và backend verification trước reuse. Demo phải cho thấy cả reuse hợp lệ lẫn từ chối context stale, bị sửa hoặc mất quyền. Cold/warm và chi phí chuẩn bị cache phải rõ ràng.
 
-| ID | Yêu cầu | Bằng chứng cần có khi triển khai |
-| --- | --- | --- |
-| FR-01 | App báo giá tối giản và trạng thái gốc không có rule mới | Code và test hiện trạng chạy được, revision gốc được ghi |
-| FR-02 | Một fixture có nhãn, định nghĩa ngày hợp lệ và thời điểm tham chiếu cố định | Manifest/hash bất biến, ca biên và oracle được duyệt trước thực nghiệm |
-| FR-03 | Repository Context Cache trong trình duyệt cho web Workspace, embedding, exact/semantic matching và threshold | Hit/Miss/Rejected thật, context/provenance được backend xác minh trước khi Agent dùng; LLM vẫn xử lý, không gán hit hoặc tiết kiệm từ mô phỏng |
-| FR-04 | Authorization và cache verification trước reuse | Identity/tenant/repo, scope/intent, nguồn/version/hash, TTL, policy và toàn vẹn; lỗi thì không reuse |
-| FR-05 | Authorized Repository Retrieval/RAG khi miss/reject | Chỉ đọc nguồn được phép, có provenance; lỗi quyền không biến thành truy xuất không hạn chế |
-| FR-06 | Agent tạo patch đúng một rule và chạy kiểm thử thật | Diff, revision, kết quả validation/gate và lỗi có liên kết |
-| FR-07 | Một approval gate chung cho cả hai workflow | Chặn chưa duyệt/sai quyền/sai phiên bản; chỉ deploy đúng artifact được duyệt, backend/control thực thi |
-| FR-08 | Trace và evaluation | Truy ngược request → context/cache → patch → test → approval → deployment; ghi năm chiều đo và chỉ số cache riêng |
-| FR-09 | Admission, TTL, eviction, invalidation và cấu hình có phiên bản | Namespace riêng cho cấu hình/vector; nguồn/policy đổi phải kiểm tra lại; không cache quyết định deployment approval |
+### Lịch sử và database
 
-Ngày 2026-11-07, người dùng chọn **Repository Context Cache trong trình duyệt cho web Workspace trước**, adapter IDE làm sau. Quyết định này thay đề xuất Answer Cache đầu tiên; không phải yêu cầu mới đã được giảng viên xác nhận hoặc tính năng đã triển khai. [Thiết kế cache](../system/cache.md) sở hữu payload và verification. Answer Cache, server cache, nhiều embedding/eviction, hai tầng và fine-tune/FL vẫn là khả năng mở rộng ngoài lát cắt đã chọn.
+Lưu bền trong PostgreSQL theo **cặp so sánh → nhánh → turn/revision → test/đánh giá**:
 
-## Yêu cầu phi chức năng
+- Prompt, source snapshot, model/config, trạng thái cold/warm/preload.
+- Candidate source/diff và liên kết artifact/test/evidence có digest.
+- Tokens input/output/total, generation/embedding calls, timing từng bước và end-to-end.
+- Cache outcome/score/reason, lỗi/timeout/cancel và các tiêu chí đánh giá.
 
-| ID | Yêu cầu |
+Bytes source/artifact có thể ở kho blob bền hiện có; database lưu metadata/kết quả và liên kết. Browser Context Cache vẫn local. Revision và assessment mới giữ nguyên lịch sử cũ; reload/restart mở lại kết quả đã commit mà không gọi model hoặc chạy test lại. Quyền đọc vẫn được kiểm tra; retention còn cần thiết kế. Số liệu thiếu ghi null/unknown kèm lý do, không tự coi là pass. Công thức và nguồn đo ở [thiết kế đánh giá](../evaluation/design.md).
+
+## Các quyết định đã chốt
+
+| Chủ đề | Quyết định |
 | --- | --- |
-| NFR-01 | Không tin quyền/metadata client tự khai; fail closed khi không xác minh được; nêu rõ freshness và giới hạn local plaintext |
-| NFR-02 | Khóa repo gốc, fixture, gate implementation, acceptance rule và cấu hình đo trước run; lưu phiên bản và mọi lỗi/timeout |
-| NFR-03 | Đo end-to-end và thành phần thực tế, không dùng độ trễ demo hoặc usage 0 để kết luận tiết kiệm |
-| NFR-04 | Dữ liệu giả lập, log tối thiểu đủ audit, không ghi secrets hoặc code ngoài scope được cấp quyền |
-| NFR-05 | Theo cấu trúc Next.js/TypeScript, FastAPI/Python hiện có; tách nghiệp vụ khỏi UI/storage và adapter khỏi provider; không dựng ERP/microservice/plugin framework |
-| NFR-06 | Theo yêu cầu người dùng ngày 2026-11-07, tách source ứng dụng báo giá, Agent/IDE và lõi cache trong cùng repo; app chạy độc lập. Cache có contract chung có phiên bản, được tài liệu hóa, có thể cung cấp bằng SDK/API và adapter để dùng trực tiếp trong IDE/Agent được hỗ trợ, không buộc dùng web Workspace. [Kiến trúc](../system/architecture.md#quy-tắc-độc-lập-giữa-ứng-dụng-agentide-và-cache) sở hữu ranh giới; hỗ trợ nhiều IDE là hướng mở rộng, chưa có implementation hoặc bằng chứng tích hợp ngoài |
+| App mẫu | Sáu trường: id, supplier_name, description, total_amount, currency, expires_on; giữ contract validation nền hiện có |
+| Rule ngày | Chuỗi đúng YYYY-MM-DD, ngày tồn tại, d >= R; fixture dùng R = 2026-11-07 |
+| Parse | Không trim/ép kiểu/nhận timestamp; missing/null/rỗng/sai kiểu/sai định dạng/ngày sai hoặc trước R có cờ |
+| Identity PoC | Fixture do backend quản lý, công bố giới hạn; quyền/gate thực thi thật |
+| Human approval | Developer có quyền Reviewer được tự duyệt tường minh đúng artifact; Agent không được approve/deploy |
+| Storage/control | PostgreSQL metadata, blob local theo digest; Docker test/runtime và backend gate hiện có |
+| Tích hợp | Web Workspace trước; app báo giá, Agent/IDE và lõi cache độc lập trong cùng repo |
+| UI | Nối backend đến đâu dùng được đến đó; ít chữ, chi tiết mở khi cần |
 
-Safety property bắt buộc là **một** thuộc tính về deployment approval. Các điều kiện cache, quyền nguồn và chất lượng là yêu cầu bảo đảm reuse/đánh giá kiến trúc, không đổi thành nhiều bài toán nghiệp vụ hoặc nhiều software changes.
-
-## Hồ sơ đầu vào T01 — đang thực hiện
-
-Đã bắt đầu T01 ngày 2026-11-07. T01 chưa hoàn thành; phân biệt quyết định người dùng, yêu cầu giảng viên và bản nháp cần review. Các chi tiết chưa chốt tiếp tục nằm trong [câu hỏi mở](#giả-định-và-câu-hỏi-mở), không được dùng làm oracle/schema đã khóa.
-
-| Đầu vào | Trạng thái được xác nhận |
-| --- | --- |
-| Loại cache đầu tiên | Người dùng chọn Context Cache: tái sử dụng ngữ cảnh repo; LLM vẫn xử lý yêu cầu |
-| Vị trí/host đầu tiên | Người dùng chọn cache trong trình duyệt cho web Workspace trước; adapter IDE làm sau. Storage engine/API cụ thể chưa chốt |
-| Ngày hết hạn | Người dùng chọn ngày có thật theo lịch, định dạng YYYY-MM-DD và không trước mốc tham chiếu. Fixture dùng mốc cố định 2026-11-07; ngày bằng mốc được chấp nhận |
-| Nguồn danh tính PoC | Người dùng chọn danh tính giả lập do backend quản lý, công bố rõ giới hạn; approval gate vẫn phải thực thi thật. Gói local v0.1 đã chọn policy control riêng; principal/grants thực chưa đăng ký/triển khai |
-| Quyền API báo giá | Hai principal fixture: chỉ đọc; tạo/đọc/validate. Quyền validate chỉ cấp cho operator theo lựa chọn ngày 2026-11-09. Bearer token ngẫu nhiên cấu hình riêng, thiếu/sai token bị chặn, không tài khoản mặc định. Tách quyền Reviewer/deployment; [chi tiết](../system/authorization.md#quyền-api-báo-giá-đã-triển-khai) |
-| Freshness API báo giá | Kiểm token/quyền ở đầu mỗi thao tác; thu hồi chặn thao tác tiếp theo, không hủy thao tác đang thực hiện hoặc thu lại nội dung đã đọc. Không chốt thay cache/control/gate |
-| Giới hạn API local | Body JSON tối đa 64 KiB, trang tối đa 100 báo giá, Idempotency-Key 1–128 ký tự ASCII. Đây là cấu hình kỹ thuật, không phải ngưỡng nghiệm thu nghiên cứu |
-| Người duyệt thay đổi | Developer được tự duyệt nếu có quyền Reviewer hiện tại; vẫn cần quyết định tường minh gắn đúng artifact. Agent không nhận quyền phê duyệt |
-| Phạm vi dữ liệu báo giá | Người dùng chốt 6 trường: mã, nhà cung cấp, mô tả, tổng tiền, tiền tệ và ngày hết hạn; kiểu dữ liệu/validation nền và contract API chi tiết thuộc T02–T03 |
-| Validation nền — xác nhận 2026-11-09 | Giữ contract đã triển khai: bốn trường ngoài ngày bắt buộc là chuỗi, total_amount theo DecimalString. Không thêm giới hạn nội dung, tiền dương/min/max hoặc danh sách/định dạng currency; giữ nguyên đầu vào ngày |
-| Parse rule mới — xác nhận 2026-11-09 | Chỉ nhận chuỗi đúng YYYY-MM-DD và ngày tồn tại; không trim, ép kiểu hoặc nhận timestamp. Missing/null/rỗng/sai kiểu/sai định dạng/ngày không tồn tại hoặc d < R cần cờ; mới xác nhận đặc tả, chưa cài rule hoặc duyệt oracle |
-| Acceptance threshold | Người dùng chưa chọn, chờ cô quy định; không sử dụng đề xuất 100% trước đây như ngưỡng hiện hành |
-| Ranh giới nghiệp vụ | Một quy tắc flag để con người xem xét; ứng dụng gốc chưa có rule đó. Reviewer duyệt code/artifact, không duyệt báo giá |
-
-### Quy tắc ngày đã thống nhất với người dùng
-
-Ngày hết hạn phải biểu diễn đúng ngày tồn tại theo lịch với định dạng YYYY-MM-DD và thỏa **d >= R**, trong đó d là ngày hết hạn đã diễn giải hợp lệ, R là ngày tham chiếu. Với fixture, **R = 2026-11-07** cố định cho mọi lượt; không lấy ngày từ máy hoặc đổi mốc theo ngày chạy. So sánh theo ngày, không tự thêm giờ hết hạn hay múi giờ vào input date-only. Ngày 2026-11-09 người dùng xác nhận parse nghiêm ngặt: không trim/ép kiểu/nhận timestamp; missing/null/rỗng/sai kiểu và ngày sai hoặc trước R đều cần cờ sau khi có rule. Cách cung cấp R ngoài fixture còn cần chốt trước implementation tương ứng. [Bảng oracle T07](../evaluation/design.md#bảng-oracle-t07-để-review) là bản nháp review, chưa được duyệt hoặc đóng băng.
-
-Báo giá thiếu ngày, ngày không hợp lệ hoặc d < R phải có cờ cần xem xét; ngày bằng/sau R không phát sinh cờ này, các validation khác giữ nguyên. Đây là quyết định của người dùng ngày 2026-11-07, chưa phải bằng chứng giảng viên đã xác nhận oracle/fixture hoặc acceptance. Quy tắc chỉ được bổ sung vào bản sửa, không cài trước vào app nền.
-
-### Schema báo giá tối thiểu — phạm vi đã chốt
-
-Người dùng đã chọn bộ 6 trường dưới đây cho phạm vi nhập/danh sách/chi tiết/validation. Đã có Pydantic model, schema/store PostgreSQL và API/UI tạo/đọc/phân trang/validate nền; chưa có rule ngày hoặc artifact/gate. Không bao gồm quản lý mua hàng/thanh toán hoặc nhiều dòng hàng.
-
-| Trường dự kiến | Mục đích |
-| --- | --- |
-| id | Định danh báo giá do ứng dụng quản lý |
-| supplier_name | Tên nhà cung cấp giả lập để hiển thị |
-| description | Nội dung báo giá ngắn |
-| total_amount | Chuỗi DecimalString giữ nguyên precision/lexeme, không áp min/max hoặc tiền dương |
-| currency | Đơn vị tiền tệ minh họa, chưa chốt danh sách |
-| expires_on | Giá trị ngày hết hạn đầu vào; giữ phân biệt thiếu field, null, rỗng và giá trị thô cho validation/fixture |
-
-T02 có [wire contract v0.2](../system/api.md#dữ-liệu-ứng-dụng-báo-giá); phần đã triển khai tại [schema/storage báo giá](../system/architecture.md#lưu-trữ-báo-giá-đã-triển-khai). Theo lựa chọn người dùng ngày 2026-11-09, validation nền giữ nguyên contract: tiền là chuỗi thập phân hữu hạn, không làm tròn/áp min-max; chuỗi rỗng/khoảng trắng và currency ngoài danh sách vẫn được tiếp nhận. expires_on giữ JsonValue/absent, không parse date ở domain/storage. Luồng validator nền có điểm vào source độc lập HTTP/storage, công bố evaluated_rules rỗng vì chưa có quy tắc nghiệp vụ; không suy ra ngày hợp lệ hoặc approval. Không cài rule ngày vào app nền; oracle nghiên cứu vẫn cần review.
-
-Kết quả validation mục tiêu có danh sách cờ, với cờ expiration_review cho rule mới; shape ở [API](../system/api.md#quotationvalidation); endpoint nền đã có, runtime artifact và rule mới chưa triển khai. Không nhận cờ do client/Agent gửi như kết quả validation đáng tin cậy. Khi ca ngày sai thuộc fixture, parsing/chuẩn hóa ở API không được làm mất dấu hiệu đầu vào khiến rule nghiệp vụ không còn được kiểm tra. Test nền và schema nền không được bổ sung trước chính rule mà Agent sẽ được giao.
-
-Vai trò Developer, Reviewer và Deployment Control đã có trong thiết kế. Người dùng chọn identity fixture do backend quản lý cho PoC, không triển khai đăng nhập thật ngay từ đầu; đây là mô phỏng danh tính, không phải production authentication. Developer được tự duyệt nếu có quyền Reviewer hiện tại và thực hiện quyết định tường minh; không yêu cầu reviewer phải khác người đề xuất. Mapping/freshness API báo giá đã chốt riêng trong bảng trên; policy mapping/freshness control đã được chọn trong local v0.1, còn registry/grants thực phải triển khai; không biến ba capability thành yêu cầu ba tài khoản riêng. Fixture/oracle, acceptance và baseline/số lặp vẫn chờ xác nhận theo [thiết kế đánh giá](../evaluation/design.md).
-
-### Gói thiết kế local T03–T04 để xác nhận
-
-Ngày 2026-11-09 người dùng yêu cầu tiếp tục triển khai sau khi review gói local v0.1: **gói được chọn làm thiết kế triển khai PoC**, không đồng nghĩa các thành phần đã chạy hoặc đã được cô nghiệm thu. Quyết định self-approval, identity fixture, scope nghiệp vụ và acceptance đã thống nhất phía trên giữ nguyên. Nền blob/control migration đã có code; trạng thái từng phần ở project-status.
-
-| Nội dung đã chọn | Phương án local v0.1 | Đặc tả sở hữu |
-| --- | --- | --- |
-| Nơi lưu bản sửa/bằng chứng | PostgreSQL schema control cho metadata, kho blob local theo digest cho bytes; role app không đọc/ghi control, không tự GC/reset | [T03](../system/architecture.md#đề-xuất-t03-lưu-trữ-control-và-artifact-v01) |
-| Định danh đúng bản sửa | SHA-256 và encoder có version; source bundle + runtime image/dependencies/public config, không chỉ hash file validator; test và activate cùng artifact | [Binding v0.1](../system/api.md#binding-và-deployment-local-v01--đề-xuất) |
-| Ai được thao tác | Control realm/grants riêng theo một tenant/repo/target; human có Reviewer mới duyệt, quyền activate riêng; Agent chỉ được đọc/đề xuất/test | [Authority](../system/authorization.md#phương-án-gate-local-v01-để-chốt) |
-| Hiệu lực approval/quyền | TTL approval 30 phút, một deployment ID; kiểm quyền/revoke ở lúc phát permit. Thu hồi sau permit không hủy hồi tố operation đang triển khai | [Freshness và protocol R1–R6](../system/authorization.md#phương-án-gate-local-v01-để-chốt) |
-| Chạy code và triển khai ở đâu | Docker runtime image tin cậy, source read-only, giới hạn tài nguyên, không Docker socket/control secrets; một endpoint app loopback, stop/start có downtime | [Executor/target](../system/authorization.md#executor-và-target-local-đề-xuất) |
-| Khi lỗi hoặc mất ACK | Reservation/fence bền vững và launcher single-writer; unknown chặn lượt tiếp theo cho đến khi đối soát, không tự chạy lại/rollback | [Recovery](../system/authorization.md#protocol-reservation-dispatch-và-reconciliation) |
-
-TTL/CPU/RAM/deadline trong gói này là giới hạn kỹ thuật đã chọn cho PoC, không phải acceptance của cô. Image digest/platform thật, network/ACL host, harness tách biệt và DB runtime roles phải được đăng ký/kiểm chứng ở bước triển khai; chưa có bằng chứng chúng hoạt động. Oracle/one-fixture contract, nguồn R/config đã khóa và protocol nghiên cứu vẫn cần hoàn thiện trước đóng băng source/fixture hoặc thực nghiệm. Xác nhận gói thiết kế không tự cấp quyền chạy Agent hoặc triển khai rule mới.
-
-## Acceptance threshold cần thống nhất
-
-**Chưa chọn ngưỡng; người dùng chờ cô quy định.** Phương án 100% ca validation và 100% ca gate từng được đề xuất chưa được chọn, không phải cấu hình mặc định hoặc điều kiện nghiệm thu hiện hành. Phải ghi giá trị/đơn vị, danh sách ca bắt buộc, cách tính mẫu số/lỗi và version trước thực nghiệm; không điều chỉnh theo kết quả đã quan sát.
-
-Test thiếu/lỗi/timeout hoặc bằng chứng không xác minh được không được giả thành pass. Cả năm chiều vẫn cần báo cáo theo protocol sau khi được chốt; chưa có threshold thì không kết luận run đạt acceptance. Ngưỡng này khác similarity threshold của cache; không chặn việc soạn nháp kiến trúc/API độc lập với giá trị ngưỡng, nhưng chặn đóng băng acceptance và thực nghiệm phụ thuộc.
+App local đã có rule được duyệt; source baseline dùng để tái hiện nhiệm vụ phải chưa có rule, được chuẩn bị riêng. Chi tiết schema/API ở [api.md](../system/api.md), gate ở [authorization.md](../system/authorization.md), runtime ở [workspace-runtime.md](../system/workspace-runtime.md).
 
 ## Giả định và câu hỏi mở
 
-| Chủ đề | Cần xác nhận trước bước phụ thuộc |
+| Trước khi làm | Cần chốt |
 | --- | --- |
-| Schema báo giá | Bộ sáu trường và wire contract đã có; người dùng xác nhận giữ validation nền hiện tại ngày 2026-11-09. Giữ nguyên ca missing/null/raw của expires_on; không thêm ràng buộc nội dung |
-| Ngày hết hạn hợp lệ | Đã chọn YYYY-MM-DD, ngày có thật và d >= 2026-11-07 cho fixture; đã xác nhận parse nghiêm ngặt, không trim/ép kiểu/nhận timestamp. Còn nguồn R ngoài fixture và review oracle; không thêm ngày phát hành hay giờ/múi giờ |
-| Một fixture | Đề xuất một manifest phiên bản gồm báo giá có nhãn và ca control/cache/trace có liên kết; cần xác nhận cách diễn giải này với giảng viên, không thêm fixture thực nghiệm độc lập |
-| Threshold | Người dùng chờ cô quy định ngưỡng; chưa chọn giá trị. Cần xác nhận danh sách test bắt buộc, đơn vị/mẫu số và cách tính run lỗi/timeout trước thực nghiệm |
-| Baseline và lặp | Baseline được dùng công cụ nào, có cấm AI không; ai thực hiện; số lần lặp, thứ tự và biện pháp giảm học thuộc tác vụ? |
-| Agent và repository | Adapter/provider/model/revision, tool scope, executor, ngôn ngữ app mẫu, giới hạn đọc/ghi/chạy test; loại bỏ secrets/symlink vượt scope thế nào? |
-| Identity và gate | Đã chốt mapping/freshness reader/operator riêng API báo giá và self-approval khi Developer có quyền Reviewer. Control/gate đã chọn policy local v0.1, còn đăng ký principals/scope/repo/target và kiểm chứng runtime; ABAC/freshness cache nằm ngoài gói này và vẫn còn mở |
-| Exact change | Local v0.1 đã chọn patch manifest/bytes digest/binding, TTL/single-use và protocol dispatch/reconcile; còn schema/use case và kiểm chứng thực tế, không dùng blob index thay bằng chứng này |
-| Cache | Đã chọn Context Cache trong trình duyệt/web Workspace trước. Còn trusted metadata/integrity, storage engine, model/metric/threshold, TTL, scope chia sẻ, invalidation và logout/account switch; offline mặc định đề xuất không reuse |
-| Bằng chứng riêng cache | Các câu hỏi tìm hiểu repo thực sự lặp lại trong một nhiệm vụ; preload hợp lệ, số query đủ báo cáo, oracle reuse và cách tính tiền xử lý/chi phí? |
-| Phương pháp và tài liệu nền | Cỡ mẫu, seed, biến động model, giới hạn thống kê; chưa tìm thấy research notes hoặc bản tóm tắt bài báo trong repo, cần bổ sung nguồn thật khi có |
+| Triển khai cache | Storage engine; embedding provider/model và phạm vi gửi dữ liệu; metric/top-k/threshold; TTL/capacity/eviction |
+| Verification | Trusted metadata/integrity, dependency/intent binding, authority/freshness/revoke, sharing scope, logout/offline |
+| Lịch sử bền | Schema/contract theo nhánh và revision; retention, quyền đọc/xóa và cách ghi trạng thái khi lỗi/restart |
+| Đóng băng fixture | Review từng nhãn oracle; cách một manifest liên kết ca báo giá/gate/reuse/trace; calibration/evaluation |
+| Thực nghiệm | Acceptance do cô quy định; baseline tools/người thực hiện, số lặp/thứ tự, reset/preload và cách tính lỗi/timeout |
 
-Quyết định ảnh hưởng bảo mật, nghĩa nghiệp vụ hoặc tính đúng nghiên cứu phải được xác nhận và ghi trạng thái. Hiện chưa có dữ liệu thực nghiệm cho bối cảnh mới.
+Các lựa chọn chưa chốt giữ trạng thái đề xuất và chặn phần phụ thuộc. Acceptance nghiên cứu khác similarity threshold; không mặc định acceptance 100%.
+
+## Ngoài phạm vi demo đầu
+
+Agent sửa toàn repo, extension IDE bên ngoài, Answer Cache, server payload cache, nhiều model/policy/eviction và fine-tune/FL để sau. Giữ code UI cũ để tái sử dụng. Contract cache có phiên bản và độc lập host; chưa công bố tương thích IDE/Agent chưa được kiểm chứng.

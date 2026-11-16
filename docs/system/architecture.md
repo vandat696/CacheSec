@@ -278,7 +278,7 @@ Retention v0.1 đề xuất không GC tự động trong PoC: giữ source/artif
 
 ### Bản nháp T02: module và contract
 
-Soạn ngày 2026-11-07 từ đầu vào kỹ thuật T01; [API](api.md) ghi đặc tả T02 v0.2 và phần đã triển khai. Các module/control mục tiêu dưới đây không phải implementation đang chạy. Bộ sáu trường báo giá, rule ngày, Context Cache/browser, identity fixture và self-approval có quyền Reviewer theo [overview](../general/overview.md#hồ-sơ-đầu-vào-t01--đang-thực-hiện). Acceptance nghiên cứu chờ cô quy định; không đưa giá trị mặc định 100% vào API hoặc dùng nó để quyết định một run đã đạt nghiệm thu.
+Soạn ngày 2026-11-07 từ đầu vào kỹ thuật T01; [API](api.md) ghi đặc tả T02 v0.2 và phần đã triển khai. Các module/control mục tiêu dưới đây không phải implementation đang chạy. Bộ sáu trường báo giá, rule ngày, Context Cache/browser, identity fixture và self-approval có quyền Reviewer theo [overview](../general/overview.md#các-quyết-định-đã-chốt). Acceptance nghiên cứu chờ cô quy định; không đưa giá trị mặc định 100% vào API hoặc dùng nó để quyết định một run đã đạt nghiệm thu.
 
 #### Module và hướng gọi
 
