@@ -25,16 +25,39 @@ class QuotationValidation:
 def validate_quotation(
     quotation: QuotationRecord, *, reference_date: date | None = None
 ) -> QuotationValidation:
-    """Evaluate the original application's business rules, independently of delivery/storage.
+    if reference_date is None:
+        raise ValueError("Reference date is required for expiration review.")
 
-    This baseline intentionally has no business rules after input-contract validation.
-    Empty flags and evaluated_rules do not establish date validity or approval. The
-    experiment's expiration rule belongs in a later code change at this entry point.
-    """
+    flags = []
+    expires_on = quotation.expires_on
+
+    is_valid_date = False
+    if isinstance(expires_on, str) and expires_on.isascii() and len(expires_on) == 10:
+        parts = expires_on.split("-")
+        if len(parts) == 3 and len(parts[0]) == 4 and len(parts[1]) == 2 and len(parts[2]) == 2:
+            try:
+                parsed_date = date.fromisoformat(expires_on)
+                if parsed_date >= reference_date:
+                    is_valid_date = True
+            except ValueError:
+                pass
+
+    if not is_valid_date:
+        flags.append(
+            QuotationFlag(
+                code="expiration_review",
+                field="expires_on",
+                message=(
+                    "Quotation expiration date must be a valid ISO date "
+                    "on or after the reference date."
+                ),
+            )
+        )
+
     return QuotationValidation(
         quotation_id=quotation.id,
-        flags=(),
-        evaluated_rules=(),
-        validation_config_ref="quotation-baseline-v1",
+        flags=tuple(flags),
+        evaluated_rules=("expiration_review",),
+        validation_config_ref="quotation-expiration-v1",
         reference_date=reference_date,
     )

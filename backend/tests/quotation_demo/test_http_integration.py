@@ -1,4 +1,5 @@
 from concurrent.futures import ThreadPoolExecutor
+from datetime import date
 from threading import Barrier
 
 import pytest
@@ -26,12 +27,16 @@ WRITE_HEADERS = {"Authorization": f"Bearer {OPERATOR}", "Idempotency-Key": "test
 
 
 @pytest.fixture
-def api(quotation_database):
+def api(quotation_database, request):
     with quotation_database.connection() as connection:
         apply_migrations(connection)
     registry = FixtureIdentityRegistry(SecretStr(READER), SecretStr(OPERATOR))
     sessions = PostgresQuotationTransactions(quotation_database)
-    provider = FixtureQuotationServiceFactory(registry, sessions, max_page_size=100)
+    # Preserve the original-source checks; post-change regression supplies trusted backend R.
+    reference_date = None if request.node.get_closest_marker("baseline_only") else date(2026, 11, 7)
+    provider = FixtureQuotationServiceFactory(
+        registry, sessions, max_page_size=100, reference_date=reference_date
+    )
     app = create_quotation_http_app(provider, max_body_bytes=65536)
     with TestClient(app) as client:
         yield client, registry, quotation_database, app

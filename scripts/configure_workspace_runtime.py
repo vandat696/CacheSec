@@ -60,6 +60,9 @@ def main():
         "network": "cachesec_quotation_runtime",
         "port": 8001,
         "environment_file": str(pending_environment),
+        "baseline_image": bootstrap_image.read_text(encoding="ascii").strip()
+        if bootstrap_image.exists()
+        else previous_profile.runtime_image,
     }
     config_digest = metadata_digest(runtime_configuration(runtime, profile))
     payload = {

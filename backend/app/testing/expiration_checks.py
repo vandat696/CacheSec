@@ -19,34 +19,45 @@ CASES = (
     ("expiration_object", {"expires_on": {}}, True),
 )
 
+# Keep one named format check; the pinned harness digest versions these input variants.
+STRICT_FORMAT_INPUTS = ("2026-1-7", "20261107", "2026-W46-1", "2028-W09-2")
+
 
 def run_expiration_checks(request, operator, check):
     from uuid import uuid4
 
     for name, fields, flagged in CASES:
-        body = {
-            "supplier_name": "Synthetic task check",
-            "description": name,
-            "total_amount": "123.4500",
-            "currency": "VND",
-            **fields,
-        }
-        status, created = request("POST", "", operator, body, str(uuid4()))
-        if status != 201:
-            check(name, False)
-            continue
-        identifier = created["data"]["id"]
-        status, response = request("POST", "/" + identifier + "/validate", operator)
-        result = response.get("data", {})
-        flags = result.get("flags", [])
-        has_flag = any(
-            f.get("code") == "expiration_review" and f.get("field") == "expires_on" for f in flags
+        variants = (
+            tuple({"expires_on": value} for value in STRICT_FORMAT_INPUTS)
+            if name == "expiration_strict_format"
+            else (fields,)
         )
-        check(
-            name,
-            status == 200
-            and result.get("quotation_id") == identifier
-            and result.get("reference_date") == "2026-11-07"
-            and "expiration_review" in result.get("evaluated_rules", [])
-            and has_flag == flagged,
-        )
+        outcomes = []
+        for variant in variants:
+            body = {
+                "supplier_name": "Synthetic task check",
+                "description": name,
+                "total_amount": "123.4500",
+                "currency": "VND",
+                **variant,
+            }
+            status, created = request("POST", "", operator, body, str(uuid4()))
+            if status != 201:
+                outcomes.append(False)
+                continue
+            identifier = created["data"]["id"]
+            status, response = request("POST", "/" + identifier + "/validate", operator)
+            result = response.get("data", {})
+            flags = result.get("flags", [])
+            has_flag = any(
+                f.get("code") == "expiration_review" and f.get("field") == "expires_on"
+                for f in flags
+            )
+            outcomes.append(
+                status == 200
+                and result.get("quotation_id") == identifier
+                and result.get("reference_date") == "2026-11-07"
+                and "expiration_review" in result.get("evaluated_rules", [])
+                and has_flag == flagged
+            )
+        check(name, all(outcomes))

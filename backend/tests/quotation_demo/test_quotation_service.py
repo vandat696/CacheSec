@@ -1,4 +1,5 @@
 from contextlib import contextmanager
+from datetime import date
 from uuid import uuid4
 
 import pytest
@@ -208,10 +209,11 @@ def test_validation_reads_existing_record_without_writing_or_creating_evidence()
     sessions, access = MemorySessions(), TestAuthority()
     created = sessions.repository.create(quotation(expires_on={"raw": False}))
     before = created.model_dump(exclude_unset=True)
-    service = QuotationService(sessions, access, max_page_size=100)
+    reference_date = date(2026, 11, 7)
+    service = QuotationService(sessions, access, max_page_size=100, reference_date=reference_date)
     result = service.validate(created.id)
     assert result.quotation_id == created.id
-    assert result.reference_date is None
+    assert result.reference_date == reference_date
     assert result.active_artifact is None
     assert access.requested == [QuotationCapability.READ, QuotationCapability.VALIDATE]
     assert sessions.repository.get(created.id).model_dump(exclude_unset=True) == before

@@ -1,6 +1,7 @@
 """Trusted local launcher. The client cannot supply commands, mounts, images or a port."""
 
 import json
+import re
 import time
 import urllib.error
 import urllib.request
@@ -21,18 +22,22 @@ def runtime_configuration(configuration, profile):
     port = configuration.get("port", 8001)
     network = configuration["network"]
     environment = Path(configuration["environment_file"])
+    baseline_image = configuration.get("baseline_image", profile.runtime_image)
     if (
         type(port) is not int
         or not 1024 <= port <= 65535
         or not environment.is_absolute()
         or not network
         or any(c not in "abcdefghijklmnopqrstuvwxyz0123456789-_" for c in network)
+        or not isinstance(baseline_image, str)
+        or not re.fullmatch(r"sha256:[0-9a-f]{64}", baseline_image)
     ):
         raise ValueError("Invalid trusted runtime configuration")
     return {
         "kind": "local-quotation-runtime-v1",
         "schema_version": 1,
         "profile_digest": profile.digest,
+        "baseline_image": baseline_image,
         "environment_digest": content_digest(environment.read_bytes()),
         "network": network,
         "port": port,
@@ -101,7 +106,8 @@ class DockerLocalRuntime:
             raise DockerFailure("TARGET_MISMATCH")
         if names:
             info = self.inspect(names[0])
-            if info["Image"] != profile.runtime_image or info["Mounts"]:
+            baseline_image = self.configuration.get("baseline_image", profile.runtime_image)
+            if info["Image"] != baseline_image or info["Mounts"]:
                 raise DockerFailure("TARGET_MISMATCH")
             return names[0]
         return None
@@ -210,6 +216,11 @@ class DockerLocalRuntime:
         )
         self.verify(self.inspect(name), operation, profile, prepared)
         self.create_ingress(operation, profile)
+        # A registered bootstrap image can differ from the candidate's test runtime image.
+        # Validate the old process before obtaining permission to stop/start anything.
+        baseline = (
+            self.previous({"version": 0}, profile) if operation["target_version"] == 0 else None
+        )
         permit = client.post(operation["id"] + "/permit", ticket=operation["ticket"])
         if (
             permit["artifact_digest"] != operation["artifact_digest"]
@@ -218,9 +229,11 @@ class DockerLocalRuntime:
             != permit["target"]["config_digest"]
         ):
             raise DockerFailure("TARGET_MISMATCH")
-        previous = self.previous(permit["target"], profile)
         receipt.update(permit=permit, prepared_directory=str(prepared.directory))
         self.save_receipt(operation, receipt)
+        previous = self.previous(permit["target"], profile)
+        if operation["target_version"] == 0 and previous != baseline:
+            raise DockerFailure("TARGET_MISMATCH")
         self.workspace.verify(prepared)
         if time.time() >= permit["permit_expires_at"]:
             raise DockerFailure("PERMIT_EXPIRED")

@@ -19,6 +19,8 @@ import { checkAgentRuns } from "./agent-run-browser-check.mjs";
 import { checkAgentRunLive } from "./agent-run-live-browser-check.mjs";
 import { checkWorkbench } from "./workbench-browser-check.mjs";
 import { checkWorkspaceFiles } from "./workspace-files-browser-check.mjs";
+import { checkProposalReview } from "./proposal-review-browser-check.mjs";
+import { checkDeployedRule } from "./deployed-rule-browser-check.mjs";
 import { LocalSessionStore } from "../src/features/local-workspace/localSessionStore.ts";
 
 const frontend = fileURLToPath(new URL("..", import.meta.url));
@@ -31,7 +33,8 @@ const agentRuns = process.argv.includes("--agent-runs");
 const agentRunLive = process.argv.includes("--agent-run-live");
 const workbenchOnly = process.argv.includes("--workbench");
 const workspaceFiles = process.argv.includes("--workspace-files");
-const repositoryOnly = process.argv.includes("--repository-only") || repositoryDev || localWorkspace || agentOnly || agentLive || agentRuns || agentRunLive || workbenchOnly || workspaceFiles;
+const proposalReview = process.argv.includes("--proposal-review");
+const repositoryOnly = process.argv.includes("--repository-only") || repositoryDev || localWorkspace || agentOnly || agentLive || agentRuns || agentRunLive || workbenchOnly || workspaceFiles || proposalReview;
 if (repositoryDev) {
   // This private file contains only the dedicated read credential, never the backend DSN.
   process.loadEnvFile(join(frontend, "../backend/.local/control-access.env"));
@@ -318,6 +321,12 @@ try {
   }
   if (workspaceFiles) {
     await checkWorkspaceFiles({ cdp, navigate, evaluate, waitFor, click, fill, screenshot });
+  }
+  if (proposalReview) {
+    await checkProposalReview({ cdp, navigate, evaluate, waitFor, click, screenshot });
+    if (process.argv.includes("--deployed-rule")) {
+      await checkDeployedRule({ cdp, navigate, evaluate, waitFor, click, screenshot });
+    }
   }
   if (!repositoryOnly && !process.argv.includes("--developer-only") && !process.argv.includes("--quotations-only")) {
   await navigate("/ui");
@@ -1202,7 +1211,9 @@ try {
   }
   assert.deepEqual(errors, [], "Lỗi runtime/React trên trình duyệt");
   console.log(
-    workspaceFiles ? "Đạt: Edge Ctrl+S/source thật, sửa tiếp → tự lưu → Docker test đúng revision, giữ draft Agent, Undo phục hồi bytes gốc, reload/mobile; không gọi provider hoặc activate."
+    proposalReview && process.argv.includes("--deployed-rule") ? "Đạt: artifact đã triển khai khớp, Báo giá hiển thị đúng cờ/ngày hợp lệ/ISO tuần và mobile; không gọi model hoặc triển khai thêm."
+      : proposalReview ? "Đạt: proposal/artifact thật, diff và Docker evidence trên Workspace; không gọi provider, approve hoặc activate."
+      : workspaceFiles ? "Đạt: Edge Ctrl+S/source thật, sửa tiếp → tự lưu → Docker test đúng revision, giữ draft Agent, Undo phục hồi bytes gốc, reload/mobile; không gọi provider hoặc activate."
       : workbenchOnly ? "Đạt: hai trang tự kết nối, không nhập token/ID, giữ bản sửa và báo giá qua điều hướng/reload."
       : agentRunLive ? "Đạt: Workspace → Gemini → revision → Docker/evidence thật; chỉ chú thích, source gốc và nghiệp vụ giữ nguyên."
       : agentRuns ? "Đạt: UI Agent tự động, kết quả và hủy ở ba bố cục; model/run/executor là double có nhãn."

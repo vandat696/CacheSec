@@ -2,7 +2,7 @@
 
 ## Trạng thái và nguyên tắc
 
-Lập ngày 2026-11-02; cập nhật **2026-11-15**. T02 đã hoàn thành đặc tả v0.2; T01 còn điều kiện nghiên cứu. Đã có app báo giá/API/DB, Workspace editor/revision/test Docker và Agent thật. [Source write/runtime local](../system/workspace-runtime.md) thêm Ctrl+S ghi file host, 21 check kỹ thuật ngày và human approval/activation đúng artifact. Đây là lát cắt kỹ thuật T03–T15, chưa hoàn thành toàn các gói, cache hoặc nghiên cứu; dấu chọn chỉ xác nhận đầu ra/kiểm chứng của từng gói.
+Lập ngày 2026-11-02; cập nhật **2026-11-16**. T02 đã hoàn thành đặc tả v0.2; T01 còn điều kiện nghiên cứu. Đã có app báo giá/API/DB, Workspace editor/revision/test Docker và Agent thật. [Source write/runtime local](../system/workspace-runtime.md) thêm Ctrl+S ghi file host, 21 nhóm check kỹ thuật và human approval/activation đúng artifact. Gemini đã tạo rule ngày, sửa từ feedback thật, lưu/test qua Workspace và human đã duyệt chính xác revision 4; app local target v1 đã chạy/kiểm HTTP và UI thật. Đây là lát cắt kỹ thuật T03–T15, chưa hoàn thành toàn các gói, cache hoặc nghiên cứu; dấu chọn chỉ xác nhận đầu ra/kiểm chứng của từng gói.
 
 Phạm vi và câu hỏi mở do [tổng quan](overview.md) sở hữu; module/runtime do [kiến trúc](../system/architecture.md) sở hữu, request/response/thao tác do [contract API](../system/api.md) sở hữu; quyền/gate do [phân quyền](../system/authorization.md) sở hữu; protocol/fixture/acceptance do [đánh giá](../evaluation/design.md) sở hữu. Kế hoạch này quản lý việc cần làm và điều kiện nghiệm thu, không thay đặc tả của các tài liệu đó.
 
@@ -148,7 +148,7 @@ Kết thúc mốc khi demo được cả lưu/sửa/test thành công, sai quy�
 
 ### T14 — Agent tạo đúng một thay đổi và hoàn tất luồng thật
 
-- **Lát cắt kỹ thuật đã có:** [vòng Agent local](../system/agent-workflow.md) tự đọc source, tạo revision riêng, queue test T12 và sửa tiếp từ feedback, tối đa ba lượt/mười phút. API/state/UI/cancel, test doubles/DB integration và một run Gemini → Docker thật chỉ thêm chú thích đã đạt; dev đã được cấp hai quyền workflow theo xác nhận tường minh. Không activation hoặc rule ngày trong baseline; chưa phải toàn bộ T14, không bỏ qua phụ thuộc gate/oracle/cache của mốc nghiên cứu. Chi tiết kiểm chứng và giới hạn ở project-status.
+- **Lát cắt kỹ thuật đã có:** [vòng Agent local](../system/agent-workflow.md) tự đọc source, tạo revision riêng, queue test T12 và sửa tiếp từ feedback, tối đa ba lượt/mười phút. Ngày 2026-11-16, một run Gemini tạo rule thật; review phát hiện ngày ISO tuần lọt harness, bổ sung regression rồi một request assistance riêng sửa bằng feedback Docker failed. Hai lần gọi model tổng cộng; format giữ AST, Ctrl+S ghi source và test artifact cuối đạt. Đây không phải tự resume run terminal. Sau human phê duyệt chính xác revision 4, rule đã chạy trên app local target v1 và kiểm hành vi HTTP/UI; image baseline giữ nguyên. Cache/fixture/oracle/acceptance nghiên cứu còn mở. Chi tiết bằng chứng ở project-status.
 
 - [ ] Hoàn thành T14. **Phụ thuộc:** T08–T13.
 - **Làm:** nối request → context/cache → model/Agent tools → proposal/diff → test → xin duyệt → activation qua control. Chỉ giao một thay đổi flag ngày hết hạn; Agent không có quyền approve/deploy hoặc sửa control/cache/policy.

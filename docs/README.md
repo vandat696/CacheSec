@@ -17,8 +17,8 @@ Hồ sơ thiết kế và trạng thái hệ thống. Nội dung dự kiến kh�
 | System | [Agent tự sửa/test local](system/agent-workflow.md) | Run có giới hạn, quyền workflow riêng, vòng sửa/test, cancel và registry trong một process |
 | System | [Workspace source/runtime local](system/workspace-runtime.md) | Ctrl+S ghi file host thật, kiểm rule ngày, human approval và kích hoạt đúng artifact bằng worker Docker |
 | System | [Cache](system/cache.md) | Answer/Context Cache, Hit/Miss/Rejected, verification, metadata và lifecycle |
-| System | [Phân quyền](system/authorization.md) | Quyền app, registry control và HTTP repository đã có; gate local v0.1/dispatch/recovery chưa triển khai, threat model |
-| Frontend | [Thiết kế](frontend/design.md) | Báo giá nối API thật, Workspace snapshot/revision/diff/test Docker thật, review/approval mô phỏng và các màn cũ |
+| System | [Phân quyền](system/authorization.md) | Quyền app/control/repository và gate runtime local đã có; threat model và giới hạn freshness/recovery |
+| Frontend | [Thiết kế](frontend/design.md) | Báo giá/Workspace thật, snapshot/revision/diff/test và human review/run local; các màn mô phỏng cũ được giữ riêng |
 | Evaluation | [Thiết kế đánh giá](evaluation/design.md) | So sánh chính năm chiều, phép thử cache phụ, mẫu số/nguồn đo, fixture và threshold |
 
 ## Cách đọc và cập nhật
