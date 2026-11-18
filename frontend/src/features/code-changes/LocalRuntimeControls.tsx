@@ -1,7 +1,6 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
-import Link from "next/link";
 import { Button } from "@/components/ui/Button";
 import { ChangeApiError, type ChangeWorkflowClient, type Revision, type TestJob } from "./changeWorkflowApi";
 import { ReviewAndRunDialog } from "./ReviewAndRunDialog";
@@ -24,6 +23,8 @@ export function LocalRuntimeControls({ api, config, revision, jobs, dirty, disab
   const passed = jobs.find(job => job.status === "passed" && job.artifact_digest === revision?.artifact_digest && job.revision === revision?.revision);
   const canRun = !!api && !!revision && !!passed && !dirty && !disabled && !busy
     && config.configured && config.can_review && config.can_activate && !config.pending_id;
+  const runningVersion = operation?.status === "succeeded"
+    ? version : !operation && config.active_artifact ? config.target_version : null;
   async function activate() {
     const selected = review;
     setReview(null);
@@ -53,8 +54,7 @@ export function LocalRuntimeControls({ api, config, revision, jobs, dirty, disab
       title={!passed ? "Cần test đạt cho bản sửa hiện tại" : "Xem diff, phê duyệt rồi chạy đúng artifact"}
       onClick={() => setReview(revision)}>Chạy ứng dụng</Button>
     {busy && <span role="status">{operation?.status === "queued" ? "Chờ worker…" : "Đang chạy bản mới…"}</span>}
-    {operation?.status === "succeeded" && <Link href="/quotations">Đang chạy bản {version} · Mở Báo giá</Link>}
-    {!operation && config.active_artifact && <Link href="/quotations">Ứng dụng · Bản {config.target_version}</Link>}
+    {runningVersion !== null && <span role="status">Đang chạy bản {runningVersion}</span>}
     {!operation && config.pending_id && <span role="status">Ứng dụng đang chờ worker hoặc đối soát.</span>}
     {error && <span role="alert" className="repository-error">{error}</span>}
     <ReviewAndRunDialog revision={review} onCancel={() => setReview(null)} onApprove={() => { void activate(); }} />

@@ -12,7 +12,7 @@
 .repository-workspace-toolbar strong { font-size: 12px; }
 .repository-workspace-toolbar kbd { margin-left: 5px; color: var(--nui-muted); font: 10px Consolas, monospace; }
 .workspace-runtime-controls { display: flex; gap: 8px; align-items: center; flex-wrap: wrap; min-width: 0; font-size: 11px; }
-.workspace-runtime-controls > a, .workspace-runtime-controls > span { overflow-wrap: anywhere; }
+.workspace-runtime-controls > span { overflow-wrap: anywhere; }
 .workspace-review-dialog { width: min(800px, calc(100vw - 32px)); max-width: 800px; max-height: calc(100dvh - 32px); overflow: auto; }
 .workspace-review-dialog pre { white-space: pre; overflow: auto; max-height: 50dvh; padding: 12px; background: #f5f7fa; font-size: 12px; }
 .workspace-review-dialog details { overflow-wrap: anywhere; margin: 12px 0; }

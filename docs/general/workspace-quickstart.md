@@ -42,4 +42,5 @@ Diff dự kiến đổi `>` thành `>=`. Ca `expiration_equal` phải đạt tr�
 ## Lưu, duyệt hoặc xem lại mã gốc
 
 - **Mở đề xuất trong editor → Lưu** để ghi bản sửa đã chọn vào project. Để đưa bản đã qua test lên app báo giá, chọn **Chạy ứng dụng** và phê duyệt đúng bản sửa trong hộp thoại.
+- **Đang chạy bản** cho biết phiên bản đã triển khai. Chọn **Báo giá** trong menu để mở ứng dụng.
 - **Mở đề xuất trong editor → Thay đổi → Đưa mã gốc vào editor** để xem lại bản trước khi sửa. Bấm **Lưu** nếu cần ghi lại mã gốc và phiên của bạn có quyền ghi. [Chi tiết khôi phục](../system/context-comparison.md#về-mốc-ban-đầu).

@@ -220,10 +220,11 @@ export async function checkAgentRuns({ cdp, navigate, evaluate, waitFor, click, 
         }
         if(path.endsWith('/workspace/approvals') || path.endsWith('/workspace/activations')) {
           const activation=path.endsWith('/activations');
-          window.__runtimeUIRequests.push({path,body:JSON.parse(init.body)});
+          const body=JSON.parse(init.body);
+          window.__runtimeUIRequests.push({path,body});
           return Response.json({meta,data:{id,kind:activation?'activation':'approval',status:activation?'succeeded':'approved',
             proposal_id:id,revision:1,artifact_digest:hash,profile_digest:window.__runtimeUIProfile,job_id:id,evidence_digest:hash,
-            created_at:1,reason:null,source_digest:null,container_name:null,target_version:activation?0:null,approval_id:activation?id:null}});
+            created_at:1,reason:null,source_digest:null,container_name:null,target_version:activation?body.expected_version:null,approval_id:activation?id:null}});
         }
         return original(url,init);
       };
@@ -232,6 +233,8 @@ export async function checkAgentRuns({ cdp, navigate, evaluate, waitFor, click, 
     await fill('#change-proposal-id', 'aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa');
     await click('.change-open button');
     await waitFor("!document.querySelector('#workspace-run').disabled");
+    assert.equal(await evaluate("!!document.querySelector('.workspace-runtime-controls a')"), false);
+    assert.equal(await evaluate("!!document.querySelector('.sidebar nav a[href=\"/quotations\"]')"), true);
     await click('#workspace-run');
     await waitFor("!!document.querySelector('.workspace-review-dialog[open]')");
     assert.ok(await evaluate("document.querySelector('[aria-label=\"Diff cần phê duyệt\"]').textContent.includes('Test-only')"));
@@ -241,7 +244,8 @@ export async function checkAgentRuns({ cdp, navigate, evaluate, waitFor, click, 
     assert.equal(await evaluate("window.__runtimeUIRequests.length"), 0, 'cancel cannot approve/deploy');
     await click('#workspace-run');
     await click('#workspace-approve-run');
-    await waitFor("!!document.querySelector('.workspace-runtime-controls a')");
+    await waitFor("window.__runtimeUIRequests.length === 2 && document.querySelector('.workspace-runtime-controls [role=status]')?.textContent === 'Đang chạy bản ' + (window.__runtimeUIRequests[1].body.expected_version + 1)");
+    assert.equal(await evaluate("!!document.querySelector('.workspace-runtime-controls a')"), false);
     assert.equal(await evaluate("window.__runtimeUIRequests.length"), 2);
     assert.equal(await evaluate("window.__runtimeUIRequests[0].body.artifact_digest"), 'sha256:'+'a'.repeat(64));
   } finally {
