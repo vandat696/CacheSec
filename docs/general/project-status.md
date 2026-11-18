@@ -19,6 +19,11 @@ Lưu source không tự reload/deploy app. Chạy app cần human duyệt đúng
 
 ## Bằng chứng luồng thật gần nhất
 
+## 2026-11-18 — Xem hai bản sửa trên Workspace
+
+- Nút **Xem hai bản sửa** mở hai diff cạnh nhau với file, số dòng gốc/sau, màu thêm/xóa và lựa chọn xem nguyên file hoặc bản sửa cũ. Trạng thái Agent hiện lượt sửa, test và lúc sửa theo phản hồi; chi tiết giữ số liệu, kiểm tra chưa đạt và bằng chứng. [Cách xem](../system/context-comparison.md).
+- Edge trên demo 3100 đã mở lại cặp thật, đối chiếu diff và file gốc/sau, kiểm desktop/mobile. Lượt kiểm UI chỉ đọc lịch sử. 122 test frontend, lint/typecheck và 17 test vòng Agent dùng doubles đạt, gồm ca test thất bại rồi sửa theo phản hồi.
+
 ## 2026-11-18 — Khôi phục launcher dev khi demo riêng cùng chạy
 
 - Sửa launcher lọc Docker theo artifact active mà control dev đăng ký, tránh nhận nhầm app demo 18001; lỗi runtime có mã riêng, vẫn chặn fallback baseline khi target pending hoặc app đã deploy đang dừng/không xác định duy nhất.

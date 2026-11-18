@@ -50,6 +50,29 @@ export async function checkComparisons({ cdp, navigate, evaluate, waitFor, click
     assert.notEqual(pair.branches.none.run.proposal_id, pair.branches.local.run.proposal_id);
     return pair;
   };
+  const openReview = async () => {
+    await waitFor("!!document.querySelector('#comparison-review-open')", "review button available");
+    await click("#comparison-review-open");
+    await waitFor("document.querySelectorAll('.comparison-review[open] .comparison-code').length === 2", "both code diffs visible");
+    const displayed = await evaluate(String.raw`(() => {
+      const review = document.querySelector('.comparison-review[open]');
+      return [...review.querySelectorAll('.comparison-review-branch')].map(branch => ({
+        added: [...branch.querySelectorAll('[data-kind="added"] code')].map(code => code.textContent),
+        removed: [...branch.querySelectorAll('[data-kind="removed"] code')].map(code => code.textContent),
+        path: review.querySelector('.comparison-file').textContent,
+      }));
+    })()`);
+    const expected = await evaluate("['none', 'local'].map(mode => window.__comparisonPair.branches[mode].revisions.at(-1))");
+    for (const [index, revision] of expected.entries()) {
+      const lines = revision.diff.replaceAll("\r\n", "\n").split("\n").slice(2);
+      assert.deepEqual(displayed[index], {
+        added: lines.filter(line => line.startsWith("+")).map(line => line.slice(1)),
+        removed: lines.filter(line => line.startsWith("-")).map(line => line.slice(1)),
+        path: revision.path,
+      });
+    }
+    return expected;
+  };
   try {
     await navigate("/workspace" + (resume ? "?comparison=" + resume : "")); await connect();
     const details = " Chỉ sửa quotation_validation.py. Giữ dataclass và signature hiện có. expires_on hợp lệ khi đúng chuỗi ASCII YYYY-MM-DD, ngày tồn tại và >= reference_date. Không trim, không ép kiểu, không nhận timestamp/ISO tuần. Missing/null/rỗng/sai kiểu/định dạng/ngày không tồn tại hoặc trước reference_date phải có đúng một flag code expiration_review, field expires_on; ngày hợp lệ không có flag. evaluated_rules chứa expiration_review và giữ reference_date. Nếu reference_date=None thì báo lỗi rõ ràng. Trả toàn bộ file; không sửa test, policy hoặc file khác. Test là kỹ thuật, không tuyên bố acceptance nghiên cứu.";
@@ -61,6 +84,21 @@ export async function checkComparisons({ cdp, navigate, evaluate, waitFor, click
     assert.equal(warm.branches.local.context.outcome, "hit"); assert.equal(warm.branches.local.context.decisions.at(-1).kind, "semantic");
     assert.equal(await evaluate("window.__comparisonForbidden"), 0);
     await screenshot("comparison-live-desktop.png");
+    const reviewed = await openReview();
+    await screenshot("comparison-review-desktop.png");
+    for (const [value, part] of [["base", "base_text"], ["candidate", "content"]]) {
+      await evaluate(`(() => {
+        const branch = document.querySelector('.comparison-review-branch');
+        const select = branch.querySelector('.comparison-diff-toolbar select');
+        select.value = ${JSON.stringify(value)};
+        select.dispatchEvent(new Event('change', { bubbles: true }));
+      })()`);
+      await waitFor("!!document.querySelector('.comparison-review-branch pre code')");
+      assert.equal(await evaluate("document.querySelector('.comparison-review-branch pre code').textContent"), reviewed[0][part]);
+    }
+    await click(".comparison-review-heading button");
+    await waitFor("!document.querySelector('.comparison-review[open]')");
+    assert.equal(await evaluate("document.activeElement.id"), "comparison-review-open");
     assert.equal(await evaluate("window.__comparisonStarts"), resume ? 0 : 4);
     await navigate("/workspace?comparison=" + warm.pair_id); await connect();
     await waitFor("document.querySelectorAll('.comparison-branch details').length > 0", "durable history restored");
@@ -69,6 +107,13 @@ export async function checkComparisons({ cdp, navigate, evaluate, waitFor, click
     assert.deepEqual(stored.branches.local.revisions.map(r => r.artifact_digest), warm.branches.local.revisions.map(r => r.artifact_digest));
     await cdp("Emulation.setDeviceMetricsOverride", { width: 390, height: 844, deviceScaleFactor: 1, mobile: true });
     await screenshot("comparison-live-mobile.png");
+    await openReview();
+    assert.equal(await evaluate(`(() => {
+      const [first, second] = document.querySelectorAll('.comparison-review-branch');
+      const dialog = document.querySelector('.comparison-review');
+      return second.getBoundingClientRect().top > first.getBoundingClientRect().top && dialog.scrollWidth <= dialog.clientWidth;
+    })()`), true);
+    await screenshot("comparison-review-mobile.png");
     const after = await Promise.all(manifest.source_paths.map(path => readFile(resolve(root, "project", path))));
     assert.deepEqual(after.map(value => createHash("sha256").update(value).digest("hex")), hashes);
     if (!resume) await writeFile(resolve(root, "comparison-results.json"), JSON.stringify({ cold, warm }, null, 2));

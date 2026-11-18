@@ -56,6 +56,14 @@ export function isComparisonPair(v: unknown): v is ComparisonPair {
   });
 }
 export const branchPending = (branch: Branch) => ![...terminalRunStatuses, "incomplete", "ready", "preparing"].includes(branch.status as typeof terminalRunStatuses[number]);
+export const branchLabel = (mode: ContextMode) => mode === "none" ? "Không cache" : "Có Context Cache";
+export const revisionTest = (item: Revision) => item.tests.find(job => job.artifact_digest === item.artifact_digest
+  && job.revision === item.revision && job.proposal_id === item.proposal_id);
+export const testLabel = (status?: string) => ({
+  passed: "Test đạt", failed: "Test chưa đạt", queued: "Đang chờ test", preparing: "Đang chuẩn bị test",
+  running: "Đang chạy test", blocked: "Test bị chặn", timed_out: "Test hết thời gian",
+  error: "Lỗi chạy test", unknown: "Chưa rõ kết quả test",
+} as Record<string, string>)[status ?? ""] ?? "Chưa có test";
 export function branchMetrics(branch: Branch) {
   const events = branch.run?.events.filter(event => event.tool === "generate" && event.state === "completed") ?? [];
   const usage = events.length && events.every(event => event.usage != null)

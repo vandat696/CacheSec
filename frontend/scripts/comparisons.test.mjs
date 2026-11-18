@@ -2,6 +2,24 @@ import assert from "node:assert/strict";
 import { test } from "node:test";
 import { AgentHttpClient, AgentApiError } from "../src/features/agent/agentApi.ts";
 import { isComparisonPair, branchMetrics } from "../src/features/comparisons/comparisonModel.ts";
+import { comparisonDiff } from "../src/features/comparisons/comparisonDiff.ts";
+
+test("code review preserves signs inside code and numbers before/after across hunks", () => {
+  const patch = [
+    "--- base/validation.py", "+++ candidate/validation.py", "@@ -3,2 +3,3 @@",
+    " context", "--- code", "+++ code", "+", "@@ -12,0 +14 @@", "+tail", "",
+  ].join("\r\n");
+  assert.deepEqual(comparisonDiff(patch), [
+    [
+      { kind: "context", before: 3, after: 3, text: "context" },
+      { kind: "removed", before: 4, after: null, text: "-- code" },
+      { kind: "added", before: null, after: 4, text: "++ code" },
+      { kind: "added", before: null, after: 5, text: "" },
+    ],
+    [{ kind: "added", before: null, after: 14, text: "tail" }],
+  ]);
+  assert.equal(comparisonDiff(patch.replace("+tail", "old+tail")), null);
+});
 
 const id = "aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa";
 const other = "bbbbbbbb-bbbb-4bbb-8bbb-bbbbbbbbbbbb";

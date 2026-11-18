@@ -35,6 +35,8 @@ Standalone context POST chưa có key registry riêng, không tự retry generat
 
 Browser resolve candidate trước khi chạy hai nhánh. None không mở IndexedDB/lookup/embedding/admission Local. Miss/Rejected fallback bằng retrieval có quyền; authority/verifier/storage backend lỗi trả lỗi. IndexedDB lỗi ghi riêng `client_storage_error`; lỗi embedding ghi cho Local, None vẫn có thể chạy. Không đổi lỗi thành Hit/Miss thành công.
 
+Trên Workspace, chọn **Agent → So sánh** rồi chạy hai nhánh hoặc mở một phiên trong **Lịch sử**. **Xem hai bản sửa** mở hai diff đối chiếu với snapshot gốc của phiên: xanh `+` là dòng thêm, đỏ `−` là dòng xóa. Hai cột số dòng chỉ vị trí trong file gốc và sau sửa. Có thể đổi bản sửa, xem nguyên file, hoặc mở đề xuất của từng nhánh trong trình chỉnh sửa. Trạng thái nhánh hiển thị lượt Agent hiện tại, lúc chạy Docker và lúc sửa theo kết quả test. Mở từng bản trong phần kết quả để xem các kiểm tra chưa đạt và bằng chứng test.
+
 ## Lịch sử và số đo
 
 Migration 006 thêm requests/registry; 007 thêm pairs, immutable revision references và append-only assessments. Source/diff/artifact/evidence dùng snapshot/blob hiện có; registry cache không lưu payload. Checkpoint lưu events/usage/trạng thái từng mốc, không lưu credential.

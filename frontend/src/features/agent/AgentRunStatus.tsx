@@ -21,14 +21,16 @@ export function AgentRunStatus({ run, busy, error, onCancel, onRefresh, onOpen }
   if (!run && !error) return null;
   const pending = run ? pendingAgentRun(run) : false;
   const cancelling = run?.events.some(event => event.state === "cancel_requested");
+  const repairing = run?.status === "generating" && run.turn > 1;
   return <div className="agent-proposal agent-run" role="region" aria-label="Tiến trình Agent" data-status={run?.status}>
     {run && <>
-      <strong role="status">{labels[run.status]} · {run.turn}/{run.max_turns}</strong>
+      <strong role="status">{repairing ? "Đang sửa theo kết quả test" : labels[run.status]} · Lượt {run.turn}/{run.max_turns}</strong>
       {run.answer && <p>{run.answer}</p>}
       {run.error_code && <p role="alert">{errors[run.error_code] ?? "Không hoàn tất được lượt Agent. Xem bản sửa và kết quả đã lưu."}</p>}
       {run.test_may_continue && !pending && <p>Job Docker đã nhận có thể tiếp tục trong giới hạn riêng.</p>}
       <details><summary>Các bước</summary><ol>{run.events.map(event => <li key={event.sequence}>
-        {({ read_source: "Đọc source", generate: "Model", save_revision: "Lưu bản sửa", test: "Test", storage: "Lưu trữ", run: "Agent" } as Record<string, string>)[event.tool]}
+        {event.turn > 0 && `Lượt ${event.turn} · `}
+        {({ read_source: "Đọc mã nguồn", generate: "Sinh mã", save_revision: "Lưu bản sửa", test: "Test", storage: "Lưu trữ", run: "Agent" } as Record<string, string>)[event.tool]}
         {" · "}{({ started: "bắt đầu", accepted: "đã nhận", completed: "hoàn tất", passed: "đạt", failed: "chưa đạt", cancel_requested: "yêu cầu dừng", effect_unknown: "kết quả chưa rõ" } as Record<string, string>)[event.state] ?? labels[event.state] ?? "đã dừng"}
       </li>)}</ol></details>
       {pending && <Button variant="secondary" onClick={onCancel} disabled={busy || cancelling}>{cancelling ? "Đang dừng…" : "Dừng Agent"}</Button>}

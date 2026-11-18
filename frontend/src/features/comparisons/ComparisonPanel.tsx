@@ -4,6 +4,7 @@ import { useState } from "react";
 import { Button } from "@/components/ui/Button";
 import type { AgentHttpClient } from "../agent/agentApi";
 import { ComparisonBranch } from "./ComparisonBranch";
+import { ComparisonReview } from "./ComparisonReview";
 import { useComparison } from "./useComparison";
 
 export function ComparisonPanel({ api, snapshotId, enabled, onDenied, onOpen }: {
@@ -12,6 +13,9 @@ export function ComparisonPanel({ api, snapshotId, enabled, onDenied, onOpen }: 
   const comparison = useComparison(api, onDenied);
   const [prompt, setPrompt] = useState("");
   const [state, setState] = useState<"cold" | "warm" | "preload">("warm");
+  const [reviewId, setReviewId] = useState<string | null>(null);
+  const pair = comparison.pair;
+  const hasRevisions = pair && Object.values(pair.branches).some(branch => branch.revisions?.length);
   const blocked = comparison.busy || comparison.pending;
   function download() {
     if (!comparison.pair) return;
@@ -31,9 +35,18 @@ export function ComparisonPanel({ api, snapshotId, enabled, onDenied, onOpen }: 
       <option value="">Chọn phiên</option>{comparison.history.map(item => <option key={item.pair_id} value={item.pair_id}>{new Date(item.created_at).toLocaleString("vi-VN")} · {item.prompt.slice(0, 60)}</option>)}</select></label>
       {comparison.pair && <><Button variant="tertiary" disabled={comparison.busy} onClick={() => { void comparison.open(comparison.pair!.pair_id); }}>Tải lại</Button><Button variant="tertiary" onClick={download}>Xuất JSON</Button></>}
     </div>
-    {comparison.pair && <><details><summary>Yêu cầu đã chạy</summary><p className="comparison-prompt">{comparison.pair.prompt}</p></details><div className="comparison-branches">
-      {(["none", "local"] as const).map(mode => <ComparisonBranch key={mode} branch={comparison.pair!.branches[mode]} busy={comparison.busy}
-        onOpen={onOpen} onCancel={() => { void comparison.cancel(mode); }} />)}
-    </div></>}
+    {pair && <>
+      <div className="comparison-result-heading">
+        <h3>Kết quả hai nhánh</h3>
+        {hasRevisions && <Button id="comparison-review-open" onClick={() => setReviewId(pair.pair_id)}>Xem hai bản sửa</Button>}
+      </div>
+      <details><summary>Yêu cầu đã chạy</summary><p className="comparison-prompt">{pair.prompt}</p></details>
+      <div className="comparison-branches">
+        {(["none", "local"] as const).map(mode => <ComparisonBranch key={mode} branch={pair.branches[mode]} busy={comparison.busy}
+          onCancel={() => { void comparison.cancel(mode); }} />)}
+      </div>
+      {reviewId === pair.pair_id && <ComparisonReview key={pair.pair_id} pair={pair} busy={comparison.busy}
+        onClose={() => setReviewId(null)} onOpen={onOpen} />}
+    </>}
   </div>;
 }
