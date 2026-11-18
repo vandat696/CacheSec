@@ -20,9 +20,11 @@ Dùng project demo riêng có bản mã gốc, trước khi thêm `expiration_re
 
 > Chỉ sửa `quotation_validation.py`. Trong `validate_quotation`, thêm đúng một cờ `expiration_review` cho `expires_on` nếu ngày hết hạn bị thiếu, sai định dạng, không tồn tại hoặc trước `reference_date`. Ngày hợp lệ có dạng `YYYY-MM-DD` và bằng hoặc sau `reference_date`. Giữ API và các tệp khác, rồi chạy bộ test hiện có.
 
+Để thử một thay đổi nhỏ, gửi “Thêm một comment ngắn ở đầu hàm `validate_quotation`, giữ nguyên logic”. Bạn cũng có thể hỏi “Bạn đọc và sửa được những file nào?”.
+
 ## Xem bản sửa và cache hit
 
-- Trong khung chat Agent, bấm tab **Không cache** hoặc **Có Context Cache** để xem các câu hỏi và phản hồi của nhánh đó. Gửi tiếp để bổ sung lượt vào phiên đang mở. Bấm **đồng hồ → Phiên mới** để bắt đầu phiên riêng.
+- Trong khung chat Agent, bấm tab **Không cache** hoặc **Có Context Cache** để xem các câu hỏi và phản hồi của nhánh đó. Gửi tiếp trong cùng phiên để Agent dùng ngữ cảnh gần đây, ví dụ “viết comment đó ngắn lại”. Bấm **đồng hồ → Phiên mới** để bắt đầu phiên riêng.
 - Cuộn xuống dưới Workspace để xem **Không cache** và **Có Context Cache**. Dòng thêm có **`+` màu xanh**, dòng xóa có **`−` màu đỏ**. Bấm **Đến dòng sửa** để nhảy tới thay đổi đầu tiên.
 - Ở nhánh **Có Context Cache**, **Miss** nghĩa là Agent đọc lại mã nguồn. **Verified Hit** nghĩa là backend đã kiểm tra quyền và phiên bản nguồn rồi cho dùng lại ngữ cảnh đã lưu. Agent vẫn gọi Gemini để tạo bản sửa cho lượt đó.
 - Nếu gặp `MODEL_UNAVAILABLE`, mở **Chi tiết** để xem mã HTTP nếu có. Agent thử gọi lại tối đa một lần trong mỗi nhánh khi gặp lỗi tạm thời. `MODEL_RATE_LIMIT` nghĩa là đã chạm hạn mức nhà cung cấp.

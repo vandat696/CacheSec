@@ -10,6 +10,8 @@ Backend kiểm quyền hiện tại trước mỗi bước và sau model; các t
 
 Scope đọc giữ đúng ba file của source profile đã đăng ký. Chỉ `quotation_validation.py` được sửa trong candidate riêng; không ghi working tree, sửa harness/policy hoặc chạy command do model/client gửi. Provider nhận ba file và prompt; từ vòng hai, source validation là candidate đã đọc lại qua proposal service và feedback chỉ là kết quả/checks kỹ thuật đã gắn job/revision/artifact. Không gửi stdout hoặc coi nội dung candidate là chỉ thị có thẩm quyền.
 
+Chỉ dẫn Agent phân biệt câu hỏi và yêu cầu sửa. Agent trả lời trực tiếp lời chào, câu hỏi về source/phạm vi và câu hỏi xin ví dụ prompt. Với yêu cầu chỉ thêm chú thích trong validator, Agent có thể chọn vị trí phù hợp và giữ nguyên logic. Agent hỏi làm rõ khi chi tiết còn thiếu làm thay đổi hành vi nghiệp vụ được yêu cầu.
+
 ## Vòng thực thi
 
 1. POST tạo run có idempotency key; backend xác thực quyền và cấu hình model. Cùng requester/key/payload trả cùng run trong đời process; đổi payload trả conflict. Một run đang hoạt động cho mỗi control process, không có hàng đợi không giới hạn.

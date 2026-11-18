@@ -7,6 +7,7 @@ from contextlib import contextmanager
 
 import pytest
 
+from app.agent_assistance.assistance_prompt import INSTRUCTIONS
 from app.agent_assistance.gemini_generation import MODEL, GeminiContentGeneration, decode_response
 from app.agent_assistance.generation import AgentError, GenerationTransportError
 from app.agent_assistance.generation_transport import NoRedirect
@@ -161,6 +162,7 @@ def test_private_key_rotation_history_mapping_and_fixed_transport(
     body = json.loads(request.data)
     assert request.full_url == ENDPOINT.replace(MODEL, model_id) and "?" not in request.full_url
     assert request.get_header("X-goog-api-key") == key
+    assert body["systemInstruction"]["parts"] == [{"text": INSTRUCTIONS}]
     assert [m["role"] for m in body["contents"]] == ["user", "model", "user"]
     assert "tools" not in body and "cachedContent" not in body
     assert body["generationConfig"]["responseJsonSchema"]["additionalProperties"] is False

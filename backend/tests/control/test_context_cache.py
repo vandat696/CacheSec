@@ -122,7 +122,12 @@ def cache_env():
             return [1.0] + [0.0] * 767
 
     env.service = ContextService(
-        Transactions(), Snapshots(), Embedding(), "test-only-model", lambda: env.now
+        Transactions(),
+        Snapshots(),
+        Embedding(),
+        "test-only-model",
+        lambda: env.now,
+        prompt_version="test-prompt-v1",
     )
     env.prepare = lambda mode="local", prompt="explain", purpose="inspect": env.service.prepare(
         TOKEN, bundle.snapshot.snapshot_id, prompt, mode, purpose
@@ -170,6 +175,7 @@ def test_none_skips_embedding_lookup_and_admission(cache_env):
         ("expired", "EXPIRED"),
         ("unknown", "ENTRY_UNKNOWN"),
         ("purpose", "SCOPE_OR_CONFIG_MISMATCH"),
+        ("prompt_version", "SCOPE_OR_CONFIG_MISMATCH"),
         ("query", "QUERY_MISMATCH"),
         ("threshold", "BELOW_THRESHOLD"),
     ],
@@ -184,6 +190,8 @@ def test_candidate_rejected_then_authorized_retrieval(cache_env, mutation, reaso
         env.now += POLICY["ttl_seconds"]
     elif mutation == "unknown":
         report_candidate["entry_id"] = str(uuid4())
+    elif mutation == "prompt_version":
+        env.service.prompt_version = "test-prompt-v2"
     request = env.prepare(
         prompt="different" if mutation == "query" else "explain",
         purpose="change" if mutation == "purpose" else "inspect",

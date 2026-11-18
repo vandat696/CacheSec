@@ -1,5 +1,6 @@
 """Real PostgreSQL comparisons with explicitly labeled model, embedding and worker doubles."""
 
+import json
 from types import SimpleNamespace
 from uuid import UUID, uuid4
 
@@ -8,6 +9,7 @@ from fastapi import FastAPI
 from fastapi.testclient import TestClient
 
 from app.agent_assistance.assistance_http import configure_assistance_http
+from app.agent_assistance.assistance_prompt import ASSISTANCE_PROMPT_VERSION
 from app.agent_assistance.assistance_service import AgentAssistanceService
 from app.agent_assistance.cached_assistance import CachedAgentAssistance
 from app.agent_assistance.generation import GenerationResult, GenerationTransportError
@@ -72,6 +74,7 @@ def comparison(workflow, monkeypatch):
         env.snapshots,
         Embedding(),
         assistance.models.default.model_id,
+        prompt_version=ASSISTANCE_PROMPT_VERSION,
     )
     cached = CachedAgentAssistance(contexts, assistance.models)
     executor = ManualExecutor()
@@ -207,6 +210,7 @@ def test_conversation_keeps_order_and_grouping_across_restart_and_legacy_pairs(c
     assert response.status_code == 202
     second = response.json()["data"]
     assert second["session_id"] == str(session_id) and second["pair_id"] != first["pair_id"]
+    assert second["conversation_context"]["turn_ids"] == [first["pair_id"]]
     assert e.client.post(endpoint, json=body, headers=headers).json()["data"] == second
     assert (
         e.client.post(endpoint, json={**body, "session_id": None}, headers=headers).status_code
@@ -215,8 +219,22 @@ def test_conversation_keeps_order_and_grouping_across_restart_and_legacy_pairs(c
     start_pair(e, second)
     e.executor.drain()
     e.executor.drain()
+    history = e.state.calls[2][2]
+    assert e.state.calls[3][2] == history
+    assert history[:2] == [
+        {"role": "user", "content": "first prompt"},
+        {"role": "assistant", "content": "test-only answer"},
+    ]
+    diffs = json.loads(history[2]["content"])["previous_tested_diffs"]
+    assert set(diffs) == {"Không cache", "Có Context Cache"}
+    assert all("candidate-" in diff for diff in diffs.values())
+    assert e.state.embeddings == ["first prompt", "second prompt"]
     separate = create(e, "new conversation")
     assert separate["session_id"] == separate["pair_id"]
+    start_pair(e, separate)
+    e.executor.drain()
+    e.executor.drain()
+    assert all(call[2] == [] for call in e.state.calls[4:])
     rows = e.factory().list(TOKEN)
     assert [(row["pair_id"], row["prompt"]) for row in rows] == [
         (separate["pair_id"], "new conversation"),

@@ -42,6 +42,8 @@ Browser resolve candidate trước khi chạy hai nhánh. None không mở Index
 
 Workspace mở sẵn editor mã nguồn cạnh chat **Cả hai**. Hai tab **Không cache** và **Có Context Cache** hiển thị toàn bộ câu hỏi theo thứ tự gửi, kèm phản hồi của nhánh tương ứng. Nút đồng hồ mở lại phiên. **Phiên mới** làm trống chat và đưa hai nhánh về **Chưa chạy**. Mỗi câu gửi tiếp trong cùng phiên tạo một cặp chạy riêng trên snapshot của lượt đó. Các lượt lưu trước khi có định danh phiên được mở như những phiên riêng.
 
+Khi tạo lượt mới, backend chốt tối đa sáu lượt đã kết thúc gần đây của chính phiên, trong ngân sách 24.000 byte UTF-8 cho hội thoại. Hai nhánh nhận cùng lịch sử. Khi có đề xuất đã qua test trên đúng snapshot gốc, cả hai nhận thêm diff của đề xuất đó làm ngữ cảnh, tối đa 8 KiB mỗi diff. Chỉ dẫn Agent dùng diff khi câu mới yêu cầu tiếp tục bản đề xuất và hỏi lại nếu cách chọn bản sẽ làm thay đổi đáng kể kết quả. Registry lưu ID lượt, digest lịch sử và tham chiếu revision để kiểm lại trước khi gửi. Embedding vẫn dùng prompt mới.
+
 Cuộn xuống dưới Workspace để xem hai bản sửa, tiến trình, cache hit/miss, lỗi và số liệu của lượt đang mở. Nền xanh `+` là dòng thêm, nền đỏ `−` là dòng xóa. **Đến dòng sửa** cuộn tới thay đổi đầu tiên trong khung đó. Trên màn hình hẹp, hai bản xếp dọc. Bấm **Mở đề xuất trong editor** khi cần chỉnh tiếp.
 
 ## Lịch sử và số đo

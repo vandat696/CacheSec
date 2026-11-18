@@ -25,9 +25,12 @@ class ContextService:
         embedding: QueryEmbedding,
         model_id: str,
         clock=time.time,
+        *,
+        prompt_version: str,
     ):
         self.transactions, self.snapshots, self.embedding = transactions, snapshots, embedding
         self.default_model_id, self.clock = model_id, clock
+        self.prompt_version = prompt_version
         self.authorizer = ControlAuthorizer()
 
     def _authorized(self, session, token):
@@ -65,7 +68,7 @@ class ContextService:
                 "purpose": purpose,
                 "intent": "full-authorized-source",
                 "model": model_id,
-                "prompt_version": "assistance-v1",
+                "prompt_version": self.prompt_version,
             }
         )
 
@@ -122,6 +125,7 @@ class ContextService:
                 "mode": mode,
                 "purpose": purpose,
                 "model": model_id,
+                "prompt_version": self.prompt_version,
                 "intent": "full-authorized-source",
                 "namespace": namespace,
                 "partition": fingerprint(

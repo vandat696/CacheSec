@@ -7,6 +7,7 @@ from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
 from app.agent_assistance.assistance_http import configure_assistance_http
+from app.agent_assistance.assistance_prompt import ASSISTANCE_PROMPT_VERSION
 from app.agent_assistance.assistance_service import AgentAssistanceService
 from app.agent_assistance.cached_assistance import CachedAgentAssistance
 from app.agent_assistance.gemini_generation import ALTERNATIVE_MODELS, GeminiContentGeneration
@@ -129,6 +130,7 @@ def create_app(configuration: Settings = settings) -> FastAPI:
             snapshots,
             GeminiQueryEmbedding(configuration.control_agent_config),
             assistance.models.default.model_id,
+            prompt_version=ASSISTANCE_PROMPT_VERSION,
         )
         if snapshots is not None
         else None

@@ -84,6 +84,15 @@ class PostgresComparisonRecords:
             ).fetchall()
         ]
 
+    def recent(self, scope, owner, session_id, limit):
+        rows = self.connection.execute(
+            "SELECT record FROM control.comparison_pairs WHERE tenant_id=%s AND repo_id=%s "
+            "AND owner_id=%s AND COALESCE((record->>'session_id')::uuid, pair_id)=%s "
+            "ORDER BY created_at DESC, pair_id DESC LIMIT %s",
+            (scope.tenant_id, scope.repo_id, owner, session_id, limit),
+        ).fetchall()
+        return [row[0] for row in reversed(rows)]
+
     def add(self, scope, owner, key, record):
         self.connection.execute(
             "INSERT INTO control.comparison_pairs "

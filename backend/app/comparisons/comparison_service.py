@@ -1,6 +1,7 @@
 """Owned None/Local pairs reuse the bounded Agent loop with separate revision streams."""
 
 import hashlib
+import json
 from threading import RLock
 from uuid import UUID, uuid4
 
@@ -9,6 +10,12 @@ from app.agent_assistance.run_models import TERMINAL_RUNS
 from app.agent_assistance.run_service import AgentRunService
 from app.agent_assistance.run_store import LocalAgentRunStore, timestamp
 from app.agent_assistance.workflow_run_tools import WorkflowRunAccess, WorkflowRunTools
+from app.comparisons.comparison_conversation import (
+    DRAFT_DIFF_BYTES,
+    RECENT_TURNS,
+    conversation_history,
+    draft_references,
+)
 from app.context_cache.context_contract import POLICY, ContextError, fingerprint
 from app.identity.control_authority import ControlAuthorizer
 from app.identity.control_authority import ControlCapability as Cap
@@ -17,13 +24,14 @@ from app.identity.control_authority import ControlCapability as Cap
 class BoundContextGeneration:
     """Internal adapter: a branch cannot change the prompt/snapshot of its context request."""
 
-    def __init__(self, assistance, cached, request, resolved):
+    def __init__(self, assistance, cached, request, resolved, conversation):
         self.assistance, self.cached, self.request, self.resolved = (
             assistance,
             cached,
             request,
             resolved,
         )
+        self.conversation = conversation
 
     def config(self, token, model_id=None):
         return self.assistance.config(token, model_id)
@@ -36,7 +44,9 @@ class BoundContextGeneration:
         ):
             raise AgentError("AGENT_BINDING_MISMATCH", 409)
         try:
-            return self.cached.generate(token, self.request, self.resolved, history, candidate)
+            return self.cached.generate(
+                token, self.request, self.resolved, [*self.conversation, *history], candidate
+            )
         except ContextError as error:
             raise AgentError(error.code, error.status) from None
 
@@ -103,6 +113,12 @@ class ComparisonService:
                 return existing
             if session_id is not None:
                 self._session_root(session, actor, session_id)
+                recent = session.records.recent(
+                    actor.scope, actor.principal_id, session_id, RECENT_TURNS
+                )
+            else:
+                recent = []
+            turn_ids, history = conversation_history(recent)
             pair_id = str(uuid4())
             pair = {
                 "pair_id": pair_id,
@@ -116,6 +132,11 @@ class ComparisonService:
                 "created_at": timestamp(),
                 "status": "preparing",
                 "instance": self.instance,
+                "conversation_context": {
+                    "turn_ids": turn_ids,
+                    "history_digest": fingerprint(history),
+                    "drafts": draft_references(recent, str(snapshot_id)),
+                },
                 "branches": {
                     mode: {"mode": mode, "status": "preparing", "run": None}
                     for mode in ("none", "local")
@@ -172,6 +193,10 @@ class ComparisonService:
             branch.update(status="starting", instance=self.instance, started_at=timestamp())
             session.records.update(actor.scope, actor.principal_id, pair)
         try:
+            with self.transactions.open() as session:
+                actor, current = self._owned(session, token, pair_id)
+                conversation = self._read_conversation(session, actor, current)
+            conversation.extend(self._read_draft_diffs(token, pair))
             request, resolved, resolution = self.contexts.resolve(
                 token, UUID(branch["context_request"]["request_id"]), report, model_id=pair["model"]
             )
@@ -203,7 +228,9 @@ class ComparisonService:
             store = LocalAgentRunStore(checkpoint)
             run_service = AgentRunService(
                 WorkflowRunAccess(self.proposals),
-                BoundContextGeneration(self.assistance, self.cached, request, resolved),
+                BoundContextGeneration(
+                    self.assistance, self.cached, request, resolved, conversation
+                ),
                 WorkflowRunTools(self.proposals),
                 store,
                 self.executor,
@@ -232,6 +259,42 @@ class ComparisonService:
                 )
                 session.records.update(actor.scope, actor.principal_id, stored)
             raise
+
+    def _read_conversation(self, session, actor, pair):
+        context = pair.get("conversation_context")
+        if context is None:
+            return []
+        earlier = []
+        for turn_id in context["turn_ids"]:
+            record = session.records.get(actor.scope, actor.principal_id, UUID(turn_id))
+            if record is None or record.get("session_id", record["pair_id"]) != pair["session_id"]:
+                raise ContextError("COMPARISON_HISTORY_CHANGED")
+            earlier.append(record)
+        _, history = conversation_history(earlier)
+        if fingerprint(history) != context["history_digest"]:
+            raise ContextError("COMPARISON_HISTORY_CHANGED")
+        return history
+
+    def _read_draft_diffs(self, token, pair):
+        diffs = {}
+        for draft in pair.get("conversation_context", {}).get("drafts", []):
+            revision = self.proposals.get(token, UUID(draft["proposal_id"]), draft["revision"])
+            if (
+                revision["artifact_digest"] != draft["artifact_digest"]
+                or revision["base_snapshot_id"] != UUID(pair["snapshot_id"])
+            ):
+                raise ContextError("COMPARISON_HISTORY_CHANGED")
+            diff = revision["diff"]
+            if diff and len(diff.encode("utf-8")) <= DRAFT_DIFF_BYTES:
+                diffs[draft["branch"]] = diff
+        if not diffs:
+            return []
+        return [
+            {
+                "role": "assistant",
+                "content": json.dumps({"previous_tested_diffs": diffs}, ensure_ascii=False),
+            }
+        ]
 
     def get(self, token, pair_id):
         with self.lock:

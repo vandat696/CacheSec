@@ -1,6 +1,6 @@
 # Trạng thái CacheSec
 
-Cập nhật 2026-11-18. Đây là bản tổng hợp hiện trạng, thay nhật ký thao tác chi tiết. [Phạm vi](overview.md) và [kế hoạch](implementation-plan.md) quản lý yêu cầu và việc tiếp theo.
+Cập nhật 2026-11-19. Đây là bản tổng hợp hiện trạng, thay nhật ký thao tác chi tiết. [Phạm vi](overview.md) và [kế hoạch](implementation-plan.md) quản lý yêu cầu và việc tiếp theo.
 
 ## Hiện trạng đã kiểm chứng
 
@@ -18,6 +18,16 @@ Cập nhật 2026-11-18. Đây là bản tổng hợp hiện trạng, thay nhậ
 Lưu source không tự reload/deploy app. Chạy app cần human duyệt đúng artifact; cache không thay quyền, test hoặc gate. Trạng thái trên dựa trên bằng chứng gần nhất, không phải probe dịch vụ đang chạy ở thời điểm đọc.
 
 ## Bằng chứng luồng thật gần nhất
+
+## 2026-11-19 — Agent hiểu câu nối tiếp trong chế độ Cả hai
+
+- Hai nhánh nhận cùng ngữ cảnh hội thoại đã chốt ở đầu lượt. Backend chọn tối đa sáu lượt đã kết thúc và tham chiếu các diff đã qua test trên đúng snapshot. Chỉ dẫn mới dùng ngữ cảnh để tiếp tục yêu cầu hiện tại và hỏi lại khi lựa chọn bản đề xuất ảnh hưởng kết quả. [Ngữ cảnh so sánh](../system/context-comparison.md#contract-đã-triển-khai).
+- Đã nạp Workspace 3000 và demo 3100. Gemini xử lý “viết ngắn lại” với hội thoại và diff giả lập, tạo comment ngắn hơn và giữ AST. PostgreSQL test xác nhận hai nhánh nhận cùng lịch sử/diff, phiên mới bắt đầu với ngữ cảnh rỗng và embedding chỉ dùng prompt mới. 227 test Control, 127 test frontend, Ruff, ESLint, typecheck, build và Edge đọc phiên đã lưu đều đạt.
+
+## 2026-11-19 — Chỉ dẫn Agent cho hỏi đáp và chỉnh chú thích
+
+- Chỉ dẫn mới phân biệt lời chào, câu hỏi về phạm vi, yêu cầu xin ví dụ prompt và yêu cầu sửa. Agent lấy danh sách file đọc/sửa từ profile và có thể thêm chú thích trong validator với logic hiện tại. Namespace context tính theo phiên bản chỉ dẫn mới. [Luồng Agent](../system/agent-workflow.md#phạm-vi-và-quyền).
+- Gemini 3.5 Flash-Lite vượt qua bốn câu thử với source giả lập. Ca thêm comment đối chiếu AST giống bản gốc và xác nhận có chú thích mới. Câu xin prompt mẫu trả lời ở lần gọi thứ hai. 227 test Control với PostgreSQL test riêng và Ruff đạt.
 
 ## 2026-11-18 — Lưu nhiều lượt chat trong cùng phiên Agent
 
