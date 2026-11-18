@@ -134,9 +134,20 @@ class PostgresComparisonRecords:
             "timed_out",
             "error",
         }:
-            branch["server_workflow_ms"] = (
-                datetime.now(timezone.utc) - datetime.fromisoformat(branch["started_at"])
-            ).total_seconds() * 1000
+            elapsed = datetime.now(timezone.utc) - datetime.fromisoformat(branch["started_at"])
+            started = next(
+                (
+                    event["at"]
+                    for event in run["events"]
+                    if event["tool"] == "run" and event["state"] == "started"
+                ),
+                None,
+            )
+            if started is not None:
+                elapsed -= datetime.fromisoformat(started) - datetime.fromisoformat(
+                    run["created_at"]
+                )
+            branch["server_workflow_ms"] = max(0.0, elapsed.total_seconds() * 1000)
         branch["run"] = run
         branch["status"] = run["status"]
         self.update(scope, owner, pair)

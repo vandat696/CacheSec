@@ -10,7 +10,7 @@ Backend kiểm quyền hiện tại trước mỗi bước và sau model; các t
 
 Scope đọc giữ đúng ba file của source profile đã đăng ký. Chỉ `quotation_validation.py` được sửa trong candidate riêng; không ghi working tree, sửa harness/policy hoặc chạy command do model/client gửi. Provider nhận ba file và prompt; từ vòng hai, source validation là candidate đã đọc lại qua proposal service và feedback chỉ là kết quả/checks kỹ thuật đã gắn job/revision/artifact. Không gửi stdout hoặc coi nội dung candidate là chỉ thị có thẩm quyền.
 
-Chỉ dẫn Agent phân biệt câu hỏi và yêu cầu sửa. Agent trả lời trực tiếp lời chào, câu hỏi về source/phạm vi và câu hỏi xin ví dụ prompt. Với yêu cầu chỉ thêm chú thích trong validator, Agent có thể chọn vị trí phù hợp và giữ nguyên logic. Agent hỏi làm rõ khi chi tiết còn thiếu làm thay đổi hành vi nghiệp vụ được yêu cầu.
+Chỉ dẫn Agent dùng mã đầu vào và lịch sử phiên để hiểu câu nối tiếp. Agent trả lời câu hỏi trực tiếp, tự chọn chi tiết nhỏ như vị trí chú thích và hỏi một câu cụ thể khi thông tin thiếu sẽ đổi phạm vi hoặc kết quả. Với yêu cầu đã được đáp ứng, Agent giải thích dựa trên mã hiện có và trả `content=null`. Khi có thay đổi, model trả toàn bộ bản đề xuất để backend lưu và kiểm thử.
 
 ## Vòng thực thi
 
@@ -22,7 +22,7 @@ Chỉ dẫn Agent phân biệt câu hỏi và yêu cầu sửa. Agent trả lờ
 
 Mỗi run có tối đa một lần thử lại bước sinh mã, sau khoảng 1–1,5 giây, với HTTP 502/503/504 hoặc lỗi ngắt kết nối/DNS tạm thời. Backend kiểm lại quyền, snapshot, hủy và deadline trước lần gọi tiếp theo. Trace lưu `generate.error`, `provider_http_status` nếu có, `retry_wait` và lần `started` kế tiếp nếu được phép. HTTP 429, lỗi key và lỗi kiểm tra nguồn kết thúc lượt bằng lỗi tương ứng.
 
-Giới hạn là ba lượt sửa và test trong mười phút, thêm tối đa một lần gọi do thử lại. Mỗi lần gọi có output cap và timeout riêng. Mỗi job có sandbox và deadline T12. Kiểm deadline/hủy ở ranh giới bước và sau response. Cancel yêu cầu dừng vòng; model request hoặc test đã được nhận có thể tiếp tục theo giới hạn riêng. Slot chỉ giải phóng khi controller thực sự kết thúc; response model sau cancel/deadline không được dùng để tạo bước mới.
+Giới hạn là ba lượt sửa và test trong mười phút kể từ khi worker nhận chạy, thêm tối đa một lần gọi do thử lại. Mỗi lần gọi có output cap và timeout riêng. Mỗi job có sandbox và deadline T12. Kiểm deadline/hủy ở ranh giới bước và sau response. Cancel yêu cầu dừng vòng; model request hoặc test đã được nhận có thể tiếp tục theo giới hạn riêng. Slot chỉ giải phóng khi controller thực sự kết thúc; response model sau cancel/deadline không được dùng để tạo bước mới.
 
 ## State và vòng đời local
 

@@ -59,7 +59,7 @@ def create_app(configuration: Settings = settings) -> FastAPI:
     comparisons = None
     executor = ThreadPoolExecutor(max_workers=1, thread_name_prefix="cachesec-agent")
     comparison_executor = ThreadPoolExecutor(
-        max_workers=2, thread_name_prefix="cachesec-comparison"
+        max_workers=1, thread_name_prefix="cachesec-comparison"
     )
 
     @asynccontextmanager

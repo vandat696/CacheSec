@@ -40,6 +40,8 @@ Standalone context POST chưa có key registry riêng, không tự retry generat
 
 Browser resolve candidate trước khi chạy hai nhánh. None không mở IndexedDB/lookup/embedding/admission Local. Miss/Rejected fallback bằng retrieval có quyền; authority/verifier/storage backend lỗi trả lỗi. IndexedDB lỗi ghi riêng `client_storage_error`; lỗi embedding ghi cho Local, None vẫn có thể chạy. Không đổi lỗi thành Hit/Miss thành công.
 
+Workspace đưa **Không cache** vào hàng đợi trước **Có Context Cache**. Control dùng một worker so sánh. Nhánh thứ hai chờ controller của nhánh trước kết thúc, kể cả lần thử lại model và test trong vòng thực thi. Mỗi nhánh bắt đầu tính giới hạn mười phút khi worker nhận chạy.
+
 Workspace mở sẵn editor mã nguồn cạnh chat **Cả hai**. Hai tab **Không cache** và **Có Context Cache** hiển thị toàn bộ câu hỏi theo thứ tự gửi, kèm phản hồi của nhánh tương ứng. Nút đồng hồ mở lại phiên. **Phiên mới** làm trống chat và đưa hai nhánh về **Chưa chạy**. Mỗi câu gửi tiếp trong cùng phiên tạo một cặp chạy riêng trên snapshot của lượt đó. Các lượt lưu trước khi có định danh phiên được mở như những phiên riêng.
 
 Khi tạo lượt mới, backend chốt tối đa sáu lượt đã kết thúc gần đây của chính phiên, trong ngân sách 24.000 byte UTF-8 cho hội thoại. Hai nhánh nhận cùng lịch sử. Khi có đề xuất đã qua test trên đúng snapshot gốc, cả hai nhận thêm diff của đề xuất đó làm ngữ cảnh, tối đa 8 KiB mỗi diff. Chỉ dẫn Agent dùng diff khi câu mới yêu cầu tiếp tục bản đề xuất và hỏi lại nếu cách chọn bản sẽ làm thay đổi đáng kể kết quả. Registry lưu ID lượt, digest lịch sử và tham chiếu revision để kiểm lại trước khi gửi. Embedding vẫn dùng prompt mới.
@@ -55,7 +57,7 @@ Technical assessment gắn artifact/evidence và `technical-trace-v1`; các tiê
 - Tokens lấy response provider từng lượt; thiếu usage là null. Không suy số calls/tokens tiết kiệm từ Hit.
 - Mỗi nhánh có cùng [ngân sách thử lại model](agent-workflow.md#vòng-thực-thi). **Chi tiết** hiển thị trạng thái HTTP của lỗi provider khi có và số lần controller thử gọi. Lượt đã có response thành công được đếm riêng. `started` ghi lúc controller bắt đầu bước sinh mã, trước kiểm tra nguồn cuối cùng và gửi HTTP.
 - `generation_ms`: adapter generation; `embedding_ms`: gồm HTTP embedding; `preparation_ms`: authority/source/embedding trước ghi request.
-- `resolution_ms`: verify/retrieval trước commit; `server_workflow_ms`: từ start nhánh tới checkpoint terminal, chưa gồm delivery HTTP/commit cuối.
+- `resolution_ms`: verify/retrieval trước commit; `server_workflow_ms`: từ start nhánh tới checkpoint terminal, trừ thời gian trong hàng đợi worker. Số đo chưa gồm delivery HTTP/commit cuối.
 - `lookup_ms` và cold/warm browser báo nằm trong `client_report`, không phải bằng chứng trusted. Warm/preload khai báo không chứng minh Hit.
 
 Restart không resume model. Nhánh process cũ đang chạy thành incomplete; checkpoint cũ không được ghi đè. Checkpoint failure cũng thành incomplete. Kết quả đã commit mở lại được; in-flight có thể thiếu usage/evidence. PoC một control process/host worker; chưa distributed execution/fencing tổng quát. Source freshness là quan sát hash/two-pass, không khóa mọi host writer. Proposal/test/runtime gate kiểm binding riêng; cache không cấp quyền, bỏ test hoặc approve/activate.

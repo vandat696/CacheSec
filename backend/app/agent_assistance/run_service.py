@@ -156,6 +156,8 @@ class AgentRunService:
     def _execute(self, run):
         token = run.token
         try:
+            run.started = self.clock()
+            self.store.event(run, "run", "started")
             self._guard(run, token)
             self.tools.check_source(token, run.snapshot_id)
             self.store.event(run, "read_source", "completed")

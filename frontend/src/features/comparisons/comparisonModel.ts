@@ -105,6 +105,7 @@ export function branchMetrics(branch: Branch) {
   const generationMs = events.length && events.every(event => typeof event.generation_ms === "number" && Number.isFinite(event.generation_ms))
     ? events.reduce((sum, event) => sum + event.generation_ms!, 0) : null;
   const final = branch.run?.events.at(-1);
-  const workflowMs = branch.run && final && !branchPending(branch) ? Date.parse(final.at) - Date.parse(branch.run.created_at) : null;
+  const started = branch.run?.events.find(event => event.tool === "run" && event.state === "started");
+  const workflowMs = branch.run && final && !branchPending(branch) ? Date.parse(final.at) - Date.parse(started?.at ?? branch.run.created_at) : null;
   return { usage, generationMs, generationCalls: events.length, generationAttempts, workflowMs, retry, lastProviderFailure };
 }

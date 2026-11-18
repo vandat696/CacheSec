@@ -1,6 +1,7 @@
 """Real PostgreSQL comparisons with explicitly labeled model, embedding and worker doubles."""
 
 import json
+from datetime import datetime, timedelta, timezone
 from types import SimpleNamespace
 from uuid import UUID, uuid4
 
@@ -138,17 +139,26 @@ def start_pair(e, pair, local=None):
     return e.service.start(TOKEN, pair["pair_id"], "local", local or {"kind": "no_candidate"})
 
 
-def test_two_branches_revision_history_metrics_assessment_and_restart_without_calls(comparison):
+def test_two_branches_revision_history_metrics_assessment_and_restart_without_calls(
+    comparison, monkeypatch
+):
     e = comparison
     e.state.outcomes = ["failed", "passed"]
     pair = create(e)
-    admission = start_pair(e, pair)["admission"]
+    queued_at = (datetime.now(timezone.utc) - timedelta(minutes=10)).isoformat()
+    with monkeypatch.context() as clock:
+        clock.setattr("app.comparisons.comparison_service.timestamp", lambda: queued_at)
+        clock.setattr("app.agent_assistance.run_store.timestamp", lambda: queued_at)
+        admission = start_pair(e, pair)["admission"]
     assert admission is not None and e.state.calls == []
     e.executor.drain()
+    assert e.service.get(TOKEN, pair["pair_id"])["branches"]["local"]["status"] == "queued"
     e.executor.drain()
     result = e.service.get(TOKEN, pair["pair_id"])
     none, local = result["branches"]["none"], result["branches"]["local"]
     assert none["status"] == local["status"] == "passed"
+    assert none["run"]["events"][-1]["at"] <= local["run"]["events"][0]["at"]
+    assert all(0 <= branch["server_workflow_ms"] < 60_000 for branch in (none, local))
     assert none["run"]["proposal_id"] != local["run"]["proposal_id"]
     assert [r["revision"] for r in none["revisions"]] == [1, 2]
     assert len(none["assessments"]) == 2 and len(local["assessments"]) == 1

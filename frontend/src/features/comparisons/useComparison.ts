@@ -125,9 +125,11 @@ export function useComparison(api: AgentHttpClient | null, onDenied: () => void)
         catch { setNotice("Lookup local lỗi; backend sẽ kiểm quyền và đọc source lại."); }
       }
       if (controller.signal.aborted) return false;
-      const results = await Promise.allSettled((["none", "local"] as const).map(async mode => {
-        const result = await api.startComparison(created.pair_id, mode, mode === "none" ? { kind: "not_applicable" } : lookup.report, controller.signal);
-        if (mode === "local" && result.admission && !controller.signal.aborted) {
+      // Submit None first. The server worker runs both branches in submission order.
+      const noneStart = api.startComparison(created.pair_id, "none", { kind: "not_applicable" }, controller.signal);
+      const startLocal = async () => {
+        const result = await api.startComparison(created.pair_id, "local", lookup.report, controller.signal);
+        if (result.admission && !controller.signal.aborted) {
           const began = performance.now(); let state: "written" | "session_changed" | "storage_error";
           try { state = await cache.admit(result.admission, lookup.epoch) ? "written" : "session_changed";
             if (state === "session_changed") setNotice("Context chưa được lưu: phiên cache đã đổi hoặc entry hết hạn."); }
@@ -137,7 +139,8 @@ export function useComparison(api: AgentHttpClient | null, onDenied: () => void)
             catch { if (!controller.signal.aborted) setNotice("Chưa ghi được trạng thái cache local vào lịch sử; kết quả Agent vẫn ở backend."); }
           }
         }
-      }));
+      };
+      const results = await Promise.allSettled([noneStart, noneStart.then(startLocal, startLocal)]);
       if (controller.signal.aborted) return false;
       for (const result of results) if (result.status === "rejected") fail(result.reason);
       const updated = await api.comparison(created.pair_id, controller.signal);

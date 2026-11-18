@@ -12,12 +12,23 @@ Cập nhật 2026-11-19. Đây là bản tổng hợp hiện trạng, thay nhậ
 | Gate runtime | Backend/worker duyệt và activate đúng artifact/evidence | Chưa hoàn thiện operator reconciliation tổng quát, distributed fencing hoặc audit nghiên cứu |
 | Persistence | PostgreSQL/blob giữ pair/branch/events/usage/revision/test/assessment và journal source-write/approval/activation | Assessment nghiên cứu chưa khóa; in-flight có thể incomplete/null usage |
 | Context Cache | Dexie, Gemini query embedding 768 chiều, exact/semantic, backend verifier/registry, TTL/LRU/invalidation/logout | Full-source profile, online và riêng principal; chưa summary/Answer Cache/offline |
-| So sánh hai nhánh | UI/backend None/Local thật, lịch sử PostgreSQL mở lại sau reload/control restart | Cấu hình demo cố định; chưa benchmark hoặc thí nghiệm chính |
+| So sánh hai nhánh | Workspace chạy None trước Local trên một worker Control, lịch sử PostgreSQL mở lại sau reload/control restart | Cấu hình demo cố định; chưa benchmark hoặc thí nghiệm chính |
 | UI cũ | Chat, metrics, setup, documents được giữ để tái sử dụng | Chat/metrics còn dữ liệu mô phỏng; setup chưa chạy benchmark; documents chưa ingest |
 
 Lưu source không tự reload/deploy app. Chạy app cần human duyệt đúng artifact; cache không thay quyền, test hoặc gate. Trạng thái trên dựa trên bằng chứng gần nhất, không phải probe dịch vụ đang chạy ở thời điểm đọc.
 
 ## Bằng chứng luồng thật gần nhất
+
+## 2026-11-19 — Chạy so sánh tuần tự
+
+- Workspace xếp **Không cache** trước **Có Context Cache**. Một worker Control chạy model và test lần lượt. Giới hạn thực thi và số đo workflow của mỗi nhánh loại thời gian chờ. [Luồng so sánh](../system/context-comparison.md#contract-đã-triển-khai).
+- Lượt kỹ thuật `07a38c5b-7186-4ae2-ac5c-fb6641d52675` dùng cùng Gemini 3.5 Flash-Lite và một key. Trace xác nhận Local ở hàng đợi khi None chạy. Cả hai sinh mã ngay lần đầu và qua Docker test, không ghi nhận HTTP 503 hay 429. Local chạy Cold và ghi nhận Miss. Hash ba file nguồn giữ nguyên; lượt chỉ tạo đề xuất.
+- Control dev 8000 và demo 18000 đã nạp worker mới. Workspace 3000 đã nạp bản build. 228 test Control, 127 test frontend, Ruff, ESLint, typecheck và build đạt. Edge mở lại lịch sử trên cả Workspace 3000 và demo 3100.
+
+## 2026-11-19 — Làm rõ chỉ dẫn Agent
+
+- Chỉ dẫn `assistance-v4` tách cách hiểu yêu cầu, phạm vi và định dạng phản hồi. Agent dùng mã/lịch sử, tự xử lý chi tiết nhỏ và hỏi khi thông tin thiếu làm đổi kết quả. Khi mã đã đáp ứng, Agent giải thích và trả `content=null`. [Luồng Agent](../system/agent-workflow.md#phạm-vi-và-quyền).
+- Gemini vượt qua bốn ca với mã giả lập gồm hỏi phạm vi, thêm comment, viết ngắn lại và yêu cầu đã đáp ứng. 60 test adapter Gemini và Context Cache cùng Ruff đạt.
 
 ## 2026-11-19 — Agent hiểu câu nối tiếp trong chế độ Cả hai
 

@@ -134,6 +134,18 @@ def finish(env):
     return env.service.get(TOKEN, UUID(response["run_id"]))
 
 
+def test_time_in_queue_does_not_consume_execution_budget(loop):
+    queued = loop.start()
+    assert queued["status"] == "queued"
+
+    loop.state.now += queued["deadline_seconds"] + 1
+    loop.executor.drain()
+    result = loop.service.get(TOKEN, next(iter(loop.store.records)))
+    assert result["status"] == "passed"
+    assert result["events"][0]["tool"] == "run"
+    assert result["events"][0]["state"] == "started"
+
+
 def test_failed_candidate_is_repaired_from_its_bound_feedback_and_source(loop):
     loop.state.outcomes = ["failed", "passed"]
     result = finish(loop)
