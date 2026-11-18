@@ -6,22 +6,23 @@ import type { AgentHttpClient, AgentModelId } from "../agent/agentApi";
 import { getBrowserContextCache } from "../context-cache/dexieContextCache";
 import type { ContextMode, LookupReport } from "../context-cache/contextCacheModel";
 import { readViewReference, writeViewReference } from "../workbench/viewReferences";
-import { branchPending, type ComparisonPair, type ComparisonSummary } from "./comparisonModel";
+import { branchPending, comparisonSessionId, mergeComparisonTurn, type ComparisonConversation, type ComparisonPair, type ComparisonSummary } from "./comparisonModel";
 
 export function useComparison(api: AgentHttpClient | null, onDenied: () => void) {
   const [pair, setPair] = useState<ComparisonPair | null>(null);
   const [history, setHistory] = useState<ComparisonSummary[]>([]);
+  const [conversation, setConversation] = useState<ComparisonConversation | null>(null);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState("");
   const [notice, setNotice] = useState("");
   const mutation = useRef<AbortController | null>(null);
-  const attempt = useRef<{ fingerprint: string; key: string } | null>(null);
+  const attempt = useRef<{ fingerprint: string; key: string; sessionId?: string; createdSessionId?: string } | null>(null);
   const [owner, setOwner] = useState(api);
-  if (owner !== api) { setOwner(api); setPair(null); setHistory([]); setBusy(false); setError(""); setNotice(""); }
+  if (owner !== api) { setOwner(api); setPair(null); setHistory([]); setConversation(null); setBusy(false); setError(""); setNotice(""); }
   function fail(value: unknown) {
     setError(value instanceof ChangeApiError ? value.message : "Chưa hoàn tất thao tác so sánh. Tải lại để kiểm tra trạng thái.");
     if (value instanceof ChangeApiError && [401, 403].includes(value.status)) {
-      setPair(null); setHistory([]);
+      setPair(null); setHistory([]); setConversation(null);
       if (value.status === 401) onDenied();
     }
   }
@@ -42,7 +43,18 @@ export function useComparison(api: AgentHttpClient | null, onDenied: () => void)
     return () => { controller.abort(); mutation.current?.abort(); };
   }, [api]);
   const pairId = pair?.pair_id;
+  const sessionId = pair ? comparisonSessionId(pair) : undefined;
+  const savedTurns = conversation?.session_id === sessionId ? conversation?.turns ?? [] : [];
+  const turns = pair ? mergeComparisonTurn(savedTurns, pair) : [];
   const pending = !!pair && Object.values(pair.branches).some(branchPending);
+  useEffect(() => {
+    if (!api || !sessionId || !pairId) return;
+    const controller = new AbortController();
+    api.comparisonTurns(sessionId, controller.signal).then(value => {
+      if (!controller.signal.aborted) setConversation(value);
+    }).catch(value => { if (!controller.signal.aborted) report(value); });
+    return () => controller.abort();
+  }, [api, sessionId, pairId]);
   useEffect(() => {
     if (!api || !pairId || !pending) return;
     const controller = new AbortController(); let timer: ReturnType<typeof setTimeout>;
@@ -79,6 +91,7 @@ export function useComparison(api: AgentHttpClient | null, onDenied: () => void)
     mutation.current?.abort();
     attempt.current = null;
     setPair(null);
+    setConversation(null);
     setError("");
     setNotice("");
     writeViewReference("comparison", null);
@@ -89,14 +102,20 @@ export function useComparison(api: AgentHttpClient | null, onDenied: () => void)
     const controller = new AbortController(); mutation.current = controller;
     setBusy(true); setError(""); setNotice("");
     const fingerprint = JSON.stringify({ snapshot, prompt, state, model });
-    if (attempt.current?.fingerprint !== fingerprint) attempt.current = { fingerprint, key: crypto.randomUUID() };
+    if (attempt.current?.fingerprint !== fingerprint ||
+      (attempt.current.sessionId !== sessionId && attempt.current.createdSessionId !== sessionId)) {
+      attempt.current = { fingerprint, key: crypto.randomUUID(), sessionId };
+    }
+    const request = attempt.current;
     try {
       const cache = getBrowserContextCache();
       let cacheEpoch: string | undefined;
       try { if (state === "cold") await cache.clear(); cacheEpoch = await cache.begin(); }
       catch { setNotice("Không mở được cache local; sẽ ghi nhận lỗi storage."); }
-      const created = await api.createComparison(snapshot, prompt, state, attempt.current!.key, controller.signal, model);
+      const created = await api.createComparison(snapshot, prompt, state, request.key, controller.signal, model, request.sessionId);
       if (controller.signal.aborted) return false;
+      request.createdSessionId = comparisonSessionId(created);
+      if (sessionId) setConversation({ session_id: sessionId, turns });
       setPair(created); writeViewReference("comparison", created.pair_id);
       // Resolve browser candidates before either branch starts; None cannot warm Local.
       let lookup: { report: LookupReport; epoch: string } = { report: { kind: "client_storage_error" }, epoch: "" };
@@ -140,5 +159,5 @@ export function useComparison(api: AgentHttpClient | null, onDenied: () => void)
     catch (value) { if (!controller.signal.aborted) fail(value); }
     finally { if (!controller.signal.aborted) setBusy(false); }
   }
-  return { pair, history, busy, pending, error, notice, start, open, newSession, cancel };
+  return { pair, history, turns, busy, pending, error, notice, start, open, newSession, cancel };
 }

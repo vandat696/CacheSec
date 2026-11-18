@@ -3,6 +3,7 @@
 import { useEffect, useRef } from "react";
 import { Button } from "@/components/ui/Button";
 import { Icon } from "@/components/ui/Icon";
+import { comparisonSessionId } from "./comparisonModel";
 import type { useComparison } from "./useComparison";
 
 export function ComparisonSessions({ comparison, onOpen, onNew, onClose }: {
@@ -14,7 +15,8 @@ export function ComparisonSessions({ comparison, onOpen, onNew, onClose }: {
   const { pair, history, busy, pending, error } = comparison;
   const title = useRef<HTMLHeadingElement>(null);
   useEffect(() => { title.current?.focus(); }, []);
-  const sessions = pair && !history.some(item => item.pair_id === pair.pair_id) ? [pair, ...history] : history;
+  const current = pair ? comparisonSessionId(pair) : undefined;
+  const sessions = pair && !history.some(item => comparisonSessionId(item) === current) ? [pair, ...history] : history;
   return <section id="comparison-sessions" className="comparison-sessions" aria-labelledby="comparison-sessions-title"
     onKeyDown={event => {
       if (event.key === "Escape") {
@@ -31,9 +33,9 @@ export function ComparisonSessions({ comparison, onOpen, onNew, onClose }: {
     {busy && <p role="status">Đang tải phiên…</p>}
     {error && <p role="alert">{error}</p>}
     {sessions.length > 0 ? <ul>
-      {sessions.map(item => <li key={item.pair_id}>
+      {sessions.map(item => <li key={comparisonSessionId(item)}>
         <button type="button" className="comparison-session-item" data-pair-id={item.pair_id}
-          aria-current={pair?.pair_id === item.pair_id || undefined} disabled={busy || pending}
+          aria-current={comparisonSessionId(item) === current || undefined} disabled={busy || pending}
           onClick={() => onOpen(item.pair_id)}>
           <strong>{item.prompt.trim().replace(/\s+/g, " ").slice(0, 100)}</strong>
           <time dateTime={item.created_at}>{new Date(item.created_at).toLocaleString("vi-VN", { dateStyle: "short", timeStyle: "short" })}</time>

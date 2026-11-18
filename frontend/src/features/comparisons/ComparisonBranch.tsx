@@ -17,10 +17,12 @@ function BranchDetails({ branch, busy, onCancel }: { branch: Branch; busy: boole
   return <div className="comparison-branch-details">
     {branch.mode === "local" && branch.context && <p>{outcomes[branch.context.outcome]}</p>}
     {(branch.error_code || branch.run?.error_code) && <p role="alert">{branch.error_code ?? branch.run?.error_code}</p>}
-    {branch.status === "needs_input" && branch.run?.answer && <p>{branch.run.answer}</p>}
     <details><summary>Chi tiết</summary>
     {branch.run && turn !== undefined && turn > 0 && <p>Lượt {turn}/{branch.run.max_turns}</p>}
-    {branch.status !== "needs_input" && branch.run?.answer && <p>{branch.run.answer}</p>}
+    {metrics.lastProviderFailure && <p>
+      {metrics.lastProviderFailure.provider_http_status == null ? "Lỗi kết nối model" : `Lỗi gọi model · HTTP ${metrics.lastProviderFailure.provider_http_status}`}
+      {metrics.retry && " · Có bước thử lại"}
+    </p>}
     <dl className="comparison-metrics">
       <dt>Tokens vào / ra / tổng</dt><dd>{metrics.usage ? `${metrics.usage.input_tokens} / ${metrics.usage.output_tokens} / ${metrics.usage.total_tokens}` : "Chưa có usage"}</dd>
       <dt>Sinh mã</dt><dd>{ms(metrics.generationMs)}</dd><dt>Workflow server</dt><dd>{ms(branch.server_workflow_ms)}</dd>
@@ -29,6 +31,7 @@ function BranchDetails({ branch, busy, onCancel }: { branch: Branch; busy: boole
       <dt>Lookup browser (client báo)</dt><dd>{branch.mode === "none" ? "Không dùng" : ms(branch.context?.client_report?.lookup_ms)}</dd>
       {branch.mode === "local" && <><dt>Ghi cache (client báo)</dt><dd>{branch.client_cache_io?.length ? `${branch.client_cache_io.at(-1)!.state} · ${ms(branch.client_cache_io.at(-1)!.elapsed_ms)}` : "Chưa ghi nhận"}</dd></>}
       <dt>Lượt sinh hoàn tất / embedding</dt><dd>{metrics.generationCalls} / {branch.context?.embedding_calls ?? "—"}</dd>
+      {metrics.retry && <><dt>Lần thử gọi model</dt><dd>{metrics.generationAttempts}</dd></>}
     </dl>
     {revisions.map(item => {
       const test = revisionTest(item);

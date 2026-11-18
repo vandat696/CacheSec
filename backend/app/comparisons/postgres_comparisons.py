@@ -40,16 +40,55 @@ class PostgresComparisonRecords:
         return [
             row[0]
             for row in self.connection.execute(
-                "SELECT record FROM control.comparison_pairs WHERE tenant_id=%s AND repo_id=%s "
-                "AND owner_id=%s ORDER BY created_at DESC LIMIT 100",
+                """
+                WITH owned AS (
+                    SELECT pair_id, created_at, (record->>'snapshot_id') AS snapshot_id,
+                           (record->>'prompt') AS prompt, (record->>'cache_state') AS cache_state,
+                           (record->>'status') AS status,
+                           COALESCE((record->>'session_id')::uuid, pair_id) AS session_id
+                    FROM control.comparison_pairs
+                    WHERE tenant_id=%s AND repo_id=%s AND owner_id=%s
+                ), latest AS (
+                    SELECT DISTINCT ON (session_id) * FROM owned
+                    ORDER BY session_id, created_at DESC, pair_id DESC
+                )
+                SELECT jsonb_build_object('pair_id', latest.pair_id,
+                    'session_id', latest.session_id, 'snapshot_id', latest.snapshot_id,
+                    'prompt', root.prompt,
+                    'created_at', latest.created_at, 'cache_state', latest.cache_state,
+                    'status', latest.status)
+                FROM latest JOIN owned AS root ON root.pair_id = latest.session_id
+                ORDER BY latest.created_at DESC, latest.pair_id DESC LIMIT 100
+                """,
                 (scope.tenant_id, scope.repo_id, owner),
+            ).fetchall()
+        ]
+
+    def turns(self, scope, owner, session_id):
+        return [
+            row[0]
+            for row in self.connection.execute(
+                """
+                SELECT jsonb_build_object('pair_id', pair_id, 'prompt', record->>'prompt',
+                    'branches', jsonb_build_object(
+                        'none', jsonb_build_object('status', record#>>'{branches,none,status}',
+                            'answer', COALESCE(record#>>'{branches,none,run,answer}', '')),
+                        'local', jsonb_build_object('status', record#>>'{branches,local,status}',
+                            'answer', COALESCE(record#>>'{branches,local,run,answer}', ''))))
+                FROM control.comparison_pairs
+                WHERE tenant_id=%s AND repo_id=%s AND owner_id=%s
+                    AND COALESCE((record->>'session_id')::uuid, pair_id)=%s
+                ORDER BY (pair_id <> %s), created_at, pair_id
+                """,
+                (scope.tenant_id, scope.repo_id, owner, session_id, session_id),
             ).fetchall()
         ]
 
     def add(self, scope, owner, key, record):
         self.connection.execute(
             "INSERT INTO control.comparison_pairs "
-            "(tenant_id,repo_id,owner_id,pair_id,key_digest,record) VALUES (%s,%s,%s,%s,%s,%s)",
+            "(tenant_id,repo_id,owner_id,pair_id,key_digest,record,created_at) "
+            "VALUES (%s,%s,%s,%s,%s,%s,clock_timestamp())",
             (scope.tenant_id, scope.repo_id, owner, record["pair_id"], key, Jsonb(record)),
         )
 

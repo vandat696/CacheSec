@@ -1,7 +1,7 @@
 """Real PostgreSQL comparisons with explicitly labeled model, embedding and worker doubles."""
 
 from types import SimpleNamespace
-from uuid import uuid4
+from uuid import UUID, uuid4
 
 import pytest
 from fastapi import FastAPI
@@ -10,7 +10,7 @@ from fastapi.testclient import TestClient
 from app.agent_assistance.assistance_http import configure_assistance_http
 from app.agent_assistance.assistance_service import AgentAssistanceService
 from app.agent_assistance.cached_assistance import CachedAgentAssistance
-from app.agent_assistance.generation import GenerationResult
+from app.agent_assistance.generation import GenerationResult, GenerationTransportError
 from app.agent_assistance.workflow_run_tools import WorkflowRunTools
 from app.change_workflow.test_profiles import CHECK_NAMES, EDITABLE_PATH
 from app.change_workflow.workflow_http import configure_workflow_http
@@ -182,6 +182,60 @@ def test_create_and_start_replay_never_regenerates_or_embeds_again(comparison):
     assert len(e.state.calls) == 2 and not e.executor.pending
 
 
+def test_conversation_keeps_order_and_grouping_across_restart_and_legacy_pairs(comparison):
+    e = comparison
+    first = create(e, "first prompt")
+    start_pair(e, first)
+    e.executor.drain()
+    e.executor.drain()
+    session_id = UUID(first["pair_id"])
+    with e.env.database.connection() as connection:
+        connection.execute(
+            "UPDATE control.comparison_pairs SET record = record - 'session_id' WHERE pair_id=%s",
+            (session_id,),
+        )
+    headers = {"Authorization": "Bearer " + TOKEN, "Idempotency-Key": "second-turn"}
+    body = {
+        "snapshot_id": first["snapshot_id"],
+        "prompt": "second prompt",
+        "cache_state": "warm",
+        "provider_consent": True,
+        "session_id": str(session_id),
+    }
+    endpoint = "/api/v1/agent/comparisons"
+    response = e.client.post(endpoint, json=body, headers=headers)
+    assert response.status_code == 202
+    second = response.json()["data"]
+    assert second["session_id"] == str(session_id) and second["pair_id"] != first["pair_id"]
+    assert e.client.post(endpoint, json=body, headers=headers).json()["data"] == second
+    assert (
+        e.client.post(endpoint, json={**body, "session_id": None}, headers=headers).status_code
+        == 409
+    )
+    start_pair(e, second)
+    e.executor.drain()
+    e.executor.drain()
+    separate = create(e, "new conversation")
+    assert separate["session_id"] == separate["pair_id"]
+    rows = e.factory().list(TOKEN)
+    assert [(row["pair_id"], row["prompt"]) for row in rows] == [
+        (separate["pair_id"], "new conversation"),
+        (second["pair_id"], "first prompt"),
+    ]
+    restored = e.factory().turns(TOKEN, session_id)
+    assert [turn["prompt"] for turn in restored["turns"]] == ["first prompt", "second prompt"]
+    assert all(
+        turn["branches"][mode] == {"answer": "test-only answer", "status": "passed"}
+        for turn in restored["turns"]
+        for mode in ("none", "local")
+    )
+    path = f"{endpoint}/{session_id}/turns"
+    assert e.client.get(path, headers=headers).json()["data"] == restored
+    assert e.client.get(f"{endpoint}/{second['pair_id']}/turns", headers=headers).status_code == 404
+    grants(e.env, frozenset())
+    assert e.client.get(path, headers=headers).status_code == 403
+
+
 def test_selected_model_binds_both_branches_repair_idempotency_and_cache(comparison):
     e = comparison
     prompt = "test-only change"
@@ -332,6 +386,26 @@ def test_restart_marks_inflight_incomplete_without_resuming_and_preserves_test_r
     assert e.state.calls == []
     # The old process is gone in this scenario; its queued fake executor is not drained.
     e.executor.pending.clear()
+
+
+def test_retry_rechecks_source_before_sending_verified_context(comparison, monkeypatch):
+    e = comparison
+    pair = create(e)
+
+    def fail():
+        raise GenerationTransportError("MODEL_UNAVAILABLE", 503, retryable=True)
+
+    def change_source_during_wait(*_):
+        (e.env.root / EDITABLE_PATH).write_text("changed outside the run", encoding="utf-8")
+        return 0
+
+    e.state.action = fail
+    monkeypatch.setattr("app.agent_assistance.run_service.uniform", change_source_during_wait)
+    e.service.start(TOKEN, pair["pair_id"], "local", {"kind": "no_candidate"})
+    e.executor.drain()
+    result = e.service.get(TOKEN, pair["pair_id"])["branches"]["local"]
+    assert result["run"]["error_code"] == "STALE_SNAPSHOT"
+    assert len(e.state.calls) == 1 and not result["revisions"]
 
 
 def test_revoke_blocks_history_and_generation_after_prepare(comparison):

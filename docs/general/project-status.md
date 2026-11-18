@@ -19,6 +19,21 @@ Lưu source không tự reload/deploy app. Chạy app cần human duyệt đúng
 
 ## Bằng chứng luồng thật gần nhất
 
+## 2026-11-18 — Lưu nhiều lượt chat trong cùng phiên Agent
+
+- Gửi tiếp trong phiên đang mở sẽ thêm lượt vào PostgreSQL. Hai tab hiển thị các prompt theo thứ tự và câu trả lời của từng nhánh. Nút đồng hồ mở cả hội thoại, với tiêu đề lấy từ câu đầu. Các lượt cũ chưa có định danh phiên được mở từng lượt. [Hướng dẫn nhanh](workspace-quickstart.md#xem-bản-sửa-và-cache-hit).
+- 226 test Control với PostgreSQL test riêng và 127 test frontend đạt. Test tích hợp kiểm lưu/mở lại nhiều lượt, retry idempotent và thu hồi quyền. Edge trên 3000 kiểm hiển thị hai lượt với fixture và demo 3100 mở được phiên cũ cùng diff đã lưu. Lint, typecheck và build đạt.
+
+## 2026-11-18 — Hai tab phản hồi trong chat Agent
+
+- Trong chế độ **Cả hai**, chat có tab **Không cache** và **Có Context Cache**. Mỗi tab hiển thị cùng prompt và câu trả lời đã lưu của nhánh tương ứng. Dưới Workspace vẫn xem được hai bản sửa, test và chi tiết cache. [Hướng dẫn nhanh](workspace-quickstart.md#xem-bản-sửa-và-cache-hit).
+- Edge trên 3000 kiểm chuyển tab bằng chuột và phím mũi tên, hiển thị nhánh gặp lỗi và giữ bản nháp. Demo 3100 kiểm câu trả lời của hai nhánh qua phiên đã lưu. 126 test frontend, ESLint, typecheck và production build đạt.
+
+## 2026-11-18 — Xử lý lỗi gọi model tạm thời
+
+- Agent tự động và mỗi nhánh Cache/No Cache có tối đa một lần thử lại khi gặp HTTP 502/503/504 hoặc lỗi kết nối được phân loại tạm thời. Quyền, snapshot, hủy và deadline được kiểm trước lần gửi tiếp theo. **Chi tiết** hiển thị mã HTTP khi có và số lần thử gọi sau khi có bước thử lại. [Luồng Agent](../system/agent-workflow.md#vòng-thực-thi).
+- 225 test Control với PostgreSQL test riêng và 126 test frontend đạt. Test giả lập xác nhận phục hồi sau 503, dừng khi gặp 429 và chặn lần gửi lại sau khi thu hồi quyền hoặc source đổi. Workspace 3000 và demo 3100 đã nạp bản mới. Edge kiểm phiên cũ và probe chỉ đọc xác nhận hành vi artifact báo giá đã duyệt.
+
 ## 2026-11-18 — Chọn model trên thanh Agent
 
 - Workspace dev 3000 và demo 3100 có **Tùy chọn Agent → Model** với Gemini 3.5 Flash-Lite mặc định, Gemini 4 Hydrogen và Gemini 3.8 Flash. Backend ghi model vào từng lượt/cặp và kiểm tra namespace context theo model. [Hướng dẫn](setup.md#agent-gemini) · [Contract](../system/context-comparison.md#contract-đã-triển-khai).

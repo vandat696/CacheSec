@@ -329,7 +329,7 @@ try {
     await checkComparisons({ cdp, navigate, evaluate, waitFor, click, fill, screenshot });
   }
   if (comparisonLayout) {
-    await checkComparisonLayout({ navigate, evaluate, waitFor, click, fill, key, screenshot });
+    await checkComparisonLayout({ cdp, navigate, evaluate, waitFor, click, fill, key, screenshot });
   }
   if (workbenchOnly) {
     await checkWorkbench({ cdp, navigate, evaluate, waitFor, click, fill, screenshot });

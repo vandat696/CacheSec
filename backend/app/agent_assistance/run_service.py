@@ -4,8 +4,9 @@ import hashlib
 import json
 import time
 from concurrent.futures import Executor
+from random import uniform
 
-from app.agent_assistance.generation import AgentError
+from app.agent_assistance.generation import AgentError, GenerationTransportError
 from app.agent_assistance.run_models import (
     DEADLINE_SECONDS,
     MAX_TURNS,
@@ -130,6 +131,28 @@ class AgentRunService:
         ):
             raise AgentError("AGENT_BINDING_MISMATCH", 409)
 
+    def _generate(self, run, token, history, candidate):
+        while True:
+            self._guard(run, token)
+            self.store.event(run, "generate", "started")
+            try:
+                return self.generation.ask(
+                    token, run.snapshot_id, run.prompt, history, candidate, model_id=run.model
+                )
+            except GenerationTransportError as error:
+                self.store.event(
+                    run,
+                    "generate",
+                    "error",
+                    error_code=error.code,
+                    provider_http_status=error.provider_http_status,
+                )
+                if not error.retryable or run.provider_retry_used:
+                    raise
+                run.provider_retry_used = True
+                self.store.event(run, "generate", "retry_wait")
+                run.cancelled.wait(uniform(1.0, 1.5))
+
     def _execute(self, run):
         token = run.token
         try:
@@ -160,10 +183,7 @@ class AgentRunService:
                         }
                     ]
                 )
-                self.store.event(run, "generate", "started")
-                reply = self.generation.ask(
-                    token, run.snapshot_id, run.prompt, history, candidate, model_id=run.model
-                )
+                reply = self._generate(run, token, history, candidate)
                 self._guard(run, token)
                 if reply["snapshot_id"] != str(run.snapshot_id) or not (
                     reply["model"] == run.model or reply["model"].startswith(run.model + "-")

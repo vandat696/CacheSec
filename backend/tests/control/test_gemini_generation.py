@@ -8,7 +8,7 @@ from contextlib import contextmanager
 import pytest
 
 from app.agent_assistance.gemini_generation import MODEL, GeminiContentGeneration, decode_response
-from app.agent_assistance.generation import AgentError
+from app.agent_assistance.generation import AgentError, GenerationTransportError
 from app.agent_assistance.generation_transport import NoRedirect
 
 ENDPOINT = f"https://generativelanguage.googleapis.com/v1beta/models/{MODEL}:generateContent"
@@ -190,6 +190,9 @@ def test_alternative_adapter_rejects_unlisted_ids_and_other_model_replies():
         (404, "", "MODEL_NOT_AVAILABLE"),
         (429, "", "MODEL_RATE_LIMIT"),
         (500, "", "MODEL_UNAVAILABLE"),
+        (502, "", "MODEL_UNAVAILABLE"),
+        (503, "", "MODEL_UNAVAILABLE"),
+        (504, "", "MODEL_UNAVAILABLE"),
         (302, "", "MODEL_UNAVAILABLE"),
     ],
 )
@@ -221,9 +224,11 @@ def test_http_errors_are_sanitized_without_retry(tmp_path, monkeypatch, status, 
             )
 
     monkeypatch.setattr("urllib.request.build_opener", lambda *handlers: Opener())
-    with pytest.raises(AgentError, match=code) as caught:
+    with pytest.raises(GenerationTransportError, match=code) as caught:
         GeminiContentGeneration(config).generate("test", (), [])
     assert len(calls) == 1 and "secret-must-not-echo" not in str(caught.value)
+    assert caught.value.provider_http_status == status
+    assert caught.value.retryable is (status in (502, 503, 504))
 
 
 @pytest.mark.parametrize(

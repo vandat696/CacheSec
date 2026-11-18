@@ -16,9 +16,11 @@ Scope đọc giữ đúng ba file của source profile đã đăng ký. Chỉ `q
 2. Đọc/kiểm snapshot gốc. Mỗi lượt model vẫn kiểm freshness của toàn source gốc trước/sau response. Model trả answer và source nullable qua generation contract hiện có; không được tự chọn tool/path/image/provider.
 3. Nếu content=null, dừng `needs_input`. Nếu có source, lưu revision CAS qua T12 với key cố định theo run/turn/action. Run mới luôn tạo proposal riêng; Agent không nhận proposal ID tùy ý để sửa bản của người khác.
 4. Queue test cho đúng revision/artifact/profile; đợi job terminal và kiểm mọi binding trước dùng kết quả. Chỉ evidence passed đúng job được ghi run `passed`. Đây là **test kỹ thuật**, không chứng minh rule ngày đúng oracle hoặc acceptance nghiên cứu.
-5. `failed` mới được gửi lại model cùng candidate hiện hành để sửa. Lỗi hạ tầng, blocked, unknown hoặc timeout của job dừng run; không gọi model để che lỗi. Revision đã bị sửa ngoài run thì dừng. Không tự retry model; lỗi mutation/storage giữ trace action đã bắt đầu và trạng thái effect_unknown thay vì giả thành công.
+5. `failed` mới được gửi lại model cùng candidate hiện hành để sửa. Lỗi hạ tầng, blocked, unknown hoặc timeout của job dừng run; không gọi model để che lỗi. Revision đã bị sửa ngoài run thì dừng. Lỗi mutation/storage giữ trace action đã bắt đầu và trạng thái effect_unknown thay vì giả thành công.
 
-Giới hạn cố định: ba lượt model, tối đa ba revision/test mới, mười phút; mỗi model call vẫn có output cap/timeout của adapter và mỗi job có sandbox/deadline T12. Kiểm deadline/hủy ở ranh giới bước và sau response. Cancel yêu cầu dừng vòng; model request hoặc test đã được nhận có thể tiếp tục theo giới hạn riêng. Slot chỉ giải phóng khi controller thực sự kết thúc; response model sau cancel/deadline không được dùng để tạo bước mới.
+Mỗi run có tối đa một lần thử lại bước sinh mã, sau khoảng 1–1,5 giây, với HTTP 502/503/504 hoặc lỗi ngắt kết nối/DNS tạm thời. Backend kiểm lại quyền, snapshot, hủy và deadline trước lần gọi tiếp theo. Trace lưu `generate.error`, `provider_http_status` nếu có, `retry_wait` và lần `started` kế tiếp nếu được phép. HTTP 429, lỗi key và lỗi kiểm tra nguồn kết thúc lượt bằng lỗi tương ứng.
+
+Giới hạn là ba lượt sửa và test trong mười phút, thêm tối đa một lần gọi do thử lại. Mỗi lần gọi có output cap và timeout riêng. Mỗi job có sandbox và deadline T12. Kiểm deadline/hủy ở ranh giới bước và sau response. Cancel yêu cầu dừng vòng; model request hoặc test đã được nhận có thể tiếp tục theo giới hạn riêng. Slot chỉ giải phóng khi controller thực sự kết thúc; response model sau cancel/deadline không được dùng để tạo bước mới.
 
 ## State và vòng đời local
 

@@ -1,13 +1,14 @@
 """Private key loading and bounded provider HTTP transport; no redirects or retries."""
 
 import json
+import socket
 import urllib.error
 import urllib.request
 from pathlib import Path
 
 from dotenv import dotenv_values
 
-from app.agent_assistance.generation import AgentError
+from app.agent_assistance.generation import AgentError, GenerationTransportError
 
 
 def private_key(config: Path | None, variable: str) -> str | None:
@@ -69,6 +70,12 @@ def post_generation_json(endpoint: str, headers: dict, body: dict) -> dict:
             except (OSError, ValueError, AttributeError, TypeError):
                 pass
         error.close()
-        raise AgentError(code) from None
-    except OSError:
-        raise AgentError("MODEL_UNAVAILABLE") from None
+        raise GenerationTransportError(
+            code, error.code, retryable=error.code in {502, 503, 504}
+        ) from None
+    except OSError as error:
+        reason = error.reason if isinstance(error, urllib.error.URLError) else error
+        transient = isinstance(reason, ConnectionError) or (
+            isinstance(reason, socket.gaierror) and reason.errno == socket.EAI_AGAIN
+        )
+        raise GenerationTransportError("MODEL_UNAVAILABLE", retryable=transient) from None

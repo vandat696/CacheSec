@@ -4,6 +4,7 @@ import { useState, type FormEvent, type Ref } from "react";
 import { Button } from "@/components/ui/Button";
 import { Icon } from "@/components/ui/Icon";
 import type { AgentModelId } from "../agent/agentApi";
+import { ComparisonChat } from "./ComparisonChat";
 import type { ComparisonSummary } from "./comparisonModel";
 import type { useComparison } from "./useComparison";
 
@@ -26,9 +27,7 @@ export function ComparisonPanel({ comparison, snapshotId, enabled, unavailable, 
     }
   }
   return <div className="comparison-conversation" hidden={hidden}>
-    <div role="log" aria-label="Hội thoại với Agent" className="dev-messages" aria-live="polite">
-      {comparison.pair && <article className="dev-message developer"><p>{comparison.pair.prompt}</p></article>}
-    </div>
+    <ComparisonChat turns={comparison.turns} />
     <form className="dev-composer comparison-composer" onSubmit={event => { void send(event); }}>
       <div>
         <textarea ref={composerRef} aria-label="Yêu cầu chung cho hai nhánh" placeholder={unavailable || "Bạn muốn Agent sửa gì?"}

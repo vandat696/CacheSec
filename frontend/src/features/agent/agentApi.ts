@@ -1,7 +1,7 @@
 import { ChangeApiError, editablePath } from "../code-changes/changeWorkflowApi.ts";
 import { isAgentAutomation, isAgentRun, type AgentAutomation, type AgentRun } from "./agentRunModel.ts";
 import { isContextRequest, isContextResolution, type ContextMode, type ContextRequest, type ContextResolution, type LookupReport } from "../context-cache/contextCacheModel.ts";
-import { isComparisonPair, isComparisonSummary, type ComparisonPair, type ComparisonSummary } from "../comparisons/comparisonModel.ts";
+import { comparisonSessionId, isComparisonConversation, isComparisonPair, isComparisonSummary, type ComparisonConversation, type ComparisonPair, type ComparisonSummary } from "../comparisons/comparisonModel.ts";
 import { isContextEntry, type ContextEntry } from "../context-cache/contextCacheModel.ts";
 
 export const agentModels = {
@@ -116,9 +116,10 @@ export class AgentHttpClient {
     if (!isAgentRun(value) || value.run_id !== id || !supportedModelVersion(value.model)) throw new AgentApiError(502);
     return value;
   }
-  async createComparison(snapshot: string, prompt: string, cacheState: "cold" | "warm" | "preload", key: string, signal: AbortSignal, model?: AgentModelId): Promise<ComparisonPair> {
-    const value = await this.request("/comparisons", signal, { snapshot_id: snapshot, prompt, cache_state: cacheState, provider_consent: true, model }, key);
+  async createComparison(snapshot: string, prompt: string, cacheState: "cold" | "warm" | "preload", key: string, signal: AbortSignal, model?: AgentModelId, sessionId?: string): Promise<ComparisonPair> {
+    const value = await this.request("/comparisons", signal, { snapshot_id: snapshot, prompt, cache_state: cacheState, provider_consent: true, model, session_id: sessionId }, key);
     if (!isComparisonPair(value) || value.snapshot_id !== snapshot || value.prompt !== prompt
+      || comparisonSessionId(value) !== (sessionId ?? value.pair_id)
       || (model !== undefined && value.model !== model)) throw new AgentApiError(502);
     return value;
   }
@@ -130,6 +131,11 @@ export class AgentHttpClient {
   async listComparisons(signal: AbortSignal): Promise<ComparisonSummary[]> {
     const value = await this.request("/comparisons", signal);
     if (!Array.isArray(value) || !value.every(isComparisonSummary)) throw new AgentApiError(502);
+    return value;
+  }
+  async comparisonTurns(sessionId: string, signal: AbortSignal): Promise<ComparisonConversation> {
+    const value = await this.request(`/comparisons/${sessionId}/turns`, signal);
+    if (!isComparisonConversation(value) || value.session_id !== sessionId) throw new AgentApiError(502);
     return value;
   }
   async startComparison(id: string, mode: ContextMode, report: LookupReport, signal: AbortSignal): Promise<{ status: string; admission: ContextEntry | null }> {

@@ -19,6 +19,7 @@ class CreateComparison(BaseModel):
     cache_state: Literal["cold", "warm", "preload"]
     provider_consent: Literal[True]
     model: str | None = Field(default=None, min_length=1, max_length=64)
+    session_id: UUID | None = None
 
     @field_validator("provider_consent", mode="before")
     @classmethod
@@ -70,6 +71,7 @@ def configure_comparison_http(app, service):
                 idempotency_key,
                 body.cache_state,
                 body.model,
+                body.session_id,
             ),
         )
 
@@ -83,6 +85,13 @@ def configure_comparison_http(app, service):
         check(request)
         return envelope(
             request, await run_in_threadpool(service.get, bearer(authorization), pair_id)
+        )
+
+    @router.get("/{session_id}/turns")
+    async def turns(session_id: UUID, request: Request, authorization: auth = None):
+        check(request)
+        return envelope(
+            request, await run_in_threadpool(service.turns, bearer(authorization), session_id)
         )
 
     @router.post("/{pair_id}/cache-io")

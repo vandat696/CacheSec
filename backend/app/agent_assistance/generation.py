@@ -10,6 +10,13 @@ class AgentError(Exception):
         self.code, self.status = code, status
 
 
+class GenerationTransportError(AgentError):
+    def __init__(self, code: str, provider_http_status: int | None = None, *, retryable=False):
+        super().__init__(code)
+        self.provider_http_status = provider_http_status
+        self.retryable = retryable
+
+
 @dataclass(frozen=True)
 class GenerationResult:
     answer: str = field(repr=False)

@@ -1,7 +1,7 @@
 import assert from "node:assert/strict";
 import { test } from "node:test";
 import { AgentHttpClient, AgentApiError } from "../src/features/agent/agentApi.ts";
-import { isComparisonPair, branchMetrics } from "../src/features/comparisons/comparisonModel.ts";
+import { isComparisonPair, branchMetrics, mergeComparisonTurn } from "../src/features/comparisons/comparisonModel.ts";
 import { comparisonDiff, completeComparisonDiff } from "../src/features/comparisons/comparisonDiff.ts";
 
 test("code review preserves signs inside code and numbers before/after across hunks", () => {
@@ -73,6 +73,28 @@ test("history reads only GET and rejects another pair/snapshot before presenting
   assert.equal(isComparisonPair(value), false);
 });
 
+test("conversation reads earlier turns and appends new prompts to the same backend session", async () => {
+  const root = pair();
+  const next = { ...pair(), pair_id: other, session_id: id, prompt: "next prompt" };
+  const history = mergeComparisonTurn([], root);
+  let postedSession;
+  const api = new AgentHttpClient("/api/local-control", null, async (url, init) => {
+    if (init.method === "GET") {
+      assert.ok(url.endsWith(`/comparisons/${id}/turns`));
+      return Response.json({ data: { session_id: id, turns: history }, meta });
+    }
+    postedSession = JSON.parse(init.body).session_id;
+    return Response.json({ data: next, meta });
+  });
+  const restored = await api.comparisonTurns(id, signal());
+  await api.createComparison(id, "next prompt", "warm", "test-key", signal(), undefined, id);
+  assert.equal(postedSession, id);
+  const combined = mergeComparisonTurn(restored.turns, next);
+  assert.deepEqual(combined.map(turn => turn.prompt), [root.prompt, next.prompt]);
+  assert.deepEqual(mergeComparisonTurn(combined, next), combined);
+  await assert.rejects(api.createComparison(id, "next prompt", "warm", "test-key", signal(), undefined, other), AgentApiError);
+});
+
 test("comparison sends one model ID and rejects a response with a different branch model", async () => {
   const model = "gemini-3.8-flash";
   const value = pair();
@@ -105,4 +127,23 @@ test("comparison branch start sends candidates only and checks returned scope an
   assert.equal((await api.startComparison(id, "none", { kind: "not_applicable" }, signal())).admission, null);
   assert.deepEqual(body, { lookup_report: { kind: "not_applicable" } });
   await assert.rejects(api.startComparison(id, "local", { kind: "no_candidate" }, signal()), AgentApiError);
+});
+
+test("comparison metrics retain the provider error and count the retry separately", () => {
+  const value = pair();
+  const branch = value.branches.local;
+  const event = branch.run.events[0];
+  branch.run.events = [
+    { ...event, state: "started" },
+    { ...event, state: "error", provider_http_status: 503 },
+    { ...event, state: "retry_wait" },
+    { ...event, state: "started" },
+    event,
+  ].map((entry, index) => ({ ...entry, sequence: index + 1 }));
+  assert.equal(isComparisonPair(value), true);
+  const metrics = branchMetrics(branch);
+  assert.equal(metrics.generationCalls, 1);
+  assert.equal(metrics.generationAttempts, 2);
+  assert.equal(metrics.retry, true);
+  assert.equal(metrics.lastProviderFailure.provider_http_status, 503);
 });

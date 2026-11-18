@@ -49,6 +49,19 @@
 .comparison-review-model { color: var(--nui-muted); }
 .comparison-conversation:not([hidden]),
 .comparison-sessions { display: flex; flex: 1; min-height: 0; flex-direction: column; }
+.comparison-chat-tabs,
+.comparison-chat-tabs > .nui,
+.comparison-chat-tabs .nui-tabpanel:not([hidden]) {
+  display: flex;
+  flex: 1;
+  min-height: 0;
+  min-width: 0;
+  flex-direction: column;
+}
+.comparison-chat-tabs .nui-tablist { flex-shrink: 0; gap: 0; }
+.comparison-chat-tabs .nui-tablist > .nui-tab { flex: 1; min-height: 36px; font-size: 12px; }
+.comparison-chat-tabs .nui-tabpanel { padding: 0; }
+.comparison-chat-status { color: var(--nui-muted); font-size: 12px; }
 .comparison-sessions { padding: 12px; overflow: auto; gap: 8px; }
 .comparison-sessions > header { display: flex; align-items: center; gap: 4px; }
 .comparison-sessions h3 { margin: 0 auto 0 0; font-size: 13px; }

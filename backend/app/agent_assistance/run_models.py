@@ -53,5 +53,6 @@ class AgentRun:
     job: dict | None = None
     answer: str = ""
     error_code: str | None = None
+    provider_retry_used: bool = False
     events: list[dict] = field(default_factory=list, repr=False)
     cancelled: Event = field(default_factory=Event, repr=False)

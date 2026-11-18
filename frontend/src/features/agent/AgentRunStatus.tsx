@@ -31,7 +31,8 @@ export function AgentRunStatus({ run, busy, error, onCancel, onRefresh, onOpen }
       <details><summary>Các bước</summary><ol>{run.events.map(event => <li key={event.sequence}>
         {event.turn > 0 && `Lượt ${event.turn} · `}
         {({ read_source: "Đọc mã nguồn", generate: "Sinh mã", save_revision: "Lưu bản sửa", test: "Test", storage: "Lưu trữ", run: "Agent" } as Record<string, string>)[event.tool]}
-        {" · "}{({ started: "bắt đầu", accepted: "đã nhận", completed: "hoàn tất", passed: "đạt", failed: "chưa đạt", cancel_requested: "yêu cầu dừng", effect_unknown: "kết quả chưa rõ" } as Record<string, string>)[event.state] ?? labels[event.state] ?? "đã dừng"}
+        {" · "}{({ started: "bắt đầu", accepted: "đã nhận", completed: "hoàn tất", passed: "đạt", failed: "chưa đạt", error: "lỗi", retry_wait: "chờ thử lại", cancel_requested: "yêu cầu dừng", effect_unknown: "kết quả chưa rõ" } as Record<string, string>)[event.state] ?? labels[event.state] ?? "đã dừng"}
+        {event.provider_http_status != null && ` · HTTP ${event.provider_http_status}`}
       </li>)}</ol></details>
       {pending && <Button variant="secondary" onClick={onCancel} disabled={busy || cancelling}>{cancelling ? "Đang dừng…" : "Dừng Agent"}</Button>}
       {!pending && run.proposal_id && <Button variant="secondary" onClick={() => onOpen(run.proposal_id!)}>Xem bản sửa</Button>}

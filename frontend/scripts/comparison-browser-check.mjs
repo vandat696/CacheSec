@@ -7,6 +7,10 @@ import { promisify } from "node:util";
 import { visibleEditorText } from "./editor-browser-actions.mjs";
 import { LocalSessionStore } from "../src/features/local-workspace/localSessionStore.ts";
 
+const chatTab = index => `.comparison-chat-tabs [role=tab]:nth-of-type(${index})`;
+const selectedChat = ".comparison-chat-tabs [role=tabpanel]:not([hidden])";
+const selectedAnswer = `document.querySelector(${JSON.stringify(`${selectedChat} .dev-message.assistant`)})?.textContent`;
+
 // Live opt-in: real browser IndexedDB, HTTP, Gemini, PostgreSQL and Docker.
 // Uses only the isolated demo. Never writes source, approves or activates.
 export async function checkComparisons({ cdp, navigate, evaluate, waitFor, click, fill, screenshot }) {
@@ -101,6 +105,11 @@ export async function checkComparisons({ cdp, navigate, evaluate, waitFor, click
     const warm = resume ? await evaluate("window.__comparisonPair") : await run("Thêm cờ xem xét cho báo giá không có ngày hết hạn hợp lệ." + details, "warm");
     assert.equal(warm.branches.local.context.outcome, "hit"); assert.equal(warm.branches.local.context.decisions.at(-1).kind, "semantic");
     assert.equal(await evaluate("window.__comparisonForbidden"), 0);
+    for (const [index, mode] of [[1, "none"], [2, "local"]]) {
+      await click(chatTab(index));
+      assert.equal(await evaluate(selectedAnswer), warm.branches[mode].run.answer);
+    }
+    await screenshot("comparison-agent-replies.png");
     await screenshot("comparison-live-desktop.png");
     const reviewed = await checkReview();
     assert.equal(await evaluate(`(() => {
@@ -204,7 +213,7 @@ export async function checkComparisons({ cdp, navigate, evaluate, waitFor, click
   } finally { await cdp("Page.removeScriptToEvaluateOnNewDocument", { identifier: observation.identifier }); }
 }
 
-export async function checkComparisonLayout({ navigate, evaluate, waitFor, click, fill, key, screenshot }) {
+export async function checkComparisonLayout({ cdp, navigate, evaluate, waitFor, click, fill, key, screenshot }) {
   const pairId = process.env.CACHESEC_COMPARISON_PAIR_ID;
   assert.match(pairId ?? "", /^[a-f0-9-]{36}$/i);
   const store = new LocalSessionStore(resolve("../backend/.local"));
@@ -253,6 +262,15 @@ export async function checkComparisonLayout({ navigate, evaluate, waitFor, click
   await waitFor("!document.querySelector('#comparison-sessions')");
   await waitFor(`!document.querySelector(${JSON.stringify(composer)})?.disabled`);
   await fill(composer, "Draft kept when browsing history");
+  assert.ok(await evaluate(selectedAnswer), "default tab shows the successful branch's real answer");
+  await click(chatTab(2));
+  assert.equal(await evaluate(selectedAnswer), undefined);
+  assert.equal(await evaluate(`document.querySelector(${JSON.stringify(`${selectedChat} .comparison-chat-status`)})?.textContent`),
+    "Nhánh gặp lỗi trước khi trả lời.");
+  await key("ArrowLeft");
+  assert.equal(await evaluate("document.activeElement.getAttribute('aria-selected')"), "true");
+  assert.ok(await evaluate(selectedAnswer), "arrow key returns to the first branch's reply");
+  assert.equal(await evaluate(`document.querySelector(${JSON.stringify(composer)}).value`), "Draft kept when browsing history");
   await click(clock);
   await key("Escape");
   assert.equal(await evaluate("document.activeElement.id"), "agent-session-toggle");
@@ -271,4 +289,28 @@ export async function checkComparisonLayout({ navigate, evaluate, waitFor, click
   await evaluate("document.querySelector('#workspace-comparison').scrollIntoView({ behavior: 'instant' })");
   await waitFor("window.scrollY > 0");
   await screenshot("comparison-partial-result.png");
+  const observeTurns = await cdp("Page.addScriptToEvaluateOnNewDocument", { source: `(() => {
+    const fetch = window.fetch.bind(window);
+    window.fetch = async (url, init) => {
+      const response = await fetch(url, init);
+      if (!response.ok || !String(url).endsWith(${JSON.stringify(`/comparisons/${pairId}/turns`)})) return response;
+      const value = await response.json();
+      value.data.turns.push({
+        pair_id: '4e77f773-d4ac-43b6-ac1c-2457bfa18db4', prompt: 'Saved follow-up (test fixture)',
+        branches: { none: { status: 'needs_input', answer: 'Without cache follow-up' },
+          local: { status: 'needs_input', answer: 'With cache follow-up' } },
+      });
+      return Response.json(value, { status: response.status });
+    };
+  })()` });
+  await navigate(`/workspace?comparison=${pairId}`);
+  const prompts = `[...document.querySelectorAll(${JSON.stringify(`${selectedChat} .dev-message.developer`)})].map(node => node.textContent)`;
+  await waitFor(`${prompts}.length === 2`, "earlier and later prompts appear after reopening a conversation");
+  const originalPrompts = await evaluate(prompts);
+  assert.equal(originalPrompts[1], "Saved follow-up (test fixture)");
+  assert.equal(await evaluate(`document.querySelector(${JSON.stringify(`${selectedChat} .dev-message.assistant:last-of-type`)})?.textContent`), "Without cache follow-up");
+  await click(chatTab(2));
+  assert.deepEqual(await evaluate(prompts), originalPrompts);
+  assert.equal(await evaluate(selectedAnswer), "With cache follow-up");
+  await cdp("Page.removeScriptToEvaluateOnNewDocument", { identifier: observeTurns.identifier });
 }

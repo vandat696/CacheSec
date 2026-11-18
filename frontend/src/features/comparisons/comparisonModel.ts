@@ -2,7 +2,10 @@ import { isAgentRun, terminalRunStatuses, type AgentRun } from "../agent/agentRu
 import { revision, type Revision } from "../code-changes/changeWorkflowApi.ts";
 import { isContextRequest, object, type ContextRequest, type ContextMode } from "../context-cache/contextCacheModel.ts";
 
-export type ComparisonSummary = { pair_id: string; snapshot_id: string; prompt: string; created_at: string; cache_state: "cold" | "warm" | "preload"; status: string };
+export type ComparisonSummary = { pair_id: string; session_id?: string; snapshot_id: string; prompt: string; created_at: string; cache_state: "cold" | "warm" | "preload"; status: string };
+type TurnReply = { status: string; answer: string };
+export type ComparisonTurn = { pair_id: string; prompt: string; branches: { none: TurnReply; local: TurnReply } };
+export type ComparisonConversation = { session_id: string; turns: ComparisonTurn[] };
 export type Branch = {
   mode: ContextMode; status: string; run: AgentRun | null; context_request?: ContextRequest;
   server_workflow_ms?: number;
@@ -30,8 +33,31 @@ function context(value: unknown) {
 }
 export function isComparisonSummary(v: unknown): v is ComparisonSummary {
   return object(v) && id(v.pair_id) && id(v.snapshot_id) && typeof v.prompt === "string" && v.prompt.length <= 4000
+    && (v.session_id === undefined || id(v.session_id))
     && typeof v.created_at === "string" && Number.isFinite(Date.parse(v.created_at))
     && ["cold", "warm", "preload"].includes(v.cache_state as string) && typeof v.status === "string";
+}
+export function isComparisonConversation(value: unknown): value is ComparisonConversation {
+  if (!object(value) || !id(value.session_id) || !Array.isArray(value.turns)) return false;
+  const seen = new Set<string>();
+  return value.turns.every(turn => {
+    if (!object(turn) || !id(turn.pair_id) || seen.has(turn.pair_id) || typeof turn.prompt !== "string"
+      || turn.prompt.length > 4000 || !object(turn.branches)) return false;
+    const { none, local } = turn.branches;
+    seen.add(turn.pair_id);
+    return [none, local].every(reply => object(reply) && typeof reply.status === "string"
+      && typeof reply.answer === "string" && reply.answer.length <= 16000);
+  }) && value.turns[0]?.pair_id === value.session_id;
+}
+export const comparisonSessionId = (pair: ComparisonSummary) => pair.session_id ?? pair.pair_id;
+export function mergeComparisonTurn(turns: ComparisonTurn[], pair: ComparisonPair): ComparisonTurn[] {
+  const reply = (branch: Branch) => ({ status: branch.status, answer: branch.run?.answer ?? "" });
+  const turn = { pair_id: pair.pair_id, prompt: pair.prompt, branches: {
+    none: reply(pair.branches.none), local: reply(pair.branches.local),
+  } };
+  return turns.some(item => item.pair_id === turn.pair_id)
+    ? turns.map(item => item.pair_id === turn.pair_id ? turn : item)
+    : [...turns, turn];
 }
 export function isComparisonPair(v: unknown): v is ComparisonPair {
   if (!object(v) || typeof v.model !== "string" || !object(v.branches)) return false;
@@ -57,7 +83,7 @@ export function isComparisonPair(v: unknown): v is ComparisonPair {
         && object(a.correctness) && a.correctness.value === null && object(a.approval_gate) && a.approval_gate.value === null)));
   });
 }
-export const branchPending = (branch: Branch) => ![...terminalRunStatuses, "incomplete", "ready", "preparing"].includes(branch.status as typeof terminalRunStatuses[number]);
+export const branchPending = (branch: Pick<Branch, "status">) => ![...terminalRunStatuses, "incomplete", "ready", "preparing"].includes(branch.status as typeof terminalRunStatuses[number]);
 export const branchLabel = (mode: ContextMode) => mode === "none" ? "Không cache" : "Có Context Cache";
 export const revisionTest = (item: Revision) => item.tests.find(job => job.artifact_digest === item.artifact_digest
   && job.revision === item.revision && job.proposal_id === item.proposal_id);
@@ -67,7 +93,11 @@ export const testLabel = (status?: string) => ({
   error: "Lỗi chạy test", unknown: "Chưa rõ kết quả test",
 } as Record<string, string>)[status ?? ""] ?? "Chưa có test";
 export function branchMetrics(branch: Branch) {
-  const events = branch.run?.events.filter(event => event.tool === "generate" && event.state === "completed") ?? [];
+  const generation = branch.run?.events.filter(event => event.tool === "generate") ?? [];
+  const generationAttempts = generation.filter(event => event.state === "started").length;
+  const retry = generation.some(event => event.state === "retry_wait");
+  const lastProviderFailure = generation.findLast(event => event.state === "error" && event.provider_http_status !== undefined);
+  const events = generation.filter(event => event.state === "completed");
   const usage = events.length && events.every(event => event.usage != null)
     ? events.reduce((sum, event) => ({ input_tokens: sum.input_tokens + event.usage!.input_tokens,
       output_tokens: sum.output_tokens + event.usage!.output_tokens, total_tokens: sum.total_tokens + event.usage!.total_tokens }),
@@ -76,5 +106,5 @@ export function branchMetrics(branch: Branch) {
     ? events.reduce((sum, event) => sum + event.generation_ms!, 0) : null;
   const final = branch.run?.events.at(-1);
   const workflowMs = branch.run && final && !branchPending(branch) ? Date.parse(final.at) - Date.parse(branch.run.created_at) : null;
-  return { usage, generationMs, generationCalls: events.length, workflowMs };
+  return { usage, generationMs, generationCalls: events.length, generationAttempts, workflowMs, retry, lastProviderFailure };
 }

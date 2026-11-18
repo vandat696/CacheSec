@@ -22,8 +22,10 @@ Dùng project demo riêng có bản mã gốc, trước khi thêm `expiration_re
 
 ## Xem bản sửa và cache hit
 
+- Trong khung chat Agent, bấm tab **Không cache** hoặc **Có Context Cache** để xem các câu hỏi và phản hồi của nhánh đó. Gửi tiếp để bổ sung lượt vào phiên đang mở. Bấm **đồng hồ → Phiên mới** để bắt đầu phiên riêng.
 - Cuộn xuống dưới Workspace để xem **Không cache** và **Có Context Cache**. Dòng thêm có **`+` màu xanh**, dòng xóa có **`−` màu đỏ**. Bấm **Đến dòng sửa** để nhảy tới thay đổi đầu tiên.
 - Ở nhánh **Có Context Cache**, **Miss** nghĩa là Agent đọc lại mã nguồn. **Verified Hit** nghĩa là backend đã kiểm tra quyền và phiên bản nguồn rồi cho dùng lại ngữ cảnh đã lưu. Agent vẫn gọi Gemini để tạo bản sửa cho lượt đó.
+- Nếu gặp `MODEL_UNAVAILABLE`, mở **Chi tiết** để xem mã HTTP nếu có. Agent thử gọi lại tối đa một lần trong mỗi nhánh khi gặp lỗi tạm thời. `MODEL_RATE_LIMIT` nghĩa là đã chạm hạn mức nhà cung cấp.
 - Để xem ví dụ đã qua test, mở [phiên Warm đã lưu trên cổng 3100](http://127.0.0.1:3100/workspace?comparison=7811520c-68bf-4f66-b17e-b42fa0ac1c55) khi demo riêng đang chạy. Nếu chưa kết nối, chọn **Kết nối bằng token** và nhập `control_token` từ `backend/.local/comparison-demo-20261118/access.json`. Nút **đồng hồ** trên thanh Agent mở các phiên đã lưu.
 
 ## Lưu, duyệt hoặc xem lại mã gốc

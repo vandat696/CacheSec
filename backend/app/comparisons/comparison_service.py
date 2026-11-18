@@ -65,7 +65,7 @@ class ComparisonService:
             raise ContextError("COMPARISON_UNAVAILABLE", 404)
         return actor, pair
 
-    def create(self, token, snapshot_id, prompt, key, cache_state, model_id=None):
+    def create(self, token, snapshot_id, prompt, key, cache_state, model_id=None, session_id=None):
         if (
             not key
             or not key.isascii()
@@ -84,15 +84,16 @@ class ComparisonService:
             raise AgentError("MODEL_NOT_CONFIGURED")
         WorkflowRunAccess(self.proposals).current(token, execute=True)
         key_digest = hashlib.sha256(key.encode()).hexdigest()
-        binding = fingerprint(
-            {
-                "snapshot_id": str(snapshot_id),
-                "prompt": prompt,
-                "cache_state": cache_state,
-                "model": config["model"],
-                "policy": POLICY,
-            }
-        )
+        binding = {
+            "snapshot_id": str(snapshot_id),
+            "prompt": prompt,
+            "cache_state": cache_state,
+            "model": config["model"],
+            "policy": POLICY,
+        }
+        if session_id is not None:
+            binding["session_id"] = str(session_id)
+        binding = fingerprint(binding)
         with self.transactions.open() as session:
             actor = self._authorized(session, token)
             existing = session.records.by_key(actor.scope, actor.principal_id, key_digest)
@@ -100,8 +101,12 @@ class ComparisonService:
                 if existing["fingerprint"] != binding:
                     raise ContextError("IDEMPOTENCY_CONFLICT")
                 return existing
+            if session_id is not None:
+                self._session_root(session, actor, session_id)
+            pair_id = str(uuid4())
             pair = {
-                "pair_id": str(uuid4()),
+                "pair_id": pair_id,
+                "session_id": str(session_id) if session_id is not None else pair_id,
                 "snapshot_id": str(snapshot_id),
                 "prompt": prompt,
                 "model": config["model"],
@@ -278,20 +283,21 @@ class ComparisonService:
     def list(self, token):
         with self.transactions.open() as session:
             actor = self._authorized(session, token)
-            return [
-                {
-                    key: pair[key]
-                    for key in (
-                        "pair_id",
-                        "snapshot_id",
-                        "prompt",
-                        "created_at",
-                        "cache_state",
-                        "status",
-                    )
-                }
-                for pair in session.records.list(actor.scope, actor.principal_id)
-            ]
+            return session.records.list(actor.scope, actor.principal_id)
+
+    def _session_root(self, session, actor, session_id):
+        root = session.records.get(actor.scope, actor.principal_id, session_id)
+        if root is None or root.get("session_id", root["pair_id"]) != str(session_id):
+            raise ContextError("COMPARISON_UNAVAILABLE", 404)
+
+    def turns(self, token, session_id):
+        with self.transactions.open() as session:
+            actor = self._authorized(session, token)
+            self._session_root(session, actor, session_id)
+            return {
+                "session_id": str(session_id),
+                "turns": session.records.turns(actor.scope, actor.principal_id, session_id),
+            }
 
     def cancel(self, token, pair_id, mode):
         with self.transactions.open() as session:

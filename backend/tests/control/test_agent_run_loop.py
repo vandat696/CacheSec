@@ -6,7 +6,7 @@ from uuid import uuid4
 
 import pytest
 
-from app.agent_assistance.generation import AgentError
+from app.agent_assistance.generation import AgentError, GenerationTransportError
 from app.agent_assistance.run_service import AgentRunService
 from app.agent_assistance.run_store import LocalAgentRunStore
 from app.change_workflow.workflow_repository import WorkflowStorageUnavailable
@@ -256,10 +256,87 @@ def test_storage_failure_has_unknown_effect_without_retry_or_fabricated_success(
 
 
 def test_provider_failure_is_not_retried_and_raw_errors_never_escape(loop):
-    def failed(*args):
+    def failed(*args, **kwargs):
         raise RuntimeError("secret-provider-error")
 
     loop.generation.ask = failed
     result = finish(loop)
     assert result["status"] == "error" and result["error_code"] == "AGENT_INTERNAL_ERROR"
     assert "secret-provider-error" not in repr(result) and not loop.tools.saved
+
+
+def test_transient_provider_failure_retries_same_turn_and_records_http_code(loop, monkeypatch):
+    monkeypatch.setattr("app.agent_assistance.run_service.uniform", lambda *_: 0)
+
+    def fail_once():
+        if len(loop.generation.calls) == 1:
+            raise GenerationTransportError("MODEL_UNAVAILABLE", 503, retryable=True)
+
+    loop.state.after_generate = fail_once
+    result = finish(loop)
+    assert result["status"] == "passed" and result["turn"] == 1
+    assert loop.generation.calls == [([], None), ([], None)]
+    assert len(loop.tools.saved) == len(loop.tools.jobs) == 1
+    events = [event for event in result["events"] if event["tool"] == "generate"]
+    assert [event["state"] for event in events] == [
+        "started",
+        "error",
+        "retry_wait",
+        "started",
+        "completed",
+    ]
+    assert events[1]["provider_http_status"] == 503
+
+
+@pytest.mark.parametrize("status,attempts", [(503, 2), (429, 1)])
+def test_repeated_outage_and_quota_errors_stop_at_expected_attempt(
+    loop, monkeypatch, status, attempts
+):
+    monkeypatch.setattr("app.agent_assistance.run_service.uniform", lambda *_: 0)
+    code = "MODEL_UNAVAILABLE" if status == 503 else "MODEL_RATE_LIMIT"
+
+    def fail():
+        raise GenerationTransportError(code, status, retryable=status == 503)
+
+    loop.state.after_generate = fail
+    result = finish(loop)
+    assert result["error_code"] == code and len(loop.generation.calls) == attempts
+    assert not loop.tools.saved and not loop.tools.jobs
+
+
+def test_provider_retry_budget_is_shared_with_repair_turns(loop, monkeypatch):
+    monkeypatch.setattr("app.agent_assistance.run_service.uniform", lambda *_: 0)
+    loop.state.outcomes = ["failed", "passed"]
+
+    def fail_first_call_of_each_turn():
+        if len(loop.generation.calls) in (1, 3):
+            raise GenerationTransportError("MODEL_UNAVAILABLE", 503, retryable=True)
+
+    loop.state.after_generate = fail_first_call_of_each_turn
+    result = finish(loop)
+    assert result["error_code"] == "MODEL_UNAVAILABLE" and len(loop.generation.calls) == 3
+    assert result["turn"] == 2 and len(loop.tools.saved) == len(loop.tools.jobs) == 1
+
+
+@pytest.mark.parametrize("reason", ["revoked", "cancelled", "timed_out"])
+def test_retry_wait_rechecks_access_cancellation_and_deadline(loop, monkeypatch, reason):
+    def fail():
+        raise GenerationTransportError("MODEL_UNAVAILABLE", 503, retryable=True)
+
+    def change_during_backoff(*_):
+        if reason == "revoked":
+            loop.state.allowed = False
+        elif reason == "cancelled":
+            loop.store.cancel_all()
+        else:
+            loop.state.now = 600
+        return 0
+
+    loop.state.after_generate = fail
+    monkeypatch.setattr("app.agent_assistance.run_service.uniform", change_during_backoff)
+    result = finish(loop)
+    assert len(loop.generation.calls) == 1 and not loop.tools.saved
+    if reason == "revoked":
+        assert result["error_code"] == "AGENT_ACCESS_REVOKED"
+    else:
+        assert result["status"] == reason

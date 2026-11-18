@@ -26,9 +26,11 @@ Provider: [Google embeddings](https://ai.google.dev/gemini-api/docs/embeddings).
 | `GET /config` | Trả model mặc định (`model`) và danh sách ID được backend cho phép (`models`) |
 | `POST /context/requests` | Chuẩn bị request gắn prompt/nguồn/identity, TTL request 300 giây; Local mới gọi embedding |
 | `POST /context/messages` | Consume request một lần, verify report rồi generation; retry đã consume trả conflict |
-| `POST /comparisons` | Idempotency-Key, snapshot/prompt, cold/warm/preload và consent tường minh. `model` tùy chọn, mặc định lấy từ backend. Lưu pair với model trước khi chuẩn bị |
+| `POST /comparisons` | Idempotency-Key, snapshot/prompt, cold/warm/preload và consent tường minh. `model` tùy chọn. Gửi `session_id` của phiên đang mở để thêm lượt, bỏ trường này để tạo phiên mới |
 | `POST /comparisons/{id}/{mode}` | Transaction chuyển ready → starting trước consume; retry trả trạng thái, không enqueue lại |
-| `GET /comparisons`, `GET /comparisons/{id}` | Lịch sử người tạo còn quyền repository/workflow; tải revision/test/evidence cũ, không gọi model/test lại |
+| `GET /comparisons` | 100 phiên cập nhật gần nhất của người tạo còn quyền repository/workflow. Mỗi phiên dùng câu hỏi đầu làm tiêu đề và mở lượt gần nhất |
+| `GET /comparisons/{session_id}/turns` | Các lượt theo thứ tự gửi, gồm câu hỏi và câu trả lời/trạng thái của hai nhánh |
+| `GET /comparisons/{id}` | Tải kết quả, test và evidence của đúng lượt đã lưu |
 | `POST /comparisons/{id}/{mode}/cancel` | Dừng controller; job đã dispatch có thể còn chạy, giữ reference để kiểm tra |
 | `POST /comparisons/{id}/cache-io` | Lưu client-reported write state/timing, gắn đúng admission entry; không thay verifier outcome |
 
@@ -38,7 +40,9 @@ Standalone context POST chưa có key registry riêng, không tự retry generat
 
 Browser resolve candidate trước khi chạy hai nhánh. None không mở IndexedDB/lookup/embedding/admission Local. Miss/Rejected fallback bằng retrieval có quyền; authority/verifier/storage backend lỗi trả lỗi. IndexedDB lỗi ghi riêng `client_storage_error`; lỗi embedding ghi cho Local, None vẫn có thể chạy. Không đổi lỗi thành Hit/Miss thành công.
 
-Workspace mở sẵn editor mã nguồn cạnh chat **Cả hai**. Nút đồng hồ trên thanh Agent mở lịch sử trong chính khung Agent. Chọn một phiên để quay lại chat và kết quả đã lưu. **Phiên mới** làm trống chat và đưa hai nhánh về **Chưa chạy**. Phiên chỉ được ghi khi gửi prompt. Trong lúc hai nhánh đang chạy, có thể xem danh sách nhưng cần chờ trước khi đổi phiên. Cuộn xuống để tới **Không cache** và **Có Context Cache**, kể cả trước lượt đầu. Tiến trình, cache hit/miss, lỗi và số liệu nằm cùng bản sửa của từng nhánh. Nền xanh `+` là dòng thêm, nền đỏ `−` là dòng xóa. **Đến dòng sửa** cuộn riêng khung tới thay đổi đầu tiên. Trên màn hình hẹp, hai bản xếp dọc. Bấm **Mở đề xuất trong editor** khi cần chỉnh tiếp.
+Workspace mở sẵn editor mã nguồn cạnh chat **Cả hai**. Hai tab **Không cache** và **Có Context Cache** hiển thị toàn bộ câu hỏi theo thứ tự gửi, kèm phản hồi của nhánh tương ứng. Nút đồng hồ mở lại phiên. **Phiên mới** làm trống chat và đưa hai nhánh về **Chưa chạy**. Mỗi câu gửi tiếp trong cùng phiên tạo một cặp chạy riêng trên snapshot của lượt đó. Các lượt lưu trước khi có định danh phiên được mở như những phiên riêng.
+
+Cuộn xuống dưới Workspace để xem hai bản sửa, tiến trình, cache hit/miss, lỗi và số liệu của lượt đang mở. Nền xanh `+` là dòng thêm, nền đỏ `−` là dòng xóa. **Đến dòng sửa** cuộn tới thay đổi đầu tiên trong khung đó. Trên màn hình hẹp, hai bản xếp dọc. Bấm **Mở đề xuất trong editor** khi cần chỉnh tiếp.
 
 ## Lịch sử và số đo
 
@@ -47,6 +51,7 @@ Migration 006 thêm requests/registry; 007 thêm pairs, immutable revision refer
 Technical assessment gắn artifact/evidence và `technical-trace-v1`; các tiêu chí nghiên cứu chưa khóa/chưa thực hiện ghi null kèm lý do. Test kỹ thuật pass không phải acceptance hoặc phê duyệt triển khai.
 
 - Tokens lấy response provider từng lượt; thiếu usage là null. Không suy số calls/tokens tiết kiệm từ Hit.
+- Mỗi nhánh có cùng [ngân sách thử lại model](agent-workflow.md#vòng-thực-thi). **Chi tiết** hiển thị trạng thái HTTP của lỗi provider khi có và số lần controller thử gọi. Lượt đã có response thành công được đếm riêng. `started` ghi lúc controller bắt đầu bước sinh mã, trước kiểm tra nguồn cuối cùng và gửi HTTP.
 - `generation_ms`: adapter generation; `embedding_ms`: gồm HTTP embedding; `preparation_ms`: authority/source/embedding trước ghi request.
 - `resolution_ms`: verify/retrieval trước commit; `server_workflow_ms`: từ start nhánh tới checkpoint terminal, chưa gồm delivery HTTP/commit cuối.
 - `lookup_ms` và cold/warm browser báo nằm trong `client_report`, không phải bằng chứng trusted. Warm/preload khai báo không chứng minh Hit.
@@ -63,7 +68,7 @@ Restart không resume model. Nhánh process cũ đang chạy thành incomplete; 
 - Từ frontend: `node --experimental-strip-types scripts/browser-smoke.mjs --comparisons`; đặt `CACHESEC_COMPARISON_DEMO_ROOT` nếu root khác. Opt-in này gửi ba source file tới Gemini generation, prompt tới embedding và chạy Docker thật.
 - Smoke lưu cold/warm results và `review.md`; chỉ tạo proposal/test và mở history. Human chọn, xem diff/evidence rồi duyệt đúng artifact trước activation.
 - Khi target đã active, chỉ đọc lại bằng `CACHESEC_COMPARISON_PAIR_ID` và `--comparisons`; thêm `--comparison-approved` để kiểm app đã duyệt. Không generation lại nhiệm vụ trên project đã có rule.
-- History UI liệt kê 100 cặp gần nhất; ID cũ vẫn mở trực tiếp được. Query/score mới do backend tính; dữ liệu cũ thiếu trường giữ unknown.
+- URL chứa ID lượt cũ vẫn mở trực tiếp được. Query/score mới do backend tính; dữ liệu cũ thiếu trường giữ unknown.
 
 ### Về mốc ban đầu
 
