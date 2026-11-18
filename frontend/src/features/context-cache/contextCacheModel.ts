@@ -5,6 +5,7 @@ export type ContextRequest = {
   intent: "full-authorized-source"; namespace: string; partition: string; manifest_digest: string;
   query_fingerprint: string; vector: number[] | null; created_at: number; expires_at: number;
   embedding_calls: number; embedding_ms: number;
+  model?: string;
   preparation_ms?: number;
   policy: { version: string; dimensions: number; threshold: number; top_k: number; ttl_seconds: number; capacity: number };
 };
@@ -33,6 +34,7 @@ function binding(v: Record<string, unknown>) {
 }
 export function isContextRequest(v: unknown): v is ContextRequest {
   return object(v) && binding(v) && uuid(v.request_id) && uuid(v.snapshot_id)
+    && (v.model === undefined || typeof v.model === "string")
     && typeof v.prompt === "string" && v.prompt.length > 0 && v.prompt.length <= 4000
     && (v.mode === "none" ? v.vector === null && v.embedding_calls === 0 : v.mode === "local" && vector(v.vector) && v.embedding_calls === 1)
     && finite(v.embedding_ms) && object(v.policy) && v.policy.version === "full-source-context-v1"

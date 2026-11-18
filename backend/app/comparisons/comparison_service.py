@@ -25,11 +25,15 @@ class BoundContextGeneration:
             resolved,
         )
 
-    def config(self, token):
-        return self.assistance.config(token)
+    def config(self, token, model_id=None):
+        return self.assistance.config(token, model_id)
 
-    def ask(self, token, snapshot_id, prompt, history, candidate=None):
-        if str(snapshot_id) != self.request["snapshot_id"] or prompt != self.request["prompt"]:
+    def ask(self, token, snapshot_id, prompt, history, candidate=None, *, model_id):
+        if (
+            str(snapshot_id) != self.request["snapshot_id"]
+            or prompt != self.request["prompt"]
+            or model_id != self.request.get("model", self.assistance.models.default.model_id)
+        ):
             raise AgentError("AGENT_BINDING_MISMATCH", 409)
         try:
             return self.cached.generate(token, self.request, self.resolved, history, candidate)
@@ -61,7 +65,7 @@ class ComparisonService:
             raise ContextError("COMPARISON_UNAVAILABLE", 404)
         return actor, pair
 
-    def create(self, token, snapshot_id, prompt, key, cache_state):
+    def create(self, token, snapshot_id, prompt, key, cache_state, model_id=None):
         if (
             not key
             or not key.isascii()
@@ -75,7 +79,7 @@ class ComparisonService:
             or cache_state not in ("cold", "warm", "preload")
         ):
             raise ContextError("INVALID_REQUEST", 400)
-        config = self.assistance.config(token)
+        config = self.assistance.config(token, model_id)
         if not config["configured"]:
             raise AgentError("MODEL_NOT_CONFIGURED")
         WorkflowRunAccess(self.proposals).current(token, execute=True)
@@ -118,7 +122,7 @@ class ComparisonService:
             for mode in ("none", "local"):
                 try:
                     requests[mode] = self.contexts.prepare(
-                        token, snapshot_id, prompt, mode, "change"
+                        token, snapshot_id, prompt, mode, "change", model_id=pair["model"]
                     )
                 except ContextError as error:
                     if mode != "local" or not error.code.startswith("EMBEDDING_"):
@@ -164,7 +168,7 @@ class ComparisonService:
             session.records.update(actor.scope, actor.principal_id, pair)
         try:
             request, resolved, resolution = self.contexts.resolve(
-                token, UUID(branch["context_request"]["request_id"]), report
+                token, UUID(branch["context_request"]["request_id"]), report, model_id=pair["model"]
             )
             with self.transactions.open() as session:
                 actor, current = self._owned(session, token, pair_id)
@@ -200,7 +204,11 @@ class ComparisonService:
                 self.executor,
             )
             run = run_service.start(
-                token, UUID(pair["snapshot_id"]), pair["prompt"], f"comparison-{pair_id}-{mode}"
+                token,
+                UUID(pair["snapshot_id"]),
+                pair["prompt"],
+                f"comparison-{pair_id}-{mode}",
+                pair["model"],
             )
             with self.lock:
                 if run["status"] not in TERMINAL_RUNS:

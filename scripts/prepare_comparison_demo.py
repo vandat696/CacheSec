@@ -4,6 +4,8 @@ Run from the repository: backend/.venv/Scripts/python scripts/prepare_comparison
 ROOT must be a new child of backend/.local. Dev source, target and credentials stay intact.
 """
 
+# ruff: noqa: E402
+
 import json
 import os
 import secrets
@@ -13,7 +15,9 @@ import sys
 import time
 import urllib.request
 from pathlib import Path
-from uuid import UUID, uuid4
+from uuid import uuid4
+
+from check_comparison_baseline import check_baseline
 
 ROOT = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(ROOT / "backend"))
@@ -50,10 +54,7 @@ from app.repositories.source_profiles import SourceProfile
 from app.shared.postgres_connection import PostgresDatabase
 from app.testing.docker_commands import docker
 from app.testing.image_inventory import verify_images
-from app.workspace_runtime.docker_runtime import (
-    DockerLocalRuntime,
-    runtime_configuration,
-)
+from app.workspace_runtime.docker_runtime import runtime_configuration
 from app.workspace_runtime.postgres_operations import PostgresOperations
 from app.workspace_runtime.source_operations import TARGET_ID
 from psycopg import sql
@@ -102,7 +103,7 @@ def main():
     local = (ROOT / "backend/.local").resolve()
     if not root.is_relative_to(local) or root == local:
         raise ValueError("Demo must use a new directory below backend/.local")
-    for port in (18000, 18001, 18002, 3100):
+    for port in (18000, 18001, 3100):
         with socket.socket() as check:
             check.bind(("127.0.0.1", port))
     profile = load_test_profile(local / "test-profile.json")
@@ -148,8 +149,6 @@ def main():
     suffix = uuid4().hex[:12]
     database_name, role = "cachesec_demo_" + suffix, "cachesec_demo_app_" + suffix
     network = "cachesec-comparison-" + suffix
-    baseline_operation = {"id": str(uuid4())}
-    baseline_name = "cachesec-local-" + UUID(baseline_operation["id"]).hex
     token, worker_key, app_token, reader_token, app_password = (
         secrets.token_hex(32) for _ in range(5)
     )
@@ -190,8 +189,6 @@ def main():
         "database": database_name,
         "runtime_role": role,
         "network": network,
-        "baseline_container": baseline_name,
-        "baseline_operation": baseline_operation,
         "baseline_commit": baseline_commit,
         "source_paths": list(OVERLAY_PATHS),
         "status": "preparing",
@@ -268,43 +265,8 @@ def main():
         ]
     )
     docker(["network", "connect", "--alias", "db", network, "cachesec-db-1"])
-    # The unchanged baseline has a separate before-demo port. The deployment target
-    # at 18001 remains stopped until an authorized human approves the selected artifact.
-    mounts = [
-        arg
-        for path in OVERLAY_PATHS
-        for arg in (
-            "--mount",
-            f"type=bind,source={frozen_baseline / path},target=/opt/quotation/{path.removeprefix('backend/')},readonly",
-        )
-    ]
-    docker(
-        [
-            "run",
-            "-d",
-            "--name",
-            baseline_name,
-            "--label",
-            "cachesec.demo=" + suffix,
-            "--network",
-            network,
-            "--env-file",
-            str(app_env_file),
-            "--read-only",
-            "--cap-drop",
-            "ALL",
-            "--security-opt",
-            "no-new-privileges:true",
-            "--tmpfs",
-            "/tmp:rw,nosuid,size=64m",
-            *mounts,
-            profile.runtime_image,
-        ]
-    )
-    ingress = DockerLocalRuntime(worker, worker_id, {**runtime, "port": 18002})
-    ingress.create_ingress(baseline_operation, profile)
-    docker(["start", baseline_name + "-gateway"])
-    ingress.health()
+    if check_baseline(root) != {"ready": True}:
+        raise ValueError("Baseline did not pass its readiness check")
     env = {
         "DATABASE_URL": dsn,
         "CONTROL_ARTIFACT_ROOT": str(store),
@@ -383,10 +345,6 @@ def main():
     )
     write_json(root / "manifest.json", manifest)
     wait_http("http://127.0.0.1:3100/workspace")
-    wait_http(
-        "http://127.0.0.1:18002/api/v1/quotations",
-        {"Authorization": "Bearer " + app_token},
-    )
     manifest["status"] = "ready-awaiting-human-approval"
     write_json(root / "manifest.json", manifest)
     print(
@@ -395,7 +353,6 @@ def main():
                 "status": manifest["status"],
                 "root": str(root),
                 "workspace": "http://127.0.0.1:3100/workspace",
-                "baseline_port": 18002,
                 "approval_target_port": 18001,
             }
         )
@@ -411,7 +368,10 @@ if __name__ == "__main__":
                 {
                     "status": "error",
                     "error_type": type(error).__name__,
-                    "message": "Demo preparation stopped; inspect the private manifest/logs. No approval or activation was requested.",
+                    "message": (
+                        "Demo preparation stopped; inspect the private manifest/logs. "
+                        "No approval or activation was requested."
+                    ),
                 }
             )
         )

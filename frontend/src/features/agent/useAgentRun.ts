@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useEffectEvent, useRef, useState } from "react";
-import type { AgentHttpClient } from "./agentApi";
+import type { AgentHttpClient, AgentModelId } from "./agentApi";
 import { AgentApiError } from "./agentApi";
 import { pendingAgentRun, type AgentRun } from "./agentRunModel";
 
@@ -13,7 +13,7 @@ export function useAgentRun(api: AgentHttpClient | null, scope: { tenant_id: str
   const [epoch, setEpoch] = useState(0);
   const failure = useRef(onFailure);
   const mutation = useRef<AbortController | null>(null);
-  const attempt = useRef<{ snapshot: string; prompt: string; key: string } | null>(null);
+  const attempt = useRef<{ fingerprint: string; key: string } | null>(null);
   useEffect(() => { failure.current = onFailure; }, [onFailure]);
   const tenantId = scope?.tenant_id, repoId = scope?.repo_id;
   const [owner, setOwner] = useState({ api, tenantId, repoId });
@@ -59,14 +59,15 @@ export function useAgentRun(api: AgentHttpClient | null, scope: { tenant_id: str
     void poll();
     return () => { controller.abort(); clearTimeout(timer); };
   }, [api, runId, pending, epoch, tenantId, repoId]);
-  async function start(snapshot: string, prompt: string) {
+  async function start(snapshot: string, prompt: string, model?: AgentModelId) {
     if (!api || busy || (run && pendingAgentRun(run))) return false;
-    if (attempt.current?.snapshot !== snapshot || attempt.current.prompt !== prompt)
-      attempt.current = { snapshot, prompt, key: crypto.randomUUID() };
+    const fingerprint = JSON.stringify({ snapshot, prompt, model });
+    if (attempt.current?.fingerprint !== fingerprint)
+      attempt.current = { fingerprint, key: crypto.randomUUID() };
     const controller = new AbortController(); mutation.current = controller;
     setBusy(true); setError("");
     try {
-      const value = await api.startRun(snapshot, prompt, attempt.current.key, controller.signal);
+      const value = await api.startRun(snapshot, prompt, attempt.current.key, controller.signal, model);
       if (controller.signal.aborted) return false;
       setRun(bound(value)); attempt.current = null; return true;
     } catch (value) { if (!controller.signal.aborted) fail(value); return false; }

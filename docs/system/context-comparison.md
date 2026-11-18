@@ -23,19 +23,22 @@ Provider: [Google embeddings](https://ai.google.dev/gemini-api/docs/embeddings).
 
 | HTTP dưới `/api/v1/agent` | Hành vi |
 | --- | --- |
+| `GET /config` | Trả model mặc định (`model`) và danh sách ID được backend cho phép (`models`) |
 | `POST /context/requests` | Chuẩn bị request gắn prompt/nguồn/identity, TTL request 300 giây; Local mới gọi embedding |
 | `POST /context/messages` | Consume request một lần, verify report rồi generation; retry đã consume trả conflict |
-| `POST /comparisons` | Idempotency-Key, snapshot/prompt, cold/warm/preload khai báo và consent tường minh; lưu pair trước chuẩn bị |
+| `POST /comparisons` | Idempotency-Key, snapshot/prompt, cold/warm/preload và consent tường minh. `model` tùy chọn, mặc định lấy từ backend. Lưu pair với model trước khi chuẩn bị |
 | `POST /comparisons/{id}/{mode}` | Transaction chuyển ready → starting trước consume; retry trả trạng thái, không enqueue lại |
 | `GET /comparisons`, `GET /comparisons/{id}` | Lịch sử người tạo còn quyền repository/workflow; tải revision/test/evidence cũ, không gọi model/test lại |
 | `POST /comparisons/{id}/{mode}/cancel` | Dừng controller; job đã dispatch có thể còn chạy, giữ reference để kiểm tra |
 | `POST /comparisons/{id}/cache-io` | Lưu client-reported write state/timing, gắn đúng admission entry; không thay verifier outcome |
 
-Standalone context POST chưa có key registry riêng, không tự retry generation. So sánh có resource/key bền riêng. API không nhận owner, namespace, provider/model URL, command hoặc quyền do browser khai.
+Backend chọn adapter theo ID được phép. Model nằm trong fingerprint của cặp và namespace của context. Khi start nhánh, backend lấy model từ cặp đã lưu, đối chiếu với request context và dùng model đó cho mỗi lượt sửa/test. Entry của model khác bị verifier loại. Lượt standalone context dùng model mặc định. `POST /messages` và `POST /runs` của Agent cũng nhận `model` tùy chọn. URL, key và quyền do backend quản lý.
+
+Standalone context POST chưa có key registry riêng, không tự retry generation. So sánh có resource/key bền riêng.
 
 Browser resolve candidate trước khi chạy hai nhánh. None không mở IndexedDB/lookup/embedding/admission Local. Miss/Rejected fallback bằng retrieval có quyền; authority/verifier/storage backend lỗi trả lỗi. IndexedDB lỗi ghi riêng `client_storage_error`; lỗi embedding ghi cho Local, None vẫn có thể chạy. Không đổi lỗi thành Hit/Miss thành công.
 
-Trên Workspace, chọn **Agent → So sánh** rồi chạy hai nhánh hoặc mở một phiên trong **Lịch sử**. **Xem hai bản sửa** mở hai diff đối chiếu với snapshot gốc của phiên: xanh `+` là dòng thêm, đỏ `−` là dòng xóa. Hai cột số dòng chỉ vị trí trong file gốc và sau sửa. Có thể đổi bản sửa, xem nguyên file, hoặc mở đề xuất của từng nhánh trong trình chỉnh sửa. Trạng thái nhánh hiển thị lượt Agent hiện tại, lúc chạy Docker và lúc sửa theo kết quả test. Mở từng bản trong phần kết quả để xem các kiểm tra chưa đạt và bằng chứng test.
+Workspace mở sẵn editor mã nguồn cạnh chat **Cả hai**. Nút đồng hồ trên thanh Agent mở lịch sử trong chính khung Agent. Chọn một phiên để quay lại chat và kết quả đã lưu. **Phiên mới** làm trống chat và đưa hai nhánh về **Chưa chạy**. Phiên chỉ được ghi khi gửi prompt. Trong lúc hai nhánh đang chạy, có thể xem danh sách nhưng cần chờ trước khi đổi phiên. Cuộn xuống để tới **Không cache** và **Có Context Cache**, kể cả trước lượt đầu. Tiến trình, cache hit/miss, lỗi và số liệu nằm cùng bản sửa của từng nhánh. Nền xanh `+` là dòng thêm, nền đỏ `−` là dòng xóa. **Đến dòng sửa** cuộn riêng khung tới thay đổi đầu tiên. Trên màn hình hẹp, hai bản xếp dọc. Bấm **Mở đề xuất trong editor** khi cần chỉnh tiếp.
 
 ## Lịch sử và số đo
 
@@ -52,10 +55,10 @@ Restart không resume model. Nhánh process cũ đang chạy thành incomplete; 
 
 ## Demo riêng
 
-`scripts/prepare_comparison_demo.py ROOT` cần ROOT mới dưới `backend/.local`, PostgreSQL dev và image của test profile đã có. Script tạo DB/role/network riêng; validator baseline lấy từ commit `4924398`, full commit ghi trong manifest. Baseline app dùng source đóng riêng, không mount project đang sửa. Dev source/grants/target được giữ.
+`scripts/prepare_comparison_demo.py ROOT` cần ROOT mới dưới `backend/.local`, PostgreSQL dev và image của test profile đã có. Script tạo database logic, role và network riêng trên cùng PostgreSQL container. Validator baseline lấy từ commit `4924398`, full commit ghi trong manifest. Baseline dùng source đóng riêng. Dev source/grants/target được giữ.
 
 - Control `127.0.0.1:18000`, frontend `127.0.0.1:3100`.
-- Baseline trước thay đổi `127.0.0.1:18002`; target chờ human approval `127.0.0.1:18001`, cùng DB báo giá demo. Target sau thay đổi chưa chạy khi chưa duyệt.
+- Target chờ human approval `127.0.0.1:18001`. Baseline chỉ chạy khi cần kiểm, trong một container tự xóa khi thoát. Hai phiên bản đọc cùng dữ liệu báo giá demo. Target sau thay đổi chưa chạy khi chưa duyệt.
 - Secrets/process IDs trong root private; `access.json` dùng kết nối thủ công trên host demo. Không đưa token vào URL/export/public docs.
 - Từ frontend: `node --experimental-strip-types scripts/browser-smoke.mjs --comparisons`; đặt `CACHESEC_COMPARISON_DEMO_ROOT` nếu root khác. Opt-in này gửi ba source file tới Gemini generation, prompt tới embedding và chạy Docker thật.
 - Smoke lưu cold/warm results và `review.md`; chỉ tạo proposal/test và mở history. Human chọn, xem diff/evidence rồi duyệt đúng artifact trước activation.
@@ -64,10 +67,10 @@ Restart không resume model. Nhánh process cũ đang chạy thành incomplete; 
 
 ### Về mốc ban đầu
 
-Trong phiên demo, chọn **Xem hai bản sửa → Mở đề xuất trong editor → Thay đổi → Đưa mã gốc vào editor**. Nút lấy `base_text` của đề xuất từ snapshot đã lưu. Nếu có nội dung chưa lưu, Workspace hỏi giữ hay bỏ trước khi thay bản nháp. Để ghi lại mã gốc vào project, chọn **Lưu** với phiên có quyền ghi. Lịch sử các bản sửa và bằng chứng test vẫn mở lại được.
+Trong cột của nhánh cần xem, chọn **Mở đề xuất trong editor → Thay đổi → Đưa mã gốc vào editor**. Nút lấy `base_text` của đề xuất từ snapshot đã lưu. Nếu có nội dung chưa lưu, Workspace hỏi giữ hay bỏ trước khi thay bản nháp. Để ghi lại mã gốc vào project, chọn **Lưu** với phiên có quyền ghi. Lịch sử các bản sửa và bằng chứng test vẫn mở lại được.
 
-Môi trường demo giữ source baseline trong `baseline/` dưới root private, với validator ghim theo commit trong manifest. App baseline tại 18002 dùng bản sao này, nên có thể kiểm cùng báo giá thiếu ngày qua hai app nhiều lần. `--comparison-approved` kiểm draft khôi phục, xác nhận 18002 trả 0 cờ rồi 18001 trả một cờ `expiration_review` cho cùng ID báo giá.
+Môi trường demo giữ source baseline trong `baseline/` dưới root private. `--comparison-approved` kiểm draft khôi phục, chạy route validation baseline qua ASGI TestClient với PostgreSQL thật trong container tạm, rồi kiểm UI nối app đã duyệt 18001. Cùng ID báo giá thiếu ngày phải trả 0 cờ ở bản gốc và một cờ `expiration_review` ở bản đã duyệt. Probe baseline chạy transaction chỉ đọc, không publish cổng hay cần gateway. Có thể kiểm riêng từ root bằng `backend/.venv/Scripts/python.exe scripts/check_comparison_baseline.py ROOT QUOTATION_ID`.
 
-Lưu mã gốc chỉ thay source. Khi cần phục hồi runtime ngay trên target đang chạy, bản khôi phục phải có kiểm thử phù hợp và phê duyệt triển khai riêng. Profile `expiration-review-v1` đòi rule mới, nên để demo hành vi trước thay đổi hãy dùng baseline 18002.
+Lưu mã gốc chỉ thay source. Khi cần phục hồi runtime ngay trên target đang chạy, bản khôi phục phải có kiểm thử phù hợp và phê duyệt triển khai riêng. Profile `expiration-review-v1` đòi rule mới. Để demo hành vi trước thay đổi, dùng probe baseline ở trên.
 
 Prepare không ghi đè/dọn môi trường tồn tại. Manifest giữ tên resource cho owner dọn có scope; không reset app dev làm baseline. Fixture demo kỹ thuật chưa phải fixture nghiên cứu đã đóng băng.

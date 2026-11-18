@@ -36,16 +36,20 @@ RUN_CAPS = CAPS | {Cap.WORKFLOW_READ, Cap.WORKFLOW_RUN}
 def comparison(workflow, monkeypatch):
     env = workflow
     grants(env, RUN_CAPS)
-    state = SimpleNamespace(calls=[], embeddings=[], outcomes=["passed"], action=lambda: None)
+    state = SimpleNamespace(
+        calls=[], models=[], embeddings=[], outcomes=["passed"], action=lambda: None
+    )
 
     class Model:
-        model_id = "gemini-3.5-flash-lite"
+        def __init__(self, model_id="gemini-3.5-flash-lite"):
+            self.model_id = model_id
 
         def configured(self):
             return True
 
         def generate(self, prompt, files, history):
             state.calls.append((prompt, files, history))
+            state.models.append(self.model_id)
             state.action()
             return GenerationResult(
                 "test-only answer",
@@ -60,14 +64,16 @@ def comparison(workflow, monkeypatch):
             return [1.0] + [0.0] * 767
 
     access = RepositoryAccessService(PostgresControlAuthorityTransactions(env.database))
-    assistance = AgentAssistanceService(access, env.snapshots, Model())
+    assistance = AgentAssistanceService(
+        access, env.snapshots, Model(), (Model("gemini-4-hydrogen"),)
+    )
     contexts = ContextService(
         PostgresContextTransactions(env.database),
         env.snapshots,
         Embedding(),
-        assistance.model.model_id,
+        assistance.models.default.model_id,
     )
-    cached = CachedAgentAssistance(contexts, assistance.model)
+    cached = CachedAgentAssistance(contexts, assistance.models)
     executor = ManualExecutor()
 
     def factory():
@@ -174,6 +180,76 @@ def test_create_and_start_replay_never_regenerates_or_embeds_again(comparison):
     e.executor.drain()
     start_pair(e, pair)
     assert len(e.state.calls) == 2 and not e.executor.pending
+
+
+def test_selected_model_binds_both_branches_repair_idempotency_and_cache(comparison):
+    e = comparison
+    prompt = "test-only change"
+    default = create(e, prompt)
+    old_entry = e.service.start(TOKEN, default["pair_id"], "local", {"kind": "no_candidate"})[
+        "admission"
+    ]
+    e.executor.drain()
+    e.state.models.clear()
+    e.state.calls.clear()
+    e.state.outcomes = ["failed", "passed"]
+    headers = {"Authorization": "Bearer " + TOKEN, "Idempotency-Key": "model-pair"}
+    body = {
+        "snapshot_id": str(e.env.snapshot.snapshot_id),
+        "prompt": prompt,
+        "cache_state": "warm",
+        "provider_consent": True,
+    }
+    endpoint = "/api/v1/agent/comparisons"
+    unsupported = e.client.post(
+        endpoint, json={**body, "model": "gemini-4-carbon"}, headers=headers
+    )
+    assert unsupported.status_code == 400
+    assert unsupported.json()["error"]["code"] == "MODEL_NOT_SUPPORTED"
+    assert e.state.embeddings == [prompt]
+    chosen = "gemini-4-hydrogen"
+    answer = e.client.post(
+        "/api/v1/agent/messages",
+        json={
+            "snapshot_id": body["snapshot_id"],
+            "prompt": prompt,
+            "model": chosen,
+        },
+        headers=headers,
+    )
+    assert answer.status_code == 200 and answer.json()["data"]["model"] == chosen
+    assert e.state.models == [chosen]
+    e.state.calls.clear()
+    e.state.models.clear()
+    response = e.client.post(endpoint, json={**body, "model": chosen}, headers=headers)
+    assert response.status_code == 202
+    pair = response.json()["data"]
+    assert pair["model"] == chosen
+    assert all(branch["context_request"]["model"] == chosen for branch in pair["branches"].values())
+    assert pair["branches"]["local"]["context_request"]["namespace"] != old_entry["namespace"]
+    assert e.client.post(endpoint, json=body, headers=headers).status_code == 409
+    start_pair(
+        e,
+        pair,
+        {
+            "kind": "candidate",
+            "candidates": [
+                {
+                    "kind": "exact",
+                    "entry_id": old_entry["entry_id"],
+                    "payload": old_entry["payload"],
+                }
+            ],
+        },
+    )
+    e.executor.drain()
+    e.executor.drain()
+    result = e.factory().get(TOKEN, pair["pair_id"])
+    assert result["model"] == chosen and e.state.models == [chosen] * 3
+    assert all(branch["run"]["model"] == chosen for branch in result["branches"].values())
+    local = result["branches"]["local"]["context"]
+    assert local["outcome"] == "rejected"
+    assert local["decisions"][0]["reason"] == "SCOPE_OR_CONFIG_MISMATCH"
 
 
 def test_client_cache_write_telemetry_is_bound_owned_and_idempotent(comparison):

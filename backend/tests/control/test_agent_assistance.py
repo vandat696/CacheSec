@@ -110,7 +110,12 @@ def test_http_auth_body_limits_and_errors_do_not_echo_source_or_secret(workflow,
         headers = {"Authorization": "Bearer " + TOKEN}
         assert client.get("/api/v1/agent/config").status_code == 401
         config = client.get("/api/v1/agent/config", headers=headers)
-        assert config.json()["data"] == {"model": model_id, "configured": False, "mode": "assisted"}
+        assert config.json()["data"] == {
+            "model": model_id,
+            "models": [model_id],
+            "configured": False,
+            "mode": "assisted",
+        }
         payload = {"snapshot_id": str(env.snapshot.snapshot_id), "prompt": "explain"}
         result = client.post("/api/v1/agent/messages", json=payload, headers=headers)
         assert (

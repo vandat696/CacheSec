@@ -1,57 +1,63 @@
-import { useEffect, useId, useRef, useState } from "react";
+import { useId, useState } from "react";
 import { Button } from "@/components/ui/Button";
-import { branchLabel, branchPending, revisionTest, testLabel, type Branch, type ComparisonPair } from "./comparisonModel";
+import { Icon } from "@/components/ui/Icon";
+import type { ContextMode } from "../context-cache/contextCacheModel";
+import { branchPending, revisionTest, testLabel, type Branch } from "./comparisonModel";
+import { ComparisonBranch } from "./ComparisonBranch";
 import { RevisionDiff } from "./RevisionDiff";
+import type { useComparison } from "./useComparison";
 
-function ReviewBranch({ branch, busy, onOpen }: { branch: Branch; busy: boolean; onOpen: (id: string) => void }) {
+function ReviewBranch({ mode, branch, busy, onOpen, onCancel }: {
+  mode: ContextMode; branch?: Branch; busy: boolean; onOpen: (id: string) => void; onCancel: () => void;
+}) {
   const [selected, setSelected] = useState<number | null>(null);
-  const revisions = branch.revisions ?? [];
+  const revisions = branch?.revisions ?? [];
   const latest = revisions.at(-1);
   const revision = revisions.find(item => item.revision === selected) ?? latest;
   const test = revision && revisionTest(revision);
-  return <section className="comparison-review-branch" aria-label={branchLabel(branch.mode)}>
-    <header className="comparison-review-branch-heading">
-      <h3>{branchLabel(branch.mode)}</h3>
-      {revision && <label>Bản sửa <select value={revision.revision} onChange={event => setSelected(Number(event.target.value))}>
-        {revisions.map(item => <option key={item.revision} value={item.revision}>{item.revision}</option>)}
-      </select></label>}
-      {revision && <span className="comparison-test-state" data-status={test?.status}>{testLabel(test?.status)}</span>}
-    </header>
+  return <ComparisonBranch mode={mode} branch={branch} busy={busy} onCancel={onCancel}>
     {revision ? <>
+      <div className="comparison-editor-tabs">
+        <div className="comparison-editor-file" title={revision.path}>
+          <Icon name="code" /><code>{revision.path.split("/").at(-1)}</code>
+        </div>
+        <div className="comparison-editor-meta">
+          {revisions.length > 1
+            ? <label>Bản <select value={revision.revision} onChange={event => setSelected(Number(event.target.value))}>
+              {revisions.map(item => <option key={item.revision} value={item.revision}>{item.revision}</option>)}
+            </select></label>
+            : <span>Bản {revision.revision}</span>}
+          {revision !== latest && <span className="comparison-test-state" data-status={test?.status}>{testLabel(test?.status)}</span>}
+        </div>
+      </div>
       <RevisionDiff key={revision.revision} revision={revision} />
-      {revision === latest && <Button variant="secondary" disabled={busy || branchPending(branch)} onClick={() => onOpen(revision.proposal_id)}>Mở đề xuất trong editor</Button>}
-    </> : <p>Nhánh này chưa có bản sửa.</p>}
-  </section>;
+      {branch && revision === latest && <Button variant="secondary" disabled={busy || branchPending(branch)} onClick={() => onOpen(revision.proposal_id)}>Mở đề xuất trong editor</Button>}
+    </> : <p className="comparison-no-revision">Chưa có bản sửa</p>}
+  </ComparisonBranch>;
 }
 
-export function ComparisonReview({ pair, busy, onClose, onOpen }: {
-  pair: ComparisonPair; busy: boolean; onClose: () => void; onOpen: (id: string) => void;
+export function ComparisonReview({ comparison, onOpen }: {
+  comparison: ReturnType<typeof useComparison>; onOpen: (id: string) => void;
 }) {
-  const dialog = useRef<HTMLDialogElement>(null);
   const title = useId();
-  useEffect(() => {
-    const element = dialog.current!;
-    const trigger = document.activeElement;
-    element.showModal();
-    return () => {
-      element.close();
-      if (trigger instanceof HTMLElement && trigger.isConnected) trigger.focus();
-    };
-  }, []);
-  const none = pair.branches.none.revisions?.at(-1);
-  const local = pair.branches.local.revisions?.at(-1);
+  const { pair, busy, error, notice, cancel } = comparison;
+  const none = pair?.branches.none.revisions?.at(-1);
+  const local = pair?.branches.local.revisions?.at(-1);
   const path = none?.path ?? local?.path;
-  return <dialog ref={dialog} className="nui nui-theme nui-dialog comparison-review" aria-labelledby={title}
-    onCancel={event => { event.preventDefault(); onClose(); }}>
+  return <section id="workspace-comparison" className="comparison-review" aria-labelledby={title}>
     <header className="comparison-review-heading">
-      <h2 id={title}>Hai bản sửa so với mã gốc</h2>
-      <Button variant="secondary" onClick={onClose}>Đóng</Button>
+      <h2 id={title}>Kết quả hai nhánh</h2>
+      {pair && <code className="comparison-review-model" aria-label="Model của hai nhánh">{pair.model}</code>}
+      {path && <><span className="comparison-addition">+ Dòng thêm</span>
+        <span className="comparison-deletion">− Dòng xóa</span></>}
     </header>
+    {error && <p role="alert">{error}</p>}
+    {notice && <p role="status">{notice}</p>}
     {path && <p className="comparison-file"><code>{path}</code></p>}
     {none && local && none.content === local.content && <p>Hai bản mới nhất có nội dung giống nhau.</p>}
     <div className="comparison-review-grid">
-      {([pair.branches.none, pair.branches.local]).map(branch => <ReviewBranch key={branch.mode} branch={branch}
-        busy={busy} onOpen={id => { onClose(); onOpen(id); }} />)}
+      {(["none", "local"] as const).map(mode => <ReviewBranch key={mode} mode={mode} branch={pair?.branches[mode]}
+        busy={busy} onOpen={onOpen} onCancel={() => { void cancel(mode); }} />)}
     </div>
-  </dialog>;
+  </section>;
 }

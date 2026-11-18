@@ -16,6 +16,7 @@ class StartAgentRun(BaseModel):
     snapshot_id: UUID
     prompt: str = Field(min_length=1, max_length=4000)
     provider_consent: Literal[True]
+    model: str | None = Field(default=None, min_length=1, max_length=64)
 
     @field_validator("provider_consent", mode="before")
     @classmethod
@@ -45,7 +46,12 @@ def configure_run_http(app, service):
         return envelope(
             request,
             await run_in_threadpool(
-                service.start, bearer(authorization), body.snapshot_id, body.prompt, idempotency_key
+                service.start,
+                bearer(authorization),
+                body.snapshot_id,
+                body.prompt,
+                idempotency_key,
+                body.model,
             ),
         )
 

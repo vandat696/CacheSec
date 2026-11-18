@@ -35,13 +35,15 @@ export function isComparisonSummary(v: unknown): v is ComparisonSummary {
 }
 export function isComparisonPair(v: unknown): v is ComparisonPair {
   if (!object(v) || typeof v.model !== "string" || !object(v.branches)) return false;
-  const branches = v.branches;
+  const { branches, model } = v;
   if (!isComparisonSummary(v)) return false;
   return (["none", "local"] as const).every(mode => {
     const b = branches[mode];
     return object(b) && b.mode === mode && statuses.includes(b.status as typeof terminalRunStatuses[number]) && (b.run === null || (isAgentRun(b.run)
-      && b.run.snapshot_id === v.snapshot_id)) && (b.context_request === undefined || (isContextRequest(b.context_request)
-        && b.context_request.mode === mode && b.context_request.snapshot_id === v.snapshot_id && b.context_request.prompt === v.prompt))
+      && b.run.snapshot_id === v.snapshot_id && b.run.model === model))
+      && (b.context_request === undefined || (isContextRequest(b.context_request) && b.context_request.mode === mode
+        && b.context_request.snapshot_id === v.snapshot_id && b.context_request.prompt === v.prompt
+        && (b.context_request.model === undefined || b.context_request.model === model)))
       && (b.revisions === undefined || (Array.isArray(b.revisions) && b.revisions.length <= 3 && b.revisions.every(r => revision(r)
         && r.base_snapshot_id === v.snapshot_id && (!object(b.run) || r.proposal_id === b.run.proposal_id))))
       && (b.context === undefined || context(b.context))

@@ -6,15 +6,34 @@ from contextlib import redirect_stdout
 from pathlib import Path
 from types import SimpleNamespace
 from unittest.mock import patch
+from urllib.error import HTTPError
 
 from scripts.local_configuration import (
+    LocalComparisonStateError,
     LocalRuntimeStateError,
+    probe_comparisons,
     quotation_environment,
     runtime_state,
 )
 
 
 class LocalConfigurationTests(unittest.TestCase):
+    def test_comparison_probe_rejects_old_control_or_unavailable_history(self):
+        url = "http://127.0.0.1:8000/api/v1/agent/comparisons"
+        for status, code in [
+            (404, "COMPARISON_API_MISSING"),
+            (500, "COMPARISON_HISTORY_UNAVAILABLE"),
+        ]:
+            with self.subTest(status=status), patch("urllib.request.OpenerDirector.open") as send:
+                send.side_effect = HTTPError(url, status, "private upstream detail", {}, None)
+                with self.assertRaisesRegex(LocalComparisonStateError, "^" + code + "$"):
+                    from urllib.request import build_opener
+
+                    probe_comparisons(build_opener(), "test-only")
+                request = send.call_args.args[0]
+                self.assertEqual(request.get_method(), "GET")
+                self.assertEqual(request.full_url, url)
+
     def setUp(self):
         self.app = {
             "QUOTATION_DATABASE_URL": "postgresql://dev:p%40ss@127.0.0.1:5544/demo?application_name=quotation",

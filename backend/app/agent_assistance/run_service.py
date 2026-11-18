@@ -63,7 +63,7 @@ class AgentRunService:
             "active_run_id": active,
         }
 
-    def start(self, token, snapshot_id, prompt, key):
+    def start(self, token, snapshot_id, prompt, key, model_id=None):
         actor = self.access.current(token, execute=True)
         if (
             not key
@@ -74,11 +74,14 @@ class AgentRunService:
             raise AgentError("INVALID_IDEMPOTENCY_KEY", 400)
         if not prompt.strip() or len(prompt) > 4000:
             raise AgentError("INVALID_REQUEST", 400)
-        config = self.generation.config(token)
+        config = self.generation.config(token, model_id)
         if not config["configured"]:
             raise AgentError("MODEL_NOT_CONFIGURED")
         digest = hashlib.sha256(
-            json.dumps({"snapshot_id": str(snapshot_id), "prompt": prompt}, sort_keys=True).encode()
+            json.dumps(
+                {"snapshot_id": str(snapshot_id), "prompt": prompt, "model": config["model"]},
+                sort_keys=True,
+            ).encode()
         ).hexdigest()
         key_digest = hashlib.sha256(key.encode()).hexdigest()
         run, created = self.store.reserve(
@@ -158,7 +161,9 @@ class AgentRunService:
                     ]
                 )
                 self.store.event(run, "generate", "started")
-                reply = self.generation.ask(token, run.snapshot_id, run.prompt, history, candidate)
+                reply = self.generation.ask(
+                    token, run.snapshot_id, run.prompt, history, candidate, model_id=run.model
+                )
                 self._guard(run, token)
                 if reply["snapshot_id"] != str(run.snapshot_id) or not (
                     reply["model"] == run.model or reply["model"].startswith(run.model + "-")

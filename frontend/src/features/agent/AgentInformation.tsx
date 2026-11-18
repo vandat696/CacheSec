@@ -3,13 +3,13 @@
 import { useEffect, useId, useRef, useState } from "react";
 import { Button } from "@/components/ui/Button";
 import { Icon } from "@/components/ui/Icon";
-import { agentModels, type AgentConfig } from "./agentApi";
+import { agentModels, type AgentConfig, type AgentModelId } from "./agentApi";
 
-export function AgentInformation({ config, connected, fileCount, busy, onRefresh }: {
-  config: AgentConfig | null; connected: boolean; fileCount: number; busy: boolean; onRefresh: () => void;
+export function AgentInformation({ config, modelId, connected, fileCount, busy, onRefresh }: {
+  config: AgentConfig | null; modelId?: AgentModelId; connected: boolean; fileCount: number; busy: boolean; onRefresh: () => void;
 }) {
   const [open, setOpen] = useState(false);
-  const model = agentModels[config?.model ?? "gemini-3.5-flash-lite"];
+  const model = modelId ? agentModels[modelId] : undefined;
   const id = useId();
   const root = useRef<HTMLDivElement>(null);
   const trigger = useRef<HTMLButtonElement>(null);
@@ -36,10 +36,10 @@ export function AgentInformation({ config, connected, fileCount, busy, onRefresh
       <Icon name="info" />
     </Button>
     <div id={id} className="agent-information-panel" hidden={!open} role="region" aria-label="Thông tin Agent">
-      <strong>{model.label}</strong>
+      {model && <strong>{model.label}</strong>}
       {!connected ? <p>Mở project để bắt đầu.</p> : <>
         <p>{config ? config.configured ? "Đã cấu hình API key." : "Chưa cấu hình API key." : "Đang đọc cấu hình…"}</p>
-        {config && !config.configured && <p>Đặt <code>{model.keyVariable}</code> trong <code>backend/.local/agent-config/{model.keyFile}</code>, rồi tải lại cấu hình.</p>}
+        {config && model && !config.configured && <p>Đặt <code>{model.keyVariable}</code> trong <code>backend/.local/agent-config/{model.keyFile}</code>, rồi tải lại cấu hình.</p>}
         <p>Source gốc · {fileCount} tệp</p>
         <Button variant="secondary" onClick={onRefresh} disabled={busy} aria-label="Tải lại cấu hình Agent">
           <Icon name="refresh" />Tải lại cấu hình

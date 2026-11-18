@@ -59,14 +59,14 @@ def loop():
             self.calls = []
             self.content = "test-only candidate"
 
-        def config(self, token):
-            return {"model": "gemini-3.5-flash-lite", "configured": True}
+        def config(self, token, model_id=None):
+            return {"model": model_id or "gemini-3.5-flash-lite", "configured": True}
 
-        def ask(self, token, snapshot, prompt, history, candidate=None):
+        def ask(self, token, snapshot, prompt, history, candidate=None, *, model_id):
             self.calls.append((history, candidate))
             state.after_generate()
             return {
-                "model": "gemini-3.5-flash-lite",
+                "model": model_id,
                 "snapshot_id": str(snapshot),
                 "answer": "test-only suggestion",
                 "content": self.content,
@@ -231,6 +231,8 @@ def test_start_is_idempotent_and_conflicting_payload_or_parallel_run_is_rejected
     assert loop.start()["run_id"] == first["run_id"] and len(loop.executor.pending) == 1
     with pytest.raises(AgentError, match="IDEMPOTENCY_CONFLICT"):
         loop.service.start(TOKEN, loop.snapshot, "changed task", "test-run")
+    with pytest.raises(AgentError, match="IDEMPOTENCY_CONFLICT"):
+        loop.service.start(TOKEN, loop.snapshot, "test task", "test-run", "gemini-4-hydrogen")
     with pytest.raises(AgentError, match="AGENT_BUSY"):
         loop.start("other")
     loop.executor.drain()

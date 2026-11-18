@@ -1,4 +1,4 @@
-"""Owned comparison creation/start/history; scope and model never come from clients."""
+"""Owned comparison creation/start/history with server-validated model selection."""
 
 from typing import Annotated, Literal
 from uuid import UUID
@@ -18,6 +18,7 @@ class CreateComparison(BaseModel):
     prompt: str = Field(min_length=1, max_length=4000)
     cache_state: Literal["cold", "warm", "preload"]
     provider_consent: Literal[True]
+    model: str | None = Field(default=None, min_length=1, max_length=64)
 
     @field_validator("provider_consent", mode="before")
     @classmethod
@@ -68,6 +69,7 @@ def configure_comparison_http(app, service):
                 body.prompt,
                 idempotency_key,
                 body.cache_state,
+                body.model,
             ),
         )
 

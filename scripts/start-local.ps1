@@ -105,7 +105,7 @@ try {
         '-f', (Join-Path $workspaceRoot 'infra\agent.compose.yaml'),
         'up', '-d', '--no-build', '--wait', 'control')
     & $python -X utf8 $helper probe-control
-    if ($LASTEXITCODE -ne 0) { throw 'The local profile does not match the configured control workflow.' }
+    if ($LASTEXITCODE -ne 0) { throw 'Control dev preflight failed. See docs/general/setup.md.' }
     $runtimeState = & $python -X utf8 $helper runtime-state
     if ($LASTEXITCODE -ne 0) { throw 'Runtime state needs reconciliation. The baseline has not been restarted.' }
     if ($runtimeState -eq 'baseline') {

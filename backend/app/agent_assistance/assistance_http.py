@@ -23,6 +23,7 @@ class AssistanceRequest(BaseModel):
     snapshot_id: UUID
     prompt: str = Field(min_length=1, max_length=4000)
     history: list[HistoryMessage] = Field(default_factory=list, max_length=12)
+    model: str | None = Field(default=None, min_length=1, max_length=64)
 
     @model_validator(mode="after")
     def bounded_history(self):
@@ -70,6 +71,7 @@ def configure_assistance_http(app, service, runs=None):
             body.snapshot_id,
             body.prompt,
             [m.model_dump() for m in body.history],
+            model_id=body.model,
         )
         return envelope(request, data)
 

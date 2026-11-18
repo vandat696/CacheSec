@@ -17,9 +17,11 @@ class RunAccess(Protocol):
 
 
 class RunGeneration(Protocol):
-    def config(self, token: str | None) -> dict: ...
+    def config(self, token: str | None, model_id: str | None = None) -> dict: ...
 
-    def ask(self, token, snapshot_id, prompt, history, candidate_content=None) -> dict: ...
+    def ask(
+        self, token, snapshot_id, prompt, history, candidate_content=None, *, model_id
+    ) -> dict: ...
 
 
 class RunTools(Protocol):

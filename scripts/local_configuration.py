@@ -92,6 +92,26 @@ def worker_state():
         print("free")
 
 
+class LocalComparisonStateError(ValueError):
+    """Fixed diagnostics for the local comparison API."""
+
+
+def probe_comparisons(opener, token):
+    request = urllib.request.Request(
+        "http://127.0.0.1:8000/api/v1/agent/comparisons",
+        headers={"Authorization": "Bearer " + token},
+    )
+    try:
+        with opener.open(request, timeout=5) as response:
+            data = json.load(response)
+    except urllib.error.HTTPError as error:
+        if error.code == 404:
+            raise LocalComparisonStateError("COMPARISON_API_MISSING") from None
+        raise LocalComparisonStateError("COMPARISON_HISTORY_UNAVAILABLE") from None
+    if data["meta"]["contract_version"] != "v0.2" or not isinstance(data["data"], list):
+        raise LocalComparisonStateError("COMPARISON_HISTORY_INVALID")
+
+
 def probe_control():
     from app.change_workflow.test_profiles import load_test_profile
 
@@ -109,6 +129,7 @@ def probe_control():
         or data["data"]["profile_digest"] != profile.digest
     ):
         raise ValueError("Control workflow profile mismatch.")
+    probe_comparisons(opener, token)
 
 
 def probe():
@@ -195,6 +216,9 @@ def main():
         }[args.action]()
     except LocalRuntimeStateError as error:
         print("Local runtime check failed: " + str(error), file=sys.stderr)
+        return 1
+    except LocalComparisonStateError as error:
+        print(f"Control dev: {error}. See docs/general/setup.md.", file=sys.stderr)
         return 1
     except Exception:
         print(

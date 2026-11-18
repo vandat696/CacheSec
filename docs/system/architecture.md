@@ -53,7 +53,7 @@ Agent/IDE có thể được thay bằng host tích hợp khác; ứng dụng b�
 
 Runtime báo giá và việc chạy bản sửa/test phải tách khỏi process control. Agent chỉ sửa source ứng dụng trong scope đã cấp; không được sửa code cache, gate hoặc policy của control để hoàn thành nhiệm vụ. Bản đề xuất được lưu riêng, diff UI phản ánh đúng bản đó; chỉ artifact đúng phiên bản/hash đã qua approval gate mới được kích hoạt cho runtime báo giá. Hiển thị hoặc sửa văn bản trên web không tự thay code đang chạy. Cơ chế sandbox, quyền executor và deploy target vẫn cần chốt theo [ranh giới tin cậy](authorization.md).
 
-Dữ liệu báo giá, cache entries/vector và proposal/test/approval thuộc các chủ sở hữu riêng. Có thể tổ chức bảng/schema riêng trên cùng hạ tầng khi phù hợp; không bắt buộc database hay Git repository riêng cho mỗi thành phần hoặc mỗi revision. Không đọc chéo bảng nội bộ để bỏ qua contract. Server cache storage chưa chốt; cache không lưu approval để cấp quyền. Các lượt thực nghiệm vẫn dùng cùng fixture cố định và quy trình reset đã khóa.
+Dữ liệu báo giá, cache entries/vector và proposal/test/approval thuộc các chủ sở hữu riêng. PoC dùng một PostgreSQL container/volume bền. Dev và demo có database logic riêng để cô lập dữ liệu/fixture. Trong mỗi database, schema `quotation_demo` giữ báo giá, schema `control` giữ registry cache, lịch sử so sánh, revision/test và approval. Hai nhánh dùng cùng database với ID riêng. Payload cache ở IndexedDB, bytes source/artifact theo digest ở kho blob; PostgreSQL giữ metadata và liên kết. Job Docker test có PostgreSQL tạm dùng tmpfs và dọn sau job. [Luồng demo và dữ liệu](context-comparison.md) mô tả cách sử dụng thực tế.
 
 ### Tích hợp CacheSec vào IDE và Agent
 

@@ -6,18 +6,26 @@ import { isContextEntry, type ContextEntry } from "../context-cache/contextCache
 
 export const agentModels = {
   "gemini-3.5-flash-lite": { label: "Gemini 3.5 Flash-Lite", keyVariable: "GEMINI_API_KEY", keyFile: "gemini.env" },
+  "gemini-4-hydrogen": { label: "Gemini 4 Hydrogen", keyVariable: "GEMINI_API_KEY", keyFile: "gemini.env" },
+  "gemini-3.8-flash": { label: "Gemini 3.8 Flash", keyVariable: "GEMINI_API_KEY", keyFile: "gemini.env" },
   "gpt-6.1-sol": { label: "GPT-6.1 Sol", keyVariable: "OPENAI_API_KEY", keyFile: "openai.env" },
 } as const;
-export type AgentConfig = { model: keyof typeof agentModels; configured: boolean; mode: "assisted"; automation?: AgentAutomation };
+export type AgentModelId = keyof typeof agentModels;
+export type AgentConfig = { model: AgentModelId; models?: AgentModelId[]; configured: boolean; mode: "assisted"; automation?: AgentAutomation };
 export type AgentReply = { snapshot_id: string; manifest_digest: string; repository_identity: string;
   editable_path: string; answer: string; content: string | null; model: string;
   usage: { input_tokens: number; output_tokens: number; total_tokens: number } | null };
 export type AgentMessage = { role: "user" | "assistant"; content: string };
 const object = (v: unknown): v is Record<string, unknown> => !!v && typeof v === "object" && !Array.isArray(v);
-const supportedModelVersion = (value: string) => /^gemini-3\.5-flash-lite(?:-\d{3}|-\d{4}-\d{2}-\d{2})?$/.test(value)
-  || /^gpt-6\.1-sol(?:-\d{4}-\d{2}-\d{2})?$/.test(value);
+const isModelId = (value: unknown): value is AgentModelId => typeof value === "string" && Object.hasOwn(agentModels, value);
+const supportedModelVersion = (value: string, expected?: AgentModelId) => {
+  const suffix = value.startsWith("gemini-") ? /-(?:\d{3}|\d{4}-\d{2}-\d{2})$/ : /-\d{4}-\d{2}-\d{2}$/;
+  const model = value.replace(suffix, "");
+  return isModelId(model) && (expected === undefined || model === expected);
+};
 const errors: Record<string, string> = {
   MODEL_NOT_CONFIGURED: "Chưa cấu hình API key cho Agent.", MODEL_KEY_REJECTED: "API key không hợp lệ.",
+  MODEL_NOT_SUPPORTED: "Model này chưa được bật cho Workspace.",
   MODEL_CONFIGURATION_INVALID: "Cấu hình API key không hợp lệ. Hãy kiểm tra file cấu hình.",
   MODEL_ACCESS_DENIED: "API key chưa có quyền dùng model.", MODEL_RATE_LIMIT: "Nhà cung cấp đang giới hạn lượt gọi hoặc hạn mức tài khoản.",
   MODEL_NOT_AVAILABLE: "Model chưa khả dụng với project này.", MODEL_REQUEST_REJECTED: "Nhà cung cấp từ chối cấu hình yêu cầu.",
@@ -57,22 +65,24 @@ export class AgentHttpClient {
   }
   async config(signal: AbortSignal): Promise<AgentConfig> {
     const value = await this.request("/config", signal);
-    if (!object(value) || typeof value.model !== "string" || !Object.hasOwn(agentModels, value.model)
+    if (!object(value) || !isModelId(value.model)
+      || (value.models !== undefined && (!Array.isArray(value.models) || !value.models.every(isModelId)
+        || !value.models.includes(value.model) || new Set(value.models).size !== value.models.length))
       || typeof value.configured !== "boolean" || value.mode !== "assisted"
       || (value.automation !== undefined && !isAgentAutomation(value.automation))) throw new AgentApiError(502);
     return value as AgentConfig;
   }
-  async ask(snapshotId: string, prompt: string, history: AgentMessage[], signal: AbortSignal): Promise<AgentReply> {
-    const value = await this.request("/messages", signal, { snapshot_id: snapshotId, prompt, history });
-    return this.reply(value, snapshotId);
+  async ask(snapshotId: string, prompt: string, history: AgentMessage[], signal: AbortSignal, model?: AgentModelId): Promise<AgentReply> {
+    const value = await this.request("/messages", signal, { snapshot_id: snapshotId, prompt, history, model });
+    return this.reply(value, snapshotId, model);
   }
-  private reply(value: unknown, snapshotId: string): AgentReply {
+  private reply(value: unknown, snapshotId: string, model?: AgentModelId): AgentReply {
     if (!object(value) || value.snapshot_id !== snapshotId || typeof value.answer !== "string" || !value.answer
       || value.answer.length > 16000 || !(value.content === null || (typeof value.content === "string"
         && new TextEncoder().encode(value.content).length <= 65536))
       || typeof value.manifest_digest !== "string" || !/^sha256:[a-f0-9]{64}$/.test(value.manifest_digest)
       || typeof value.repository_identity !== "string" || value.editable_path !== editablePath
-      || typeof value.model !== "string" || !supportedModelVersion(value.model)
+      || typeof value.model !== "string" || !supportedModelVersion(value.model, model)
       || !(value.usage === null || (object(value.usage) && ["input_tokens", "output_tokens", "total_tokens"]
         .every(k => Number.isSafeInteger(value.usage && (value.usage as Record<string, unknown>)[k])
           && ((value.usage as Record<string, number>)[k] >= 0))))) throw new AgentApiError(502);
@@ -91,9 +101,9 @@ export class AgentHttpClient {
       || reply.manifest_digest !== request.manifest_digest) throw new AgentApiError(502);
     return { ...reply, context: value.context, generation_ms: value.generation_ms };
   }
-  async startRun(snapshotId: string, prompt: string, key: string, signal: AbortSignal): Promise<AgentRun> {
-    const value = await this.request("/runs", signal, { snapshot_id: snapshotId, prompt, provider_consent: true }, key);
-    if (!isAgentRun(value) || value.snapshot_id !== snapshotId || !supportedModelVersion(value.model)) throw new AgentApiError(502);
+  async startRun(snapshotId: string, prompt: string, key: string, signal: AbortSignal, model?: AgentModelId): Promise<AgentRun> {
+    const value = await this.request("/runs", signal, { snapshot_id: snapshotId, prompt, provider_consent: true, model }, key);
+    if (!isAgentRun(value) || value.snapshot_id !== snapshotId || !supportedModelVersion(value.model, model)) throw new AgentApiError(502);
     return value;
   }
   async getRun(id: string, signal: AbortSignal): Promise<AgentRun> {
@@ -106,9 +116,10 @@ export class AgentHttpClient {
     if (!isAgentRun(value) || value.run_id !== id || !supportedModelVersion(value.model)) throw new AgentApiError(502);
     return value;
   }
-  async createComparison(snapshot: string, prompt: string, cacheState: "cold" | "warm" | "preload", key: string, signal: AbortSignal): Promise<ComparisonPair> {
-    const value = await this.request("/comparisons", signal, { snapshot_id: snapshot, prompt, cache_state: cacheState, provider_consent: true }, key);
-    if (!isComparisonPair(value) || value.snapshot_id !== snapshot || value.prompt !== prompt) throw new AgentApiError(502);
+  async createComparison(snapshot: string, prompt: string, cacheState: "cold" | "warm" | "preload", key: string, signal: AbortSignal, model?: AgentModelId): Promise<ComparisonPair> {
+    const value = await this.request("/comparisons", signal, { snapshot_id: snapshot, prompt, cache_state: cacheState, provider_consent: true, model }, key);
+    if (!isComparisonPair(value) || value.snapshot_id !== snapshot || value.prompt !== prompt
+      || (model !== undefined && value.model !== model)) throw new AgentApiError(502);
     return value;
   }
   async comparison(id: string, signal: AbortSignal): Promise<ComparisonPair> {

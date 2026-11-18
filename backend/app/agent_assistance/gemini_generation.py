@@ -13,10 +13,11 @@ from app.agent_assistance.generation import (
 from app.agent_assistance.generation_transport import post_generation_json, private_key
 
 MODEL = "gemini-3.5-flash-lite"
-ENDPOINT = f"https://generativelanguage.googleapis.com/v1beta/models/{MODEL}:generateContent"
+ALTERNATIVE_MODELS = ("gemini-4-hydrogen", "gemini-3.8-flash")
+THINKING_LEVELS = {MODEL: "low", **dict.fromkeys(ALTERNATIVE_MODELS, "medium")}
 
 
-def decode_response(value: dict) -> GenerationResult:
+def decode_response(value: dict, expected_model: str = MODEL) -> GenerationResult:
     try:
         if value.get("promptFeedback", {}).get("blockReason") not in (
             None,
@@ -44,7 +45,7 @@ def decode_response(value: dict) -> GenerationResult:
         data = json.loads("".join(texts))
         model = value["modelVersion"]
         if type(model) is not str or not re.fullmatch(
-            re.escape(MODEL) + r"(?:-\d{3}|-\d{4}-\d{2}-\d{2})?", model
+            re.escape(expected_model) + r"(?:-\d{3}|-\d{4}-\d{2}-\d{2})?", model
         ):
             raise ValueError()
         metadata = value.get("usageMetadata")
@@ -70,10 +71,11 @@ def decode_response(value: dict) -> GenerationResult:
 
 
 class GeminiContentGeneration:
-    model_id = MODEL
-
-    def __init__(self, config: Path | None):
+    def __init__(self, config: Path | None, model_id: str = MODEL):
+        if model_id not in THINKING_LEVELS:
+            raise ValueError("Unsupported Gemini generation model.")
         self.config = config
+        self.model_id = model_id
 
     def configured(self) -> bool:
         return private_key(self.config, "GEMINI_API_KEY") is not None
@@ -112,9 +114,12 @@ class GeminiContentGeneration:
             "generationConfig": {
                 "candidateCount": 1,
                 "maxOutputTokens": 12000,
-                "thinkingConfig": {"thinkingLevel": "low"},
+                "thinkingConfig": {"thinkingLevel": THINKING_LEVELS[self.model_id]},
                 "responseMimeType": "application/json",
                 "responseJsonSchema": SCHEMA,
             },
         }
-        return decode_response(post_generation_json(ENDPOINT, {"x-goog-api-key": key}, body))
+        endpoint = f"https://generativelanguage.googleapis.com/v1beta/models/{self.model_id}:generateContent"
+        return decode_response(
+            post_generation_json(endpoint, {"x-goog-api-key": key}, body), self.model_id
+        )

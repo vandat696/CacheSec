@@ -40,3 +40,34 @@ export function comparisonDiff(diff: string): DiffLine[][] | null {
   }
   return hunks;
 }
+
+/** Expand a verified diff with unchanged lines so each review pane shows the whole file. */
+export function completeComparisonDiff(hunks: DiffLine[][], base: string, candidate: string): DiffLine[] | null {
+  const sourceLines = (source: string) => {
+    const lines = source.replace(/\r\n?/g, "\n").split("\n");
+    if (lines.at(-1) === "") lines.pop();
+    return lines;
+  };
+  const oldLines = sourceLines(base);
+  const newLines = sourceLines(candidate);
+  const result: DiffLine[] = [];
+  let before = 1, after = 1;
+  function addContext(count: number) {
+    if (count < 0 || before + count > oldLines.length + 1 || after + count > newLines.length + 1) return false;
+    for (let index = 0; index < count; index++) {
+      const text = oldLines[before - 1];
+      if (text !== newLines[after - 1]) return false;
+      result.push({ kind: "context", before: before++, after: after++, text });
+    }
+    return true;
+  }
+  for (const line of hunks.flat()) {
+    const gap = line.before !== null ? line.before - before : line.after! - after;
+    if (!addContext(gap)) return null;
+    if (line.before !== null && (line.before !== before || oldLines[before++ - 1] !== line.text)) return null;
+    if (line.after !== null && (line.after !== after || newLines[after++ - 1] !== line.text)) return null;
+    result.push(line);
+  }
+  const tail = oldLines.length + 1 - before;
+  return tail === newLines.length + 1 - after && addContext(tail) ? result : null;
+}

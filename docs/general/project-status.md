@@ -8,7 +8,7 @@ Cập nhật 2026-11-18. Đây là bản tổng hợp hiện trạng, thay nhậ
 | --- | --- | --- |
 | App báo giá | API/PostgreSQL, UI, rule ngày được human duyệt và chạy thật | Chưa đóng băng fixture/oracle nghiên cứu |
 | Workspace | Đọc ba file, editor/diff/revision, Ctrl+S ghi source thật, Docker test | Chỉ sửa quotation_validation.py; draft chưa lưu có thể mất khi reload |
-| Agent | Gemini thật; controller ba lượt/mười phút, hai nhánh có proposal/revision/test riêng | Solo registry còn in-memory; comparison có checkpoint bền, không tự resume model |
+| Agent | Bộ chọn Gemini trong Workspace; controller ba lượt/mười phút, hai nhánh dùng chung model và có proposal/revision/test riêng | Solo registry còn in-memory; comparison có checkpoint bền, không tự resume model |
 | Gate runtime | Backend/worker duyệt và activate đúng artifact/evidence | Chưa hoàn thiện operator reconciliation tổng quát, distributed fencing hoặc audit nghiên cứu |
 | Persistence | PostgreSQL/blob giữ pair/branch/events/usage/revision/test/assessment và journal source-write/approval/activation | Assessment nghiên cứu chưa khóa; in-flight có thể incomplete/null usage |
 | Context Cache | Dexie, Gemini query embedding 768 chiều, exact/semantic, backend verifier/registry, TTL/LRU/invalidation/logout | Full-source profile, online và riêng principal; chưa summary/Answer Cache/offline |
@@ -18,6 +18,52 @@ Cập nhật 2026-11-18. Đây là bản tổng hợp hiện trạng, thay nhậ
 Lưu source không tự reload/deploy app. Chạy app cần human duyệt đúng artifact; cache không thay quyền, test hoặc gate. Trạng thái trên dựa trên bằng chứng gần nhất, không phải probe dịch vụ đang chạy ở thời điểm đọc.
 
 ## Bằng chứng luồng thật gần nhất
+
+## 2026-11-18 — Chọn model trên thanh Agent
+
+- Workspace dev 3000 và demo 3100 có **Tùy chọn Agent → Model** với Gemini 3.5 Flash-Lite mặc định, Gemini 4 Hydrogen và Gemini 3.8 Flash. Backend ghi model vào từng lượt/cặp và kiểm tra namespace context theo model. [Hướng dẫn](setup.md#agent-gemini) · [Contract](../system/context-comparison.md#contract-đã-triển-khai).
+- Edge kiểm bộ chọn trên 3000, mở lại phiên cũ và xác nhận kết quả vẫn hiển thị model đã ghi. Demo 3100 đọc được hai bản sửa đã lưu. Probe chỉ đọc xác nhận cùng báo giá có 0 cờ trên baseline và một cờ `expiration_review` trên artifact đã duyệt. 214 test Control với PostgreSQL test riêng, 125 test frontend, Ruff, ESLint, typecheck và build đều đạt.
+- Với key hiện có, Gemini trả metadata HTTP 200 cho cả ba model. Hydrogen trả JSON hợp lệ cho prompt giả lập. Gemini 3.8 Flash trả HTTP 503 ở phép thử `generateContent`. Phép thử provider dùng prompt giả lập và danh sách source rỗng.
+
+## 2026-11-18 — Lịch sử phiên trong khung Agent
+
+- Nút đồng hồ thay bộ chọn phiên trên thanh Agent. Lịch sử mở trong khung chat, hỗ trợ xem lại và **Phiên mới**. Đóng bằng Esc giữ draft. Phiên mới đưa hai nhánh về **Chưa chạy** và chỉ tạo bản ghi khi có prompt. Nút dẫn xuống kết quả đã bỏ.
+- Edge trên 3000 kiểm mở phiên đã lưu, giữ draft khi đóng danh sách, tạo phiên trống, mở lại phiên cũ và xác nhận không có POST so sánh. Demo riêng vẫn đọc được cả hai bản sửa và kiểm khôi phục mã. Lint, typecheck và build đạt.
+
+## 2026-11-18 — Trạng thái hai nhánh nằm cùng kết quả
+
+- Chat giữ hội thoại và ô gửi. Chọn phiên, liên kết **Kết quả ↓** và tùy chọn nằm trên thanh tiêu đề ngay trên chat Agent. Hai khung kết quả luôn hiện trong chế độ **Cả hai**, với trạng thái ban đầu **Chưa chạy**.
+- Edge xác nhận phiên dev đã lưu có Không cache **Test đạt** và Context Cache **Verified Hit / MODEL_UNAVAILABLE** hiển thị đúng bên dưới. Kiểm thêm phiên demo hai nhánh đạt và khôi phục mã gốc. Typecheck, lint và build đạt. Frontend 3000 đã nạp bản mới. [Cách xem](../system/context-comparison.md).
+
+## 2026-11-18 — Mở sẵn mã nguồn và hai khung bản sửa
+
+- Workspace mở sẵn Explorer/editor cạnh chat **Cả hai**. Dưới Workspace, hai khung xem bản sửa có tab tên file, nguyên file với số dòng gốc/sau, màu cú pháp và dấu thêm/xóa. **Đến dòng sửa** cuộn riêng từng khung. [Cách xem](../system/context-comparison.md).
+- Edge kiểm trạng thái mặc định, hai khung từ lịch sử thật, đối chiếu diff và khôi phục mã gốc trên desktop/mobile. Sáu test comparison, lint/typecheck và build đạt. Frontend 3000 đã nạp build mới.
+
+## 2026-11-18 — Workspace mặc định chat Cả hai
+
+- Mở Workspace vào một khung chat, `Cả hai` được chọn và một lần gửi chạy hai nhánh. Lịch sử, tùy chọn cache và số liệu được thu gọn. Editor mở qua **Mã nguồn** hoặc từ đề xuất; hai cột diff vẫn ở dưới chat.
+- Edge kiểm bố cục mặc định, lịch sử thật, hai cột và mở editor/khôi phục mã gốc. Chế độ Agent đơn kiểm bằng browser double trên dev 3000. 14 test Agent/comparison, lint/typecheck và production build đạt. Frontend 3000 đã nạp build. [Cách xem](../system/context-comparison.md).
+
+## 2026-11-18 — Xem diff bên dưới khung Workspace
+
+- Cuộn cả trang xuống vùng hai cột hoặc bấm **Xem thay đổi ↓** từ Agent. Diff có màu cú pháp Python, gutter số dòng gốc/sau và nền xanh đỏ. Bố cục xếp dọc ở màn hình hẹp; mở đề xuất cuộn về editor.
+- Edge kiểm phiên đã lưu, vị trí hai cột dưới Workspace, thao tác cuộn, nội dung/dấu và màu cú pháp, cùng khôi phục bản gốc. Lint, typecheck và production build đạt. Frontend dev 3000 đã nạp build mới. [Cách xem](../system/context-comparison.md).
+
+## 2026-11-18 — Bật API so sánh trên Workspace dev 3000
+
+- Sửa lỗi 404: Control Docker dev trước đó thiếu API so sánh, DB dev mới tới migration 005. Áp 006–007, cập nhật image Control dev và build lại frontend 3000 với hai cột mã. Probe launcher đọc được lịch sử trước khi báo sẵn sàng và có chẩn đoán riêng khi thiếu API/schema/quyền. [Setup](setup.md).
+- Chạy lại launcher với Studio thành công. Qua proxy phiên local thật, GET lịch sử trả 200 và POST thiếu payload bị từ chối 400 `INVALID_REQUEST`. Kiểm thử này không tạo cặp hoặc gọi Gemini. Target báo giá dev vẫn version 1/đúng artifact đã duyệt, pending null. Tám test launcher, Ruff và build frontend đạt. Lịch sử/fixture demo 3100 vẫn thuộc DB riêng.
+
+## 2026-11-18 — Hai cột mã hiện ngay trên Workspace
+
+- Phần **So sánh** hiển thị trực tiếp hai bản sửa, với file, số dòng gốc/sau và dấu màu `+`/ `−`. Cột mã có thêm không gian trên desktop, xếp dọc trên màn hình hẹp. Vẫn mở được đề xuất trong editor và xem bản gốc.
+- Edge đọc lại phiên đã lưu, đối chiếu nội dung và dấu từng dòng, kiểm bố cục desktop/mobile và đường khôi phục mã gốc. Typecheck và lint phần thay đổi đạt. [Cách xem](../system/context-comparison.md).
+
+## 2026-11-18 — Giảm container thường trực và rà PostgreSQL
+
+- Gỡ đúng app/gateway baseline 18002. Giữ bản gốc đóng riêng và chuyển kiểm baseline sang container tạm, không publish cổng, PostgreSQL chỉ đọc khi kiểm. Docker từ 10 xuống 8 container, đang chạy từ 8 xuống 6. `--comparison-approved` chạy thật sau khi gỡ, cùng báo giá vẫn cho 0 cờ ở baseline và một cờ ở 18001. Ruff và lint script browser đạt. Chưa chạy lại toàn bộ provisioning demo vì các cổng đang được môi trường đã duyệt sử dụng.
+- Một PostgreSQL container/volume giữ database dev và demo riêng (10,08 MB và 10,54 MB theo `pg_database_size`). Role app demo đọc schema báo giá được cấp, không đọc bảng báo giá dev hoặc dùng schema control. Quyền `CONNECT` mặc định vào database dev vẫn có; chưa thu hẹp ACL kết nối. Data, lịch sử và 5 volume cũ chưa được dọn. [Thiết kế](../system/architecture.md) và [cách kiểm baseline](../system/context-comparison.md#về-mốc-ban-đầu) đã cập nhật.
 
 ## 2026-11-18 — Mốc ban đầu để đối chiếu và khôi phục mã
 

@@ -27,7 +27,7 @@ class ContextService:
         clock=time.time,
     ):
         self.transactions, self.snapshots, self.embedding = transactions, snapshots, embedding
-        self.model_id, self.clock = model_id, clock
+        self.default_model_id, self.clock = model_id, clock
         self.authorizer = ControlAuthorizer()
 
     def _authorized(self, session, token):
@@ -50,7 +50,7 @@ class ContextService:
             raise ContextError("STALE_SNAPSHOT")
         return snapshot
 
-    def _namespace(self, actor, repo, snapshot, purpose):
+    def _namespace(self, actor, repo, snapshot, purpose, model_id):
         return fingerprint(
             {
                 "policy": POLICY,
@@ -64,12 +64,20 @@ class ContextService:
                 "profile": snapshot.profile_blob.digest,
                 "purpose": purpose,
                 "intent": "full-authorized-source",
-                "model": self.model_id,
+                "model": model_id,
                 "prompt_version": "assistance-v1",
             }
         )
 
-    def validate_current(self, token, request):
+    def _validate_binding(self, actor, repo, snapshot, request, model_id):
+        if (
+            request.get("model", self.default_model_id) != model_id
+            or self._namespace(actor, repo, snapshot, request["purpose"], model_id)
+            != request["namespace"]
+        ):
+            raise ContextError("CONTEXT_REQUEST_MISMATCH")
+
+    def validate_current(self, token, request, model_id):
         """Recheck trusted source/authority at generation boundaries, including repair turns."""
         with self.transactions.open() as session:
             actor, repo = self._authorized(session, token)
@@ -77,11 +85,11 @@ class ContextService:
             if stored is None:
                 raise ContextError("CONTEXT_REQUEST_UNAVAILABLE", 404)
             snapshot = self._source(session, actor, repo, stored["snapshot_id"])
-            if self._namespace(actor, repo, snapshot, stored["purpose"]) != stored["namespace"]:
-                raise ContextError("CONTEXT_REQUEST_MISMATCH")
+            self._validate_binding(actor, repo, snapshot, stored, model_id)
         return repo, snapshot
 
-    def prepare(self, token, snapshot_id, prompt, mode, purpose):
+    def prepare(self, token, snapshot_id, prompt, mode, purpose, *, model_id=None):
+        model_id = self.default_model_id if model_id is None else model_id
         preparation_started = time.perf_counter()
         if (
             mode not in ("none", "local")
@@ -94,7 +102,7 @@ class ContextService:
         with self.transactions.open() as session:
             actor, repo = self._authorized(session, token)
             snapshot = self._source(session, actor, repo, snapshot_id)
-            namespace = self._namespace(actor, repo, snapshot, purpose)
+            namespace = self._namespace(actor, repo, snapshot, purpose, model_id)
         started = time.perf_counter()
         vector = self.embedding.embed(prompt) if mode == "local" else None
         embedding_ms = (time.perf_counter() - started) * 1000 if mode == "local" else 0.0
@@ -103,7 +111,7 @@ class ContextService:
             snapshot = self._source(session, current_actor, repo, snapshot_id)
             if (
                 current_actor != actor
-                or self._namespace(actor, repo, snapshot, purpose) != namespace
+                or self._namespace(actor, repo, snapshot, purpose, model_id) != namespace
             ):
                 raise ContextError("CONTEXT_REQUEST_MISMATCH")
             now = self.clock()
@@ -113,6 +121,7 @@ class ContextService:
                 "prompt": prompt,
                 "mode": mode,
                 "purpose": purpose,
+                "model": model_id,
                 "intent": "full-authorized-source",
                 "namespace": namespace,
                 "partition": fingerprint(
@@ -134,7 +143,8 @@ class ContextService:
             session.records.add_request(actor.scope, actor.principal_id, record)
         return record
 
-    def resolve(self, token, request_id, report):
+    def resolve(self, token, request_id, report, *, model_id=None):
+        model_id = self.default_model_id if model_id is None else model_id
         started = time.perf_counter()
         with self.transactions.open() as session:
             actor, repo = self._authorized(session, token)
@@ -146,8 +156,7 @@ class ContextService:
             if request["expires_at"] <= self.clock():
                 raise ContextError("CONTEXT_REQUEST_EXPIRED")
             snapshot = self._source(session, actor, repo, request["snapshot_id"])
-            if self._namespace(actor, repo, snapshot, request["purpose"]) != request["namespace"]:
-                raise ContextError("CONTEXT_REQUEST_MISMATCH")
+            self._validate_binding(actor, repo, snapshot, request, model_id)
             decisions, payload, admission = [], None, None
             kind = report["kind"]
             if request["mode"] == "none":

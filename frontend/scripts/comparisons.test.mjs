@@ -2,7 +2,7 @@ import assert from "node:assert/strict";
 import { test } from "node:test";
 import { AgentHttpClient, AgentApiError } from "../src/features/agent/agentApi.ts";
 import { isComparisonPair, branchMetrics } from "../src/features/comparisons/comparisonModel.ts";
-import { comparisonDiff } from "../src/features/comparisons/comparisonDiff.ts";
+import { comparisonDiff, completeComparisonDiff } from "../src/features/comparisons/comparisonDiff.ts";
 
 test("code review preserves signs inside code and numbers before/after across hunks", () => {
   const patch = [
@@ -19,6 +19,20 @@ test("code review preserves signs inside code and numbers before/after across hu
     [{ kind: "added", before: null, after: 14, text: "tail" }],
   ]);
   assert.equal(comparisonDiff(patch.replace("+tail", "old+tail")), null);
+});
+
+test("whole-file review fills omitted context and keeps both line numbers after insertions", () => {
+  const old = "head\r\nold\r\nlast\r\n";
+  const next = "head\nnew\nextra\nlast\n";
+  const changes = comparisonDiff("--- base/a.py\n+++ candidate/a.py\n@@ -2 +2,2 @@\n-old\n+new\n+extra\n");
+  assert.deepEqual(completeComparisonDiff(changes, old, next), [
+    { kind: "context", before: 1, after: 1, text: "head" },
+    { kind: "removed", before: 2, after: null, text: "old" },
+    { kind: "added", before: null, after: 2, text: "new" },
+    { kind: "added", before: null, after: 3, text: "extra" },
+    { kind: "context", before: 3, after: 4, text: "last" },
+  ]);
+  assert.equal(completeComparisonDiff(changes, old, next.replace("last", "unreported")), null);
 });
 
 const id = "aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa";
@@ -57,6 +71,19 @@ test("history reads only GET and rejects another pair/snapshot before presenting
   await assert.rejects(api.comparison(other, signal()), AgentApiError);
   const value = pair(); value.branches.none.run.snapshot_id = other;
   assert.equal(isComparisonPair(value), false);
+});
+
+test("comparison sends one model ID and rejects a response with a different branch model", async () => {
+  const model = "gemini-3.8-flash";
+  const value = pair();
+  value.model = value.branches.local.run.model = value.branches.none.run.model = model;
+  const api = new AgentHttpClient("/api/local-control", null, async (_url, init) => {
+    assert.equal(JSON.parse(init.body).model, model);
+    return Response.json({ data: value, meta });
+  });
+  assert.equal((await api.createComparison(id, "test-only", "warm", "test-key", signal(), model)).model, model);
+  value.branches.none.run.model = run.model;
+  await assert.rejects(api.createComparison(id, "test-only", "warm", "test-key", signal(), model), AgentApiError);
 });
 
 test("missing usage remains unknown; totals use real per-turn counts without inferring savings from Hit", () => {

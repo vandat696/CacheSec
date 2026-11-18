@@ -2,7 +2,10 @@ import assert from "node:assert/strict";
 import { readFile, writeFile } from "node:fs/promises";
 import { resolve } from "node:path";
 import { createHash } from "node:crypto";
+import { execFile } from "node:child_process";
+import { promisify } from "node:util";
 import { visibleEditorText } from "./editor-browser-actions.mjs";
+import { LocalSessionStore } from "../src/features/local-workspace/localSessionStore.ts";
 
 // Live opt-in: real browser IndexedDB, HTTP, Gemini, PostgreSQL and Docker.
 // Uses only the isolated demo. Never writes source, approves or activates.
@@ -35,7 +38,13 @@ export async function checkComparisons({ cdp, navigate, evaluate, waitFor, click
     await click('.repository-connection button[type="submit"]');
     await waitFor("document.querySelector('.repository-panel')?.dataset.connected === 'true'");
     await waitFor("document.querySelector('.dev-assistant')?.dataset.agentReady === 'true'");
-    await click("#agent-comparison-toggle");
+    assert.equal(await evaluate("document.querySelector('#agent-comparison-toggle')?.getAttribute('aria-pressed')"), "true");
+    await waitFor("!document.querySelector('#workspace-editor')?.hidden && !!document.querySelector('#workspace-editor .cm-content')", "source editor visible by default");
+    assert.equal(await evaluate("!!document.querySelector('#workspace-agent .dev-agent-navbar #agent-session-toggle')"), true);
+    assert.equal(await evaluate("!!document.querySelector('.dev-ide-toolbar #agent-session-toggle')"), false);
+    assert.equal(await evaluate("document.querySelector('.agent-options')?.open"), false);
+    assert.deepEqual(await evaluate("[...document.querySelector('.agent-options select').options].map(option => option.value)"),
+      ["gemini-3.5-flash-lite", "gemini-4-hydrogen", "gemini-3.8-flash"]);
   };
   const discardDraft = async () => {
     if (await evaluate("!!document.querySelector('dialog[open][aria-labelledby=unsaved-title]')")) {
@@ -56,16 +65,15 @@ export async function checkComparisons({ cdp, navigate, evaluate, waitFor, click
     assert.notEqual(pair.branches.none.run.proposal_id, pair.branches.local.run.proposal_id);
     return pair;
   };
-  const openReview = async () => {
-    await waitFor("!!document.querySelector('#comparison-review-open')", "review button available");
-    await click("#comparison-review-open");
-    await waitFor("document.querySelectorAll('.comparison-review[open] .comparison-code').length === 2", "both code diffs visible");
+  const checkReview = async () => {
+    await waitFor("document.querySelectorAll('.workspace-comparison-results .comparison-code').length === 2", "both code diffs available below Workspace");
     const displayed = await evaluate(String.raw`(() => {
-      const review = document.querySelector('.comparison-review[open]');
+      const review = document.querySelector('.workspace-comparison-results .comparison-review');
       return [...review.querySelectorAll('.comparison-review-branch')].map(branch => ({
         added: [...branch.querySelectorAll('[data-kind="added"] code')].map(code => code.textContent),
         removed: [...branch.querySelectorAll('[data-kind="removed"] code')].map(code => code.textContent),
         path: review.querySelector('.comparison-file').textContent,
+        markers: [...branch.querySelectorAll('tr:is([data-kind="added"], [data-kind="removed"]) .comparison-code-sign')].map(cell => cell.textContent),
       }));
     })()`);
     const expected = await evaluate("['none', 'local'].map(mode => window.__comparisonPair.branches[mode].revisions.at(-1))");
@@ -75,8 +83,12 @@ export async function checkComparisons({ cdp, navigate, evaluate, waitFor, click
         added: lines.filter(line => line.startsWith("+")).map(line => line.slice(1)),
         removed: lines.filter(line => line.startsWith("-")).map(line => line.slice(1)),
         path: revision.path,
+        markers: lines.filter(line => line.startsWith("+") || line.startsWith("-")).map(line => line.startsWith("+") ? "+" : "−"),
       });
     }
+    assert.equal(await evaluate(`[...document.querySelectorAll('.comparison-review-branch')].every(branch =>
+      branch.querySelector('.comparison-editor-file code')?.textContent === 'quotation_validation.py'
+      && branch.querySelector('.comparison-code tbody tr[data-kind="context"] td')?.textContent === '1')`), true);
     return expected;
   };
   try {
@@ -90,7 +102,20 @@ export async function checkComparisons({ cdp, navigate, evaluate, waitFor, click
     assert.equal(warm.branches.local.context.outcome, "hit"); assert.equal(warm.branches.local.context.decisions.at(-1).kind, "semantic");
     assert.equal(await evaluate("window.__comparisonForbidden"), 0);
     await screenshot("comparison-live-desktop.png");
-    const reviewed = await openReview();
+    const reviewed = await checkReview();
+    assert.equal(await evaluate(`(() => {
+      const [first, second] = document.querySelectorAll('.comparison-review-branch');
+      const a = first.getBoundingClientRect(), b = second.getBoundingClientRect();
+      const workspace = document.querySelector('.dev-workbench').getBoundingClientRect();
+      return b.left > a.left && b.top === a.top && a.top >= workspace.bottom
+        && a.left <= workspace.left + 2 && b.right >= workspace.right - 2
+        && !!first.querySelector('.tok-keyword') && !!second.querySelector('.tok-keyword');
+    })()`), true);
+    await evaluate("document.querySelector('#workspace-comparison').scrollIntoView({ behavior: 'instant' })");
+    await waitFor("window.scrollY > 0 && document.querySelector('#workspace-comparison').getBoundingClientRect().top < innerHeight / 2", "page scrolls to code");
+    await click(".comparison-review-branch:first-child .comparison-first-change");
+    await waitFor("document.querySelector('.comparison-review-branch:first-child .comparison-code-scroll').scrollTop > 0", "first edit is in view");
+    await click(".comparison-review-branch:last-child .comparison-first-change");
     await screenshot("comparison-review-desktop.png");
     for (const [value, part] of [["base", "base_text"], ["candidate", "content"]]) {
       await evaluate(`(() => {
@@ -100,14 +125,11 @@ export async function checkComparisons({ cdp, navigate, evaluate, waitFor, click
         select.dispatchEvent(new Event('change', { bubbles: true }));
       })()`);
       await waitFor("!!document.querySelector('.comparison-review-branch pre code')");
-      assert.equal(await evaluate("document.querySelector('.comparison-review-branch pre code').textContent"), reviewed[0][part]);
+      assert.equal(await evaluate("document.querySelector('.comparison-review-branch pre code').textContent"), reviewed[0][part].replace(/\r\n?/g, "\n"));
     }
-    await click(".comparison-review-heading button");
-    await waitFor("!document.querySelector('.comparison-review[open]')");
-    assert.equal(await evaluate("document.activeElement.id"), "comparison-review-open");
     assert.equal(await evaluate("window.__comparisonStarts"), resume ? 0 : 4);
     await navigate("/workspace?comparison=" + warm.pair_id); await connect();
-    await waitFor("document.querySelectorAll('.comparison-branch details').length > 0", "durable history restored");
+    await waitFor("document.querySelectorAll('.comparison-branch-details details').length > 0", "durable history restored");
     assert.equal(await evaluate("window.__comparisonStarts"), 0);
     const stored = await evaluate("window.__comparisonPair"); assert.equal(stored.pair_id, warm.pair_id);
     assert.deepEqual(stored.branches.local.revisions.map(r => r.artifact_digest), warm.branches.local.revisions.map(r => r.artifact_digest));
@@ -115,8 +137,9 @@ export async function checkComparisons({ cdp, navigate, evaluate, waitFor, click
       const revision = stored.branches.local.revisions.at(-1);
       const base = await readFile(resolve(root, "baseline", revision.path), "utf8");
       assert.equal(revision.base_text, base);
-      await openReview();
+      await checkReview();
       await click(".comparison-review-branch:last-child > button");
+      await waitFor("!document.querySelector('#workspace-editor')?.hidden", "editor opens from a result");
       await waitFor("!!document.querySelector('#change-restore-base:not(:disabled)')", "baseline restore available");
       await click("#change-restore-base");
       await discardDraft();
@@ -131,12 +154,13 @@ export async function checkComparisons({ cdp, navigate, evaluate, waitFor, click
     }
     await cdp("Emulation.setDeviceMetricsOverride", { width: 390, height: 844, deviceScaleFactor: 1, mobile: true });
     await screenshot("comparison-live-mobile.png");
-    await openReview();
+    await checkReview();
     assert.equal(await evaluate(`(() => {
       const [first, second] = document.querySelectorAll('.comparison-review-branch');
-      const dialog = document.querySelector('.comparison-review');
-      return second.getBoundingClientRect().top > first.getBoundingClientRect().top && dialog.scrollWidth <= dialog.clientWidth;
+      const panel = document.querySelector('.workspace-comparison-results');
+      return second.getBoundingClientRect().top > first.getBoundingClientRect().top && panel.scrollWidth <= panel.clientWidth;
     })()`), true);
+    await evaluate("document.querySelector('.comparison-review').scrollIntoView({ block: 'start', behavior: 'instant' })");
     await screenshot("comparison-review-mobile.png");
     const after = await Promise.all(manifest.source_paths.map(path => readFile(resolve(root, "project", path))));
     assert.deepEqual(after.map(value => createHash("sha256").update(value).digest("hex")), hashes);
@@ -151,23 +175,14 @@ export async function checkComparisons({ cdp, navigate, evaluate, waitFor, click
     if (process.argv.includes("--comparison-approved")) {
       const deployed = JSON.parse(await readFile(resolve(root, "live-approved-result.json"), "utf8"));
       assert.match(deployed.quotation_id, /^[a-f0-9-]{36}$/i);
-      const baselineUrl = `http://127.0.0.1:18002/api/v1/quotations/${deployed.quotation_id}`;
-      const fixture = await fetch(baselineUrl, {
-        headers: { Authorization: "Bearer " + access.quotation_token },
-        redirect: "error", signal: AbortSignal.timeout(5000),
-      });
-      assert.equal(fixture.status, 200);
-      assert.equal((await fixture.json()).data.expires_on ?? null, null);
-      const baseline = await fetch(`${baselineUrl}/validate`, {
-        method: "POST", headers: { Authorization: "Bearer " + access.quotation_token },
-        redirect: "error", signal: AbortSignal.timeout(5000),
-      });
-      assert.equal(baseline.status, 200);
-      const before = (await baseline.json()).data;
+      const { stdout } = await promisify(execFile)(resolve("../backend/.venv/Scripts/python.exe"), [
+        resolve("../scripts/check_comparison_baseline.py"), root, deployed.quotation_id,
+      ], { windowsHide: true, timeout: 30000 });
+      const before = JSON.parse(stdout);
       assert.equal(before.quotation_id, deployed.quotation_id);
+      assert.equal(before.expires_on, null);
       assert.deepEqual(before.flags, []);
       await cdp("Emulation.setDeviceMetricsOverride", { width: 1440, height: 900, deviceScaleFactor: 1, mobile: false });
-      await click(".comparison-review-heading button");
       await click("#repository-disconnect");
       await discardDraft();
       await waitFor("document.querySelector('.repository-panel')?.dataset.connected === 'false'");
@@ -181,10 +196,79 @@ export async function checkComparisons({ cdp, navigate, evaluate, waitFor, click
       const validation = await evaluate("window.__comparisonValidation");
       assert.equal(validation.quotation_id, deployed.quotation_id);
       assert.equal(validation.flags[0].code, "expiration_review"); assert.equal(validation.flags[0].field, "expires_on");
-      console.log(`Same quotation ${deployed.quotation_id}: baseline 18002 = 0 flags, approved 18001 = 1 expiration_review flag.`);
+      console.log(`Same quotation ${deployed.quotation_id}: disposable baseline = 0 flags, approved 18001 = 1 expiration_review flag.`);
       await screenshot("comparison-approved-app.png");
       assert.equal(await evaluate("window.__comparisonStarts"), 0); assert.equal(await evaluate("window.__comparisonForbidden"), 0);
     }
     console.log(resume ? "Durable history verified without generation/test/approval/activation." : "Real cold/warm comparison verified; candidates await human review.");
   } finally { await cdp("Page.removeScriptToEvaluateOnNewDocument", { identifier: observation.identifier }); }
+}
+
+export async function checkComparisonLayout({ navigate, evaluate, waitFor, click, fill, key, screenshot }) {
+  const pairId = process.env.CACHESEC_COMPARISON_PAIR_ID;
+  assert.match(pairId ?? "", /^[a-f0-9-]{36}$/i);
+  const store = new LocalSessionStore(resolve("../backend/.local"));
+  await navigate("/workspace#local-launch=" + await store.issueLaunch());
+  await waitFor("document.querySelector('.repository-panel')?.dataset.connected === 'true'");
+  const clock = "#agent-session-toggle";
+  const session = `#comparison-sessions [data-pair-id=${JSON.stringify(pairId)}]`;
+  const composer = '#workspace-agent textarea[aria-label="Yêu cầu chung cho hai nhánh"]';
+  await waitFor("!!document.querySelector('#agent-session-toggle:not(:disabled)')");
+  await evaluate(`(() => {
+    const fetch = window.fetch.bind(window);
+    window.__sessionMutations = 0;
+    window.fetch = (url, init) => {
+      if (init?.method === 'POST' && String(url).includes('/api/v1/agent/comparisons')) window.__sessionMutations++;
+      return fetch(url, init);
+    };
+  })()`);
+  const chatHasSettings = "!!document.querySelector('#workspace-agent :is(.dev-messages, .dev-composer) :is(select, details, .comparison-review-branch)')";
+  assert.equal(await evaluate("!!document.querySelector('.dev-ide-toolbar :is(#agent-session-toggle, .agent-options, #agent-comparison-toggle)')"), false);
+  assert.equal(await evaluate("!!document.querySelector('.dev-agent-navbar a[href$=workspace-comparison]')"), false);
+  assert.equal(await evaluate(chatHasSettings), false);
+  const initialStatuses = await evaluate("[...document.querySelectorAll('#workspace-comparison .comparison-test-state')].map(element => element.textContent.trim())");
+  assert.deepEqual(initialStatuses, ["Chưa chạy", "Chưa chạy"]);
+  const modelPicker = "#workspace-agent .agent-options select:first-child";
+  await click("#workspace-agent .agent-options summary");
+  await waitFor(`document.querySelector(${JSON.stringify(modelPicker)})?.options.length === 3`);
+  assert.equal(await evaluate(`document.querySelector(${JSON.stringify(modelPicker)}).value`), "gemini-3.5-flash-lite");
+  await evaluate(`(() => {
+    const select = document.querySelector(${JSON.stringify(modelPicker)});
+    select.value = 'gemini-4-hydrogen';
+    select.dispatchEvent(new Event('change', {bubbles: true}));
+  })()`);
+  await waitFor("document.querySelector('.agent-options summary').title.includes('Gemini 4 Hydrogen')");
+  await screenshot("comparison-model-picker.png");
+  await click(clock);
+  await waitFor(`!!document.querySelector(${JSON.stringify(session)})`, "saved sessions appear");
+  assert.equal(await evaluate("document.querySelector('.comparison-conversation').hidden"), true);
+  await screenshot("comparison-session-picker.png");
+  await click(session);
+  await waitFor("document.querySelector('#workspace-comparison [data-mode=local] [role=alert]')?.textContent === 'MODEL_UNAVAILABLE'");
+  assert.equal(await evaluate("document.querySelector('.comparison-review-model').textContent"), "gemini-3.5-flash-lite");
+  assert.equal(await evaluate(chatHasSettings), false);
+  assert.equal(await evaluate("document.querySelector('#workspace-agent').innerText.includes('MODEL_UNAVAILABLE')"), false);
+  assert.equal(await evaluate("document.querySelector('#workspace-comparison [data-mode=none] [role=status]').textContent.trim()"), "Test đạt");
+  assert.equal(await evaluate("document.querySelector('#workspace-comparison [data-mode=local]').innerText.includes('Verified Hit')"), true);
+  await waitFor("!document.querySelector('#comparison-sessions')");
+  await waitFor(`!document.querySelector(${JSON.stringify(composer)})?.disabled`);
+  await fill(composer, "Draft kept when browsing history");
+  await click(clock);
+  await key("Escape");
+  assert.equal(await evaluate("document.activeElement.id"), "agent-session-toggle");
+  assert.equal(await evaluate(`document.querySelector(${JSON.stringify(composer)}).value`), "Draft kept when browsing history");
+  await click(clock);
+  await click("#comparison-new-session");
+  await waitFor("!document.querySelector('#comparison-sessions') && !new URLSearchParams(location.search).has('comparison')");
+  assert.equal(await evaluate(`document.querySelector(${JSON.stringify(composer)}).value`), "");
+  assert.deepEqual(await evaluate("[...document.querySelectorAll('#workspace-comparison .comparison-test-state')].map(element => element.textContent.trim())"), initialStatuses);
+  await click(clock);
+  await waitFor(`!!document.querySelector(${JSON.stringify(session)})`, "previous session kept");
+  await click(session);
+  await waitFor("document.querySelector('#workspace-comparison [data-mode=local] [role=alert]')?.textContent === 'MODEL_UNAVAILABLE'");
+  assert.equal(await evaluate("window.__sessionMutations"), 0);
+  await screenshot("comparison-chat-clean.png");
+  await evaluate("document.querySelector('#workspace-comparison').scrollIntoView({ behavior: 'instant' })");
+  await waitFor("window.scrollY > 0");
+  await screenshot("comparison-partial-result.png");
 }

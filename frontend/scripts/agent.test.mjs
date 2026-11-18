@@ -62,6 +62,25 @@ test("Agent rejects unknown config models and malformed configuration", async ()
   }
 });
 
+test("Agent uses the catalog selection for both messages and automatic runs", async () => {
+  const model = "gemini-4-hydrogen";
+  const models = [reply.model, model, "gemini-3.8-flash"];
+  const api = new AgentHttpClient("/api/local-control", null, async (url, init) => {
+    let data;
+    if (url.endsWith("/config")) data = { model: reply.model, models, configured: true, mode: "assisted" };
+    else {
+      assert.equal(JSON.parse(init.body).model, model);
+      data = url.endsWith("/runs") ? { ...run, model } : { ...reply, model: model + "-001" };
+    }
+    return Response.json({ data, meta });
+  });
+  assert.deepEqual((await api.config(signal())).models, models);
+  assert.equal((await api.ask(id, "test", [], signal(), model)).model, model + "-001");
+  assert.equal((await api.startRun(id, "test", "key", signal(), model)).model, model);
+  const wrongModel = new AgentHttpClient("/api/local-control", null, async () => Response.json({ data: reply, meta }));
+  await assert.rejects(wrongModel.ask(id, "test", [], signal(), model), AgentApiError);
+});
+
 const run = { run_id: id, snapshot_id: id, tenant_id: id, repo_id: id, status: "queued", turn: 0,
   max_turns: 3, deadline_seconds: 600, model: "gemini-3.5-flash-lite", created_at: "test-only timestamp",
   answer: "", error_code: null, proposal_id: null, revision: null, artifact_digest: null,

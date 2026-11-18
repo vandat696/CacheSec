@@ -9,7 +9,7 @@ from fastapi.middleware.cors import CORSMiddleware
 from app.agent_assistance.assistance_http import configure_assistance_http
 from app.agent_assistance.assistance_service import AgentAssistanceService
 from app.agent_assistance.cached_assistance import CachedAgentAssistance
-from app.agent_assistance.gemini_generation import GeminiContentGeneration
+from app.agent_assistance.gemini_generation import ALTERNATIVE_MODELS, GeminiContentGeneration
 from app.agent_assistance.openai_generation import OpenAIResponsesGeneration
 from app.agent_assistance.run_http import configure_run_http
 from app.agent_assistance.run_service import AgentRunService
@@ -99,12 +99,19 @@ def create_app(configuration: Settings = settings) -> FastAPI:
     configure_workspace_http(
         app, operations, runtime, workspace_worker, configuration.control_test_worker_token
     )
+    gemini = configuration.control_agent_provider == "gemini"
     assistance = AgentAssistanceService(
         RepositoryAccessService(PostgresControlAuthorityTransactions(database)),
         snapshots,
         GeminiContentGeneration(configuration.control_agent_config)
-        if configuration.control_agent_provider == "gemini"
+        if gemini
         else OpenAIResponsesGeneration(configuration.control_agent_config),
+        tuple(
+            GeminiContentGeneration(configuration.control_agent_config, model)
+            for model in ALTERNATIVE_MODELS
+        )
+        if gemini
+        else (),
     )
     if proposals is not None:
         runs = AgentRunService(
@@ -121,12 +128,12 @@ def create_app(configuration: Settings = settings) -> FastAPI:
             PostgresContextTransactions(database),
             snapshots,
             GeminiQueryEmbedding(configuration.control_agent_config),
-            assistance.model.model_id,
+            assistance.models.default.model_id,
         )
         if snapshots is not None
         else None
     )
-    cached = CachedAgentAssistance(contexts, assistance.model)
+    cached = CachedAgentAssistance(contexts, assistance.models)
     configure_context_http(app, contexts, cached)
     if contexts is not None and proposals is not None:
         comparisons = ComparisonService(
