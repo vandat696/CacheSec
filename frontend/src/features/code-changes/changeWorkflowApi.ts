@@ -70,7 +70,7 @@ function job(v: unknown): v is TestJob {
       && [checkNames, taskCheckNames].some(names => JSON.stringify(checks.map(c => c.name)) === JSON.stringify(names))
       && checks.every(c => c.passed)));
 }
-function revision(v: unknown): v is Revision {
+export function revision(v: unknown): v is Revision {
   return object(v) && id(v.proposal_id) && positive(v.revision) && id(v.base_snapshot_id)
     && id(v.candidate_snapshot_id) && hash(v.artifact_digest) && hash(v.patch_digest)
     && hash(v.profile_digest) && typeof v.created_at === "string" && v.path === editablePath

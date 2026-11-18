@@ -15,11 +15,21 @@ def timestamp():
 
 
 class LocalAgentRunStore:
-    def __init__(self):
+    def __init__(self, checkpoint=None):
         self.lock = RLock()
         self.records = {}
         self.requests = {}
         self.active = None
+        self.checkpoint = checkpoint
+        self.checkpoint_failed = False
+
+    def _checkpoint(self, run):
+        if self.checkpoint is not None and not self.checkpoint_failed:
+            try:
+                self.checkpoint(self.view(run))
+            except Exception:
+                self.checkpoint_failed = True
+                raise
 
     def reserve(self, actor, token, snapshot_id, prompt, key, fingerprint, model, clock):
         with self.lock:
@@ -41,6 +51,7 @@ class LocalAgentRunStore:
             self.records[run.run_id] = run
             self.requests[identity] = run.run_id
             self.active = run.run_id
+            self._checkpoint(run)
             return run, True
 
     def owned(self, run_id, actor):
@@ -61,6 +72,7 @@ class LocalAgentRunStore:
                 return
             for key, value in changes.items():
                 setattr(run, key, value)
+            self._checkpoint(run)
 
     def event(self, run, tool, state, **details):
         with self.lock:
@@ -75,6 +87,7 @@ class LocalAgentRunStore:
                         **details,
                     }
                 )
+                self._checkpoint(run)
 
     def finish(self, run, status, error_code=None):
         with self.lock:
@@ -84,6 +97,7 @@ class LocalAgentRunStore:
             run.status, run.error_code, run.token = status, error_code, None
             if self.active == run.run_id:
                 self.active = None
+            self._checkpoint(run)
 
     def view(self, run):
         with self.lock:

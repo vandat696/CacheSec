@@ -1,10 +1,10 @@
 # Kế hoạch hoàn thiện demo CacheSec
 
-Cập nhật 2026-11-17. [Mục tiêu và yêu cầu](overview.md) là phạm vi chuẩn; [trạng thái](project-status.md) ghi phần đã kiểm chứng. Kế hoạch này thay danh sách T01–T17 cũ; mã T trong tài liệu kỹ thuật chỉ còn là tham chiếu các gói lịch sử.
+Cập nhật 2026-11-18. [Mục tiêu và yêu cầu](overview.md) là phạm vi chuẩn; [trạng thái](project-status.md) ghi phần đã kiểm chứng. Kế hoạch này thay danh sách T01–T17 cũ; mã T trong tài liệu kỹ thuật chỉ còn là tham chiếu các gói lịch sử.
 
 ## Điểm xuất phát
 
-Đã có Gemini đọc source, tạo revision, Docker test, Workspace lưu file thật và human approval/activation đúng artifact. Chưa có Context Cache, màn hai nhánh hoặc lịch sử metrics/đánh giá đầy đủ trong database.
+Đã có Gemini đọc source, tạo revision, Docker test, Workspace lưu file thật và human approval/activation đúng artifact. Đã có implementation cache, hai nhánh và checkpoint/history kỹ thuật theo [contract](../system/context-comparison.md). Bằng chứng D1–D5 ở [project-status](project-status.md); D6 vẫn chờ khóa điều kiện nghiên cứu.
 
 ## Thứ tự thực hiện
 

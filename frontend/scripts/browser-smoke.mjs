@@ -21,6 +21,7 @@ import { checkWorkbench } from "./workbench-browser-check.mjs";
 import { checkWorkspaceFiles } from "./workspace-files-browser-check.mjs";
 import { checkProposalReview } from "./proposal-review-browser-check.mjs";
 import { checkDeployedRule } from "./deployed-rule-browser-check.mjs";
+import { checkComparisons } from "./comparison-browser-check.mjs";
 import { LocalSessionStore } from "../src/features/local-workspace/localSessionStore.ts";
 
 const frontend = fileURLToPath(new URL("..", import.meta.url));
@@ -34,7 +35,8 @@ const agentRunLive = process.argv.includes("--agent-run-live");
 const workbenchOnly = process.argv.includes("--workbench");
 const workspaceFiles = process.argv.includes("--workspace-files");
 const proposalReview = process.argv.includes("--proposal-review");
-const repositoryOnly = process.argv.includes("--repository-only") || repositoryDev || localWorkspace || agentOnly || agentLive || agentRuns || agentRunLive || workbenchOnly || workspaceFiles || proposalReview;
+const comparisons = process.argv.includes("--comparisons") || process.argv.includes("--comparison-approved");
+const repositoryOnly = process.argv.includes("--repository-only") || repositoryDev || localWorkspace || agentOnly || agentLive || agentRuns || agentRunLive || workbenchOnly || workspaceFiles || proposalReview || comparisons;
 if (repositoryDev) {
   // This private file contains only the dedicated read credential, never the backend DSN.
   process.loadEnvFile(join(frontend, "../backend/.local/control-access.env"));
@@ -314,6 +316,9 @@ try {
   }
   if (agentRunLive) {
     await checkAgentRunLive({ cdp, navigate, evaluate, waitFor, click, fill, screenshot });
+  }
+  if (comparisons) {
+    await checkComparisons({ cdp, navigate, evaluate, waitFor, click, fill, screenshot });
   }
   if (workbenchOnly) {
     await checkWorkbench({ cdp, navigate, evaluate, waitFor, click, fill, screenshot });
@@ -1211,7 +1216,8 @@ try {
   }
   assert.deepEqual(errors, [], "Lỗi runtime/React trên trình duyệt");
   console.log(
-    proposalReview && process.argv.includes("--deployed-rule") ? "Đạt: artifact đã triển khai khớp, Báo giá hiển thị đúng cờ/ngày hợp lệ/ISO tuần và mobile; không gọi model hoặc triển khai thêm."
+    comparisons ? "Đạt: comparison/history và UI; kiểm chứng theo live hoặc history-only mode đã chọn, không tự approve/activate."
+      : proposalReview && process.argv.includes("--deployed-rule") ? "Đạt: artifact đã triển khai khớp, Báo giá hiển thị đúng cờ/ngày hợp lệ/ISO tuần và mobile; không gọi model hoặc triển khai thêm."
       : proposalReview ? "Đạt: proposal/artifact thật, diff và Docker evidence trên Workspace; không gọi provider, approve hoặc activate."
       : workspaceFiles ? "Đạt: Edge Ctrl+S/source thật, sửa tiếp → tự lưu → Docker test đúng revision, giữ draft Agent, Undo phục hồi bytes gốc, reload/mobile; không gọi provider hoặc activate."
       : workbenchOnly ? "Đạt: hai trang tự kết nối, không nhập token/ID, giữ bản sửa và báo giá qua điều hướng/reload."

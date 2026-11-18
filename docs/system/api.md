@@ -1,5 +1,7 @@
 # Contract backend và cache — T02
 
+Cập nhật 2026-11-18: API Context Cache/comparison đang có được ghi riêng tại [contract thực thi](context-comparison.md#contract-đã-triển-khai). Resource T02 chưa được ánh xạ ở đó vẫn là thiết kế mục tiêu.
+
 ## Trạng thái và phạm vi
 
 Đặc tả T02 v0.2; cập nhật 2026-11-15: đã có API báo giá, snapshot, revision/test, Agent và [source write/local runtime](workspace-runtime.md). Cache và artifact-ready/audit nghiên cứu còn là thiết kế. Source nền chưa có rule ngày; runtime binding do launcher/control xác nhận, không tin trường active_artifact do candidate trả. Ví dụ JSON là dữ liệu giả minh họa, không phải kết quả đo hoặc SDK đã phát hành.

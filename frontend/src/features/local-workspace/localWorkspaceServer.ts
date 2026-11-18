@@ -4,9 +4,13 @@ const uuid = "[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-
 const routes: Record<string, RegExp[]> = {
   GET: [new RegExp(`^/api/v1/repository(?:/snapshots/${uuid}(?:/files/${uuid})?)?$`),
     /^\/api\/v1\/agent\/config$/,
+    new RegExp(`^/api/v1/agent/comparisons(?:/${uuid})?$`),
     new RegExp(`^/api/v1/agent/runs/${uuid}$`),
     new RegExp(`^/api/v1/changes/(?:config|proposals/${uuid}|tests/${uuid})$`)],
   POST: [/^\/api\/v1\/repository\/snapshots$/,
+    /^\/api\/v1\/agent\/context\/(?:requests|messages)$/,
+    new RegExp(`^/api/v1/agent/comparisons(?:/${uuid}/(?:none|local)(?:/cancel)?)?$`),
+    new RegExp(`^/api/v1/agent/comparisons/${uuid}/cache-io$`),
     /^\/api\/v1\/agent\/messages$/,
     /^\/api\/v1\/agent\/runs$/,
     new RegExp(`^/api/v1/agent/runs/${uuid}/cancel$`),
@@ -102,7 +106,8 @@ export class LocalWorkspaceServer {
       : this.store.session(sessionId(request), localOrigin)); }
     catch { return failure(401); }
     try {
-      const body = request.method === "POST" ? await limitedBody(request, 400000) : undefined;
+      const body = request.method === "POST" ? await limitedBody(request,
+        path === "/api/v1/agent/context/messages" || path.startsWith("/api/v1/agent/comparisons/") ? 1500000 : 400000) : undefined;
       if (body && request.headers.get("content-type") !== "application/json") return failure(400);
       if (path === "/api/v1/repository/snapshots" && body) return failure(400);
       if (quotation && path.endsWith("/validate") && body) return failure(400);

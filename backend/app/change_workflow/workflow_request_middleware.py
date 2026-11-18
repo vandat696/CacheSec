@@ -58,6 +58,13 @@ class WorkflowRequestMiddleware:
             )(scope, receive, referenced)
 
         declared = dict(scope.get("headers", [])).get(b"content-length")
+        # Up to three full-source candidates, each bounded by the context contract.
+        limit = (
+            1500000
+            if scope["path"] == "/api/v1/agent/context/messages"
+            or scope["path"].startswith("/api/v1/agent/comparisons/")
+            else 65536
+        )
         if declared is not None:
             try:
                 length = int(declared)
@@ -66,7 +73,7 @@ class WorkflowRequestMiddleware:
             except ValueError:
                 await reject(400, "INVALID_REQUEST")
                 return
-            if length > 65536:
+            if length > limit:
                 await reject(413, "PAYLOAD_TOO_LARGE")
                 return
         chunks = []
@@ -77,7 +84,7 @@ class WorkflowRequestMiddleware:
                 return
             chunk = message.get("body", b"")
             size += len(chunk)
-            if size > 65536:
+            if size > limit:
                 await reject(413, "PAYLOAD_TOO_LARGE")
                 return
             chunks.append(chunk)

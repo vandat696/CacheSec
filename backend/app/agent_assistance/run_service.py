@@ -165,7 +165,12 @@ class AgentRunService:
                 ):
                     raise AgentError("AGENT_BINDING_MISMATCH", 409)
                 self.store.event(
-                    run, "generate", "completed", model=reply["model"], usage=reply["usage"]
+                    run,
+                    "generate",
+                    "completed",
+                    model=reply["model"],
+                    usage=reply["usage"],
+                    generation_ms=reply.get("generation_ms"),
                 )
                 self.store.update(run, answer=reply["answer"])
                 if reply["content"] is None:

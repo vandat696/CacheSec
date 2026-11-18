@@ -346,3 +346,7 @@ Tài liệu tham khảo: [Next.js installation](https://nextjs.org/docs/app/gett
 - Báo giá: schema quotation_demo, migration 001/002, domain/application, API và PostgreSQL store/session; Bearer fixture reader/operator. Source có rule ngày; app dev target v1 đã chạy đúng artifact qua human approval/activation.
 - Control/Agent: authority fixture, snapshot/revision/evidence, Gemini và source write/gate runtime local đã có; xem [trạng thái](project-status.md). Chưa authentication production, embedding/cache hoặc audit/runner nghiên cứu.
 - Chưa thêm Dexie/model SDK vì chưa dùng tới; chưa chốt storage server cache.
+
+## Demo so sánh riêng
+
+Xem [chuẩn bị và chạy](../system/context-comparison.md#demo-riêng). Script nhận root mới dưới backend/.local, dùng database/network/source/ports riêng, không approve/activate. Kết nối Workspace 3100 bằng token trong access.json của đúng root; nút **So sánh** mở None/Context Cache và lịch sử PostgreSQL. Dev launcher cũ tiếp tục dùng config dev; không reset app dev để làm baseline.

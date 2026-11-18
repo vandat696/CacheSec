@@ -1,25 +1,12 @@
 """Human-initiated source assistance. No delegated credential, writes or execution."""
 
-from typing import Protocol
-from uuid import UUID
-
 from app.agent_assistance.generation import AgentError, GenerationModel
-from app.change_workflow.test_profiles import EDITABLE_PATH, OVERLAY_PATHS
-from app.identity.control_authority import RegisteredRepository, RepositoryScope
-from app.repositories.snapshot_bundles import SnapshotBundle
-from app.repositories.snapshot_models import RepositorySnapshot
-
-
-class RepositoryAccess(Protocol):
-    def describe_current(self, token: str | None) -> RegisteredRepository: ...
-
-
-class SourceSnapshots(Protocol):
-    def read_bundle(
-        self, token: str | None, scope: RepositoryScope, snapshot_id: UUID
-    ) -> SnapshotBundle: ...
-
-    def capture(self, token: str | None, scope: RepositoryScope) -> RepositorySnapshot: ...
+from app.agent_assistance.repository_context import (
+    RepositoryAccess,
+    RepositoryContextPreparation,
+    SourceSnapshots,
+)
+from app.change_workflow.test_profiles import EDITABLE_PATH
 
 
 class AgentAssistanceService:
@@ -27,6 +14,7 @@ class AgentAssistanceService:
         self, access: RepositoryAccess, snapshots: SourceSnapshots | None, model: GenerationModel
     ):
         self.access, self.snapshots, self.model = access, snapshots, model
+        self.contexts = RepositoryContextPreparation(access, snapshots) if snapshots else None
 
     def config(self, token):
         self.access.describe_current(token)
@@ -36,50 +24,17 @@ class AgentAssistanceService:
             "mode": "assisted",
         }
 
-    def _fresh(self, token, scope, base):
-        current = self.snapshots.capture(token, scope)
-        if current.profile_blob.digest != base.profile_blob.digest or [
-            (f.path, f.blob) for f in current.files
-        ] != [(f.path, f.blob) for f in base.files]:
-            raise AgentError("STALE_SNAPSHOT", 409)
-
     def ask(self, token, snapshot_id, prompt, history, candidate_content=None):
         repository = self.access.describe_current(token)
-        if self.snapshots is None or not self.model.configured():
+        if self.contexts is None or not self.model.configured():
             raise AgentError("MODEL_NOT_CONFIGURED")
-        bundle = self.snapshots.read_bundle(token, repository.scope, snapshot_id)
-        if tuple(f.path for f in bundle.files) != OVERLAY_PATHS:
-            raise AgentError("AGENT_SOURCE_PROFILE_UNSUPPORTED", 403)
-        if sum(len(f.content) for f in bundle.files) > 131072:
-            raise AgentError("AGENT_CONTEXT_TOO_LARGE", 413)
-        try:
-            files = tuple((f.path, f.content.decode("utf-8-sig")) for f in bundle.files)
-        except UnicodeError:
-            raise AgentError("AGENT_SOURCE_NOT_TEXT", 422) from None
-        if candidate_content is not None:
-            if (
-                type(candidate_content) is not str
-                or "\x00" in candidate_content
-                or len(candidate_content.encode("utf-8")) > 65536
-            ):
-                raise AgentError("AGENT_CONTEXT_TOO_LARGE", 413)
-            # Internal run input, read from the verified candidate revision; never an HTTP field.
-            files = tuple(
-                (path, candidate_content if path == EDITABLE_PATH else content)
-                for path, content in files
-            )
-            if sum(len(content.encode("utf-8")) for _, content in files) > 131072:
-                raise AgentError("AGENT_CONTEXT_TOO_LARGE", 413)
-        self._fresh(token, repository.scope, bundle.snapshot)
-        result = self.model.generate(prompt, files, history)
-        # A slow model response cannot restore revoked permission or stale source.
-        self.access.describe_current(token)
-        self.snapshots.read_bundle(token, repository.scope, snapshot_id)
-        self._fresh(token, repository.scope, bundle.snapshot)
+        context = self.contexts.prepare(token, repository, snapshot_id, candidate_content)
+        result = self.model.generate(prompt, context.files, history)
+        self.contexts.revalidate(token, context)
         return {
             "snapshot_id": str(snapshot_id),
             "repository_identity": repository.identity,
-            "manifest_digest": bundle.snapshot.manifest_blob.digest,
+            "manifest_digest": context.snapshot.manifest_blob.digest,
             "editable_path": EDITABLE_PATH,
             "answer": result.answer,
             "content": result.content,

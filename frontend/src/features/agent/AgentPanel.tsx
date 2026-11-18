@@ -11,6 +11,7 @@ import { AgentInformation } from "./AgentInformation";
 import { AgentRunStatus } from "./AgentRunStatus";
 import { pendingAgentRun } from "./agentRunModel";
 import { useAgentRun } from "./useAgentRun";
+import { ComparisonPanel } from "../comparisons/ComparisonPanel";
 
 type Message = AgentMessage & { reply?: AgentReply };
 export function AgentPanel({ repo, hidden, guardAction, onOpenProposal }: {
@@ -23,6 +24,7 @@ export function AgentPanel({ repo, hidden, guardAction, onOpenProposal }: {
   const [error, setError] = useState("");
   const [busy, setBusy] = useState(false);
   const [automatic, setAutomatic] = useState(false);
+  const [comparison, setComparison] = useState(false);
   const [saved, setSaved] = useState<{ reply: AgentReply; revision: Revision } | null>(null);
   const request = useRef<AbortController | null>(null);
   const attempts = useRef(new Map<AgentReply, string>());
@@ -92,9 +94,13 @@ export function AgentPanel({ repo, hidden, guardAction, onOpenProposal }: {
   }
   return <section id="workspace-agent" className="dev-assistant" hidden={hidden} aria-labelledby="dev-agent-title" data-agent-ready={!!config?.configured}>
     <div className="dev-agent-heading"><Icon name="spark" /><h2 id="dev-agent-title">Agent</h2>
+      <Button id="agent-comparison-toggle" variant="tertiary" disabled={blocked} onClick={() => setComparison(value => !value)}>{comparison ? "Hội thoại" : "So sánh"}</Button>
       <AgentInformation config={config} connected={!!api} fileCount={repo.snapshot?.files.length ?? 0}
         busy={blocked} onRefresh={() => { void refreshConfig(); }} />
     </div>
+    {comparison ? <ComparisonPanel key={repo.repository?.repository_identity ?? "disconnected"} api={api} snapshotId={(repo.contextSnapshot ?? repo.snapshot)?.snapshot_id ?? null}
+      enabled={!!config?.configured && !!config.automation?.can_start} onDenied={repo.disconnect}
+      onOpen={id => guardAction(() => onOpenProposal(id))} /> : <>
     <div className="dev-messages" role="log" aria-label="Hội thoại với Agent" aria-live="polite" ref={log}>
       <AgentRunStatus run={automation.run} busy={automation.busy} error={automation.error}
         onCancel={() => { void automation.cancel(); }} onRefresh={automation.refresh}
@@ -122,5 +128,6 @@ export function AgentPanel({ repo, hidden, guardAction, onOpenProposal }: {
         onKeyDown={event => { if (event.key === "Enter" && !event.shiftKey && !event.nativeEvent.isComposing) { event.preventDefault(); event.currentTarget.form?.requestSubmit(); } }} />
         <Button type="submit" aria-label="Gửi yêu cầu" disabled={!config?.configured || blocked || !draft.trim()}><Icon name="send" /></Button></div>
     </form>
+    </>}
   </section>;
 }

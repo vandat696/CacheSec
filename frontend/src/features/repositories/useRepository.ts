@@ -5,6 +5,7 @@ import { clearLocalBootstrap, closeLocalWorkspace, initializeLocalWorkspace, loc
 import { ChangeApiError, ChangeWorkflowClient, editablePath, type Revision } from "../code-changes/changeWorkflowApi";
 import { readViewReference, writeViewReference } from "../workbench/viewReferences";
 import { AgentHttpClient } from "../agent/agentApi";
+import { clearBrowserContextCache } from "../context-cache/dexieContextCache";
 import {
   RepositoryApiError, RepositoryHttpClient, sourceText,
   type Repository, type RepositorySnapshot, type SnapshotFile,
@@ -61,6 +62,7 @@ export function useRepository() {
     current.current?.abort(); current.current = null; client.current = null;
     setChanges(null); setAgent(null);
     setRepository(null); clearSource(); setError(""); setRequestId(undefined); setBusy(false);
+    void clearBrowserContextCache().catch(() => setError("Chưa xóa được cache trình duyệt. Hãy xóa dữ liệu trang trước khi đổi tài khoản."));
   }
   function disconnect() {
     clearConnection();

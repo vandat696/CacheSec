@@ -221,6 +221,26 @@ class RepositorySnapshotService:
             ),
         )
 
+    def describe_in_transaction(self, session, scope, snapshot_id, identity):
+        """Trusted metadata read without loading source payload blobs.
+
+        The composing use case must authorize on this same session first.
+        """
+        return self._load(session, scope, snapshot_id, identity)
+
+    def matches_current_files(self, snapshot):
+        """Verify every current file against saved references without publishing a snapshot."""
+        profile = self._source.profile(snapshot.scope)
+        if profile.digest != snapshot.profile_blob.digest:
+            return False
+        files = self._source.capture(profile)
+        return len(files) == len(snapshot.files) and all(
+            item.path == reference.path
+            and len(item.content) == reference.blob.byte_size
+            and content_digest(item.content) == reference.blob.digest
+            for item, reference in zip(files, snapshot.files, strict=True)
+        )
+
     def store_in_transaction(
         self,
         session: SnapshotSession,

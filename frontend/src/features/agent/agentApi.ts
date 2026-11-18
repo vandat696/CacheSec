@@ -1,5 +1,8 @@
 import { ChangeApiError, editablePath } from "../code-changes/changeWorkflowApi.ts";
 import { isAgentAutomation, isAgentRun, type AgentAutomation, type AgentRun } from "./agentRunModel.ts";
+import { isContextRequest, isContextResolution, type ContextMode, type ContextRequest, type ContextResolution, type LookupReport } from "../context-cache/contextCacheModel.ts";
+import { isComparisonPair, isComparisonSummary, type ComparisonPair, type ComparisonSummary } from "../comparisons/comparisonModel.ts";
+import { isContextEntry, type ContextEntry } from "../context-cache/contextCacheModel.ts";
 
 export const agentModels = {
   "gemini-3.5-flash-lite": { label: "Gemini 3.5 Flash-Lite", keyVariable: "GEMINI_API_KEY", keyFile: "gemini.env" },
@@ -61,6 +64,9 @@ export class AgentHttpClient {
   }
   async ask(snapshotId: string, prompt: string, history: AgentMessage[], signal: AbortSignal): Promise<AgentReply> {
     const value = await this.request("/messages", signal, { snapshot_id: snapshotId, prompt, history });
+    return this.reply(value, snapshotId);
+  }
+  private reply(value: unknown, snapshotId: string): AgentReply {
     if (!object(value) || value.snapshot_id !== snapshotId || typeof value.answer !== "string" || !value.answer
       || value.answer.length > 16000 || !(value.content === null || (typeof value.content === "string"
         && new TextEncoder().encode(value.content).length <= 65536))
@@ -71,6 +77,19 @@ export class AgentHttpClient {
         .every(k => Number.isSafeInteger(value.usage && (value.usage as Record<string, unknown>)[k])
           && ((value.usage as Record<string, number>)[k] >= 0))))) throw new AgentApiError(502);
     return value as AgentReply;
+  }
+  async prepareContext(snapshotId: string, prompt: string, mode: ContextMode, signal: AbortSignal): Promise<ContextRequest> {
+    const value = await this.request("/context/requests", signal, { snapshot_id: snapshotId, prompt, mode, purpose: "change" });
+    if (!isContextRequest(value) || value.snapshot_id !== snapshotId || value.prompt !== prompt || value.mode !== mode) throw new AgentApiError(502);
+    return value;
+  }
+  async askContext(request: ContextRequest, report: LookupReport, signal: AbortSignal): Promise<AgentReply & { context: ContextResolution; generation_ms: number }> {
+    const value = await this.request("/context/messages", signal, { context_request_id: request.request_id, lookup_report: report });
+    const reply = this.reply(value, request.snapshot_id);
+    if (!object(value) || !isContextResolution(value.context) || value.context.request_id !== request.request_id
+      || typeof value.generation_ms !== "number" || !Number.isFinite(value.generation_ms) || value.generation_ms < 0
+      || reply.manifest_digest !== request.manifest_digest) throw new AgentApiError(502);
+    return { ...reply, context: value.context, generation_ms: value.generation_ms };
   }
   async startRun(snapshotId: string, prompt: string, key: string, signal: AbortSignal): Promise<AgentRun> {
     const value = await this.request("/runs", signal, { snapshot_id: snapshotId, prompt, provider_consent: true }, key);
@@ -86,5 +105,35 @@ export class AgentHttpClient {
     const value = await this.request("/runs/" + id + "/cancel", signal, null);
     if (!isAgentRun(value) || value.run_id !== id || !supportedModelVersion(value.model)) throw new AgentApiError(502);
     return value;
+  }
+  async createComparison(snapshot: string, prompt: string, cacheState: "cold" | "warm" | "preload", key: string, signal: AbortSignal): Promise<ComparisonPair> {
+    const value = await this.request("/comparisons", signal, { snapshot_id: snapshot, prompt, cache_state: cacheState, provider_consent: true }, key);
+    if (!isComparisonPair(value) || value.snapshot_id !== snapshot || value.prompt !== prompt) throw new AgentApiError(502);
+    return value;
+  }
+  async comparison(id: string, signal: AbortSignal): Promise<ComparisonPair> {
+    const value = await this.request(`/comparisons/${id}`, signal);
+    if (!isComparisonPair(value) || value.pair_id !== id) throw new AgentApiError(502);
+    return value;
+  }
+  async listComparisons(signal: AbortSignal): Promise<ComparisonSummary[]> {
+    const value = await this.request("/comparisons", signal);
+    if (!Array.isArray(value) || !value.every(isComparisonSummary)) throw new AgentApiError(502);
+    return value;
+  }
+  async startComparison(id: string, mode: ContextMode, report: LookupReport, signal: AbortSignal): Promise<{ status: string; admission: ContextEntry | null }> {
+    const value = await this.request(`/comparisons/${id}/${mode}`, signal, { lookup_report: report });
+    if (!object(value) || value.pair_id !== id || value.mode !== mode || typeof value.status !== "string"
+      || !(value.admission === null || isContextEntry(value.admission))) throw new AgentApiError(502);
+    return value as { status: string; admission: ContextEntry | null };
+  }
+  async cancelComparison(id: string, mode: ContextMode, signal: AbortSignal) {
+    const value = await this.request(`/comparisons/${id}/${mode}/cancel`, signal, null);
+    if (!isComparisonPair(value) || value.pair_id !== id) throw new AgentApiError(502);
+    return value;
+  }
+  async recordCacheIo(id: string, report: { report_id: string; entry_id: string; state: "written" | "session_changed" | "storage_error"; elapsed_ms: number }, signal: AbortSignal) {
+    const value = await this.request(`/comparisons/${id}/cache-io`, signal, report);
+    if (!object(value) || value.recorded !== true) throw new AgentApiError(502);
   }
 }

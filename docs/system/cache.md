@@ -2,7 +2,7 @@
 
 ## Hiện trạng và thành phần giữ lại
 
-**Chưa có cache hoạt động trong code.** Chat gọi phản hồi mẫu; dashboard dùng fixture giả; model Thiết lập chỉ mô tả cấu hình. Chưa có storage IndexedDB/Dexie, embedding adapter, semantic lookup, verifier hoặc admission/invalidation. Vì vậy không có local cache hiện có để sửa hay kết quả hit để tái sử dụng.
+Ngày 2026-11-18 đã triển khai Context Cache cho luồng so sánh Workspace. Cấu hình đã xác nhận, contract, lifecycle và giới hạn ở [Context Cache/so sánh](context-comparison.md); bằng chứng ở [project-status](../general/project-status.md). Chat cũ/dashboard/Thiết lập vẫn là mô phỏng hoặc bản nháp. Các mục dưới giữ thiết kế tổng quát; lựa chọn mở rộng không thay cấu hình PoC đã xác nhận.
 
 Giữ kiến trúc storage/matching/validation; embedding và semantic similarity/threshold; authorization; authorized RAG; admission, TTL, capacity, eviction và invalidation; metadata, source provenance, version tracking; logging và evaluation. None/local/server và exact/semantic là các lựa chọn thiết kế, không phải mọi biến thể đều cần có trong PoC. Backend giữ quyết định quyền đáng tin cậy.
 
@@ -15,7 +15,7 @@ Lõi cache phải tuân thủ [quy tắc độc lập ứng dụng/Agent/IDE/cac
 | Answer Cache | Câu hỏi, answer hoàn chỉnh, nguồn hỗ trợ và context/intent đủ xác minh | Safe Hit có thể tránh LLM sinh lại answer; vẫn tốn lookup/embedding/verification/mạng | Giữ để mở rộng; không phải lát cắt PoC đầu tiên đã chọn |
 | Repository Context Cache | Kết quả truy xuất/phân tích, source excerpts/symbol map/context gắn snapshot và dependency manifest | Giảm retrieval/chuẩn bị ngữ cảnh lặp; LLM vẫn xử lý yêu cầu/tạo patch | Người dùng chọn cho PoC đầu tiên ngày 2026-11-07; lưu trong trình duyệt cho web Workspace trước |
 
-Lựa chọn Context Cache thay đề xuất Answer Cache đầu tiên; đây là quyết định thiết kế của người dùng, **chưa triển khai và chưa phải giảng viên xác nhận phương pháp**. Hai yêu cầu tìm vị trí validation tương đương có thể dùng chung context nếu intent/scope/dependencies/quyền phù hợp. Yêu cầu tìm riêng quy tắc hết hạn có thể cần context khác dù câu chữ gần nghĩa; score không đủ quyết định reuse.
+Lựa chọn Context Cache thay đề xuất Answer Cache đầu tiên; đây là quyết định thiết kế của người dùng, **chưa phải giảng viên xác nhận phương pháp**. Hai yêu cầu tìm vị trí validation tương đương có thể dùng chung context nếu intent/scope/dependencies/quyền phù hợp. Yêu cầu tìm riêng quy tắc hết hạn có thể cần context khác dù câu chữ gần nghĩa; score không đủ quyết định reuse.
 
 Payload đầu tiên là ngữ cảnh repo có provenance, không phải câu trả lời cuối, patch, approval hoặc model KV/prompt cache. Trình duyệt lưu/tìm candidate; backend xác minh payload và mọi nguồn/quyền hiện tại trước khi cung cấp ngữ cảnh cho Agent/LLM. Không tin hash/metadata/quyết định Hit do browser tự khai; registry/chứng thực và transport cụ thể chốt ở T02–T04. Không tự dùng payload local rồi xác minh sau. Miss/Rejected truy xuất lại nguồn được phép; verifier/auth lỗi vẫn theo quy tắc fail closed bên dưới.
 

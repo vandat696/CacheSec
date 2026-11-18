@@ -129,3 +129,7 @@ Trước nghiên cứu phải khóa:
 Ghi planned/attempted/completed; không bỏ lượt lỗi hoặc chạy lại đến khi đẹp. Tách nỗ lực chuẩn bị/preload, thao tác người và chờ model/test/approval; không cộng span chồng lấp. Scripted paraphrase là probe kiểm chứng, không đại diện tần suất lặp tự nhiên.
 
 Export JSON/CSV có provenance và linked IDs, loại credentials/source ngoài quyền. Báo cỡ mẫu, coverage, P50/P95 khi đủ quan sát và giới hạn của một nhiệm vụ. Không gán chênh lệch Developer-guided/AI-assisted riêng cho cache; báo đúng cả trường hợp cache không có lợi.
+
+## Nguồn kỹ thuật từ comparison Workspace (2026-11-18)
+
+[Contract thực thi](../system/context-comparison.md#lịch-sử-và-số-đo) xác định nguồn/span tokens, generation/embedding/preparation/resolution/server workflow và lookup client-reported. Migration 007 giữ revision/assessment gắn artifact/evidence; tiêu chí nghiên cứu chưa khóa ghi null với lý do. Cold/warm live smoke là kiểm chứng tích hợp, chưa benchmark hoặc thí nghiệm chính.

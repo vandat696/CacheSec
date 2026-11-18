@@ -1,3 +1,5 @@
+import { clearBrowserContextCache } from "../context-cache/dexieContextCache.ts";
+
 const endpoint = "/api/local-control/session";
 export const localSessionEnded = "cachesec-local-session-ended";
 let bootstrap: Promise<boolean> | null = null;
@@ -27,5 +29,8 @@ export function initializeLocalWorkspace() {
 }
 export function clearLocalBootstrap() { bootstrap = null; }
 export async function closeLocalWorkspace() {
-  clearLocalBootstrap(); window.dispatchEvent(new Event(localSessionEnded)); await request("DELETE");
+  clearLocalBootstrap(); window.dispatchEvent(new Event(localSessionEnded));
+  // Closing the server session must still be attempted if browser storage fails.
+  const results = await Promise.allSettled([clearBrowserContextCache(), request("DELETE")]);
+  for (const result of results) if (result.status === "rejected") throw result.reason;
 }

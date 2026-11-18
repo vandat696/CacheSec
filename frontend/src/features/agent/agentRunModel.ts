@@ -8,7 +8,7 @@ const validUsage = (v: unknown) => v === undefined || v === null || (object(v)
 export type AgentAutomation = { can_start: boolean; max_turns: 3; deadline_seconds: 600;
   persistence: "process"; active_run_id: string | null };
 export type AgentRunEvent = { sequence: number; at: string; turn: number; tool: string; state: string;
-  model?: string; usage?: { input_tokens: number; output_tokens: number; total_tokens: number } | null };
+  model?: string; generation_ms?: number | null; usage?: { input_tokens: number; output_tokens: number; total_tokens: number } | null };
 export type AgentRun = { run_id: string; snapshot_id: string; tenant_id: string; repo_id: string;
   status: string; turn: number; max_turns: 3; deadline_seconds: 600; model: string; created_at: string;
   answer: string; error_code: string | null; proposal_id: string | null; revision: number | null;
@@ -40,5 +40,6 @@ export function isAgentRun(value: unknown): value is AgentRun {
   return value.events.every((event, index) => object(event) && event.sequence === index + 1
     && typeof event.at === "string" && Number.isSafeInteger(event.turn) && (event.turn as number) >= 0 && (event.turn as number) <= 3
     && ["run", "read_source", "generate", "save_revision", "test", "storage"].includes(event.tool as string)
-    && typeof event.state === "string" && /^[a-z_]{1,40}$/.test(event.state) && validUsage(event.usage));
+    && typeof event.state === "string" && /^[a-z_]{1,40}$/.test(event.state) && validUsage(event.usage)
+    && (event.generation_ms === undefined || event.generation_ms === null || (typeof event.generation_ms === "number" && Number.isFinite(event.generation_ms) && event.generation_ms >= 0)));
 }

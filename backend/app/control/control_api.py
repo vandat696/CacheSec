@@ -8,6 +8,7 @@ from fastapi.middleware.cors import CORSMiddleware
 
 from app.agent_assistance.assistance_http import configure_assistance_http
 from app.agent_assistance.assistance_service import AgentAssistanceService
+from app.agent_assistance.cached_assistance import CachedAgentAssistance
 from app.agent_assistance.gemini_generation import GeminiContentGeneration
 from app.agent_assistance.openai_generation import OpenAIResponsesGeneration
 from app.agent_assistance.run_http import configure_run_http
@@ -20,6 +21,13 @@ from app.change_workflow.proposal_service import ProposalService
 from app.change_workflow.test_job_service import TestJobService
 from app.change_workflow.test_profiles import load_test_profile
 from app.change_workflow.workflow_http import configure_workflow_http
+from app.comparisons.comparison_http import configure_comparison_http
+from app.comparisons.comparison_service import ComparisonService
+from app.comparisons.postgres_comparisons import PostgresComparisonTransactions
+from app.context_cache.context_http import configure_context_http
+from app.context_cache.context_service import ContextService
+from app.context_cache.gemini_embedding import GeminiQueryEmbedding
+from app.context_cache.postgres_contexts import PostgresContextTransactions
 from app.control.api.repository_http_app import configure_repository_http
 from app.control.control_settings import Settings, settings
 from app.control.control_snapshots import create_repository_snapshot_service
@@ -47,14 +55,21 @@ def create_app(configuration: Settings = settings) -> FastAPI:
         binding = load_repository_binding(configuration.control_repository_config)
         snapshots = create_repository_snapshot_service(configuration, (binding,))
     runs = None
+    comparisons = None
     executor = ThreadPoolExecutor(max_workers=1, thread_name_prefix="cachesec-agent")
+    comparison_executor = ThreadPoolExecutor(
+        max_workers=2, thread_name_prefix="cachesec-comparison"
+    )
 
     @asynccontextmanager
     async def lifespan(app):
         yield
         if runs is not None:
             runs.shutdown()
+        if comparisons is not None:
+            comparisons.shutdown()
         executor.shutdown(wait=False, cancel_futures=True)
+        comparison_executor.shutdown(wait=False, cancel_futures=True)
 
     app = FastAPI(title="CacheSec API", version="0.2.0", lifespan=lifespan)
     app.dependency_overrides[get_database] = lambda: database
@@ -101,6 +116,28 @@ def create_app(configuration: Settings = settings) -> FastAPI:
         )
         configure_run_http(app, runs)
     configure_assistance_http(app, assistance, runs)
+    contexts = (
+        ContextService(
+            PostgresContextTransactions(database),
+            snapshots,
+            GeminiQueryEmbedding(configuration.control_agent_config),
+            assistance.model.model_id,
+        )
+        if snapshots is not None
+        else None
+    )
+    cached = CachedAgentAssistance(contexts, assistance.model)
+    configure_context_http(app, contexts, cached)
+    if contexts is not None and proposals is not None:
+        comparisons = ComparisonService(
+            PostgresComparisonTransactions(database),
+            contexts,
+            assistance,
+            cached,
+            proposals,
+            comparison_executor,
+        )
+    configure_comparison_http(app, comparisons)
     app.add_middleware(
         CORSMiddleware,
         allow_origins=configuration.cors_origins,

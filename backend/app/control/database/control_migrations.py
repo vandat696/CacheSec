@@ -16,6 +16,8 @@ def load_migrations() -> tuple[Migration, ...]:
             "003_repository_snapshots.sql",
             "004_change_workflow.sql",
             "005_workspace_runtime.sql",
+            "006_context_cache.sql",
+            "007_comparisons.sql",
         ),
     )
 

@@ -170,3 +170,9 @@ manifest.json khai báo source từng template và thứ tự bundle. Sửa sour
 [Hướng dẫn template](../../frontend/design-reference/templates/README.md) sở hữu cách nhúng; [setup](../general/setup.md#kiểm-tra) sở hữu kiểm chứng. Khi đổi path phải cập nhật imports, snippets, test, manifest/script và link docs cùng lúc, không đổi hành vi hoặc dữ liệu nghiên cứu chỉ để thay cấu trúc.
 
 Hai route `/workspace` và `/quotations` nằm trong route group `app/(workbench)` dùng `LocalWorkbench` chung để giữ trạng thái khi điều hướng. Page chỉ giữ metadata; `viewReferences.ts` sở hữu UUID trong URL, hook feature tự tải và kiểm quyền lại khi reload. Browser smoke `--workbench` kiểm phiên chung, draft, khôi phục ID và logout hai màn.
+
+## Context Cache và comparison
+
+app/context_cache sở hữu contract, preparation/admission/verifier và ports; gemini_embedding là query-only adapter, postgres_contexts dùng chung authority/snapshot transaction. agent_assistance/repository_context.py chuẩn bị source của host; cached_assistance.py nối verified context với generation. Lõi cache không import nghiệp vụ báo giá/Agent.
+
+app/comparisons điều phối hai controller riêng, PostgreSQL checkpoint và assessment theo revision; migration 006–007 thuộc control. Tests tương ứng thuộc tests/control/test_context_cache.py, test_repository_context.py, test_gemini_embedding.py, test_comparisons.py. Frontend features/context-cache tách matching model và Dexie storage; features/comparisons tách model/hook/panel/branch component. scripts/prepare_comparison_demo.py lắp ghép môi trường riêng; live browser opt-in ở frontend/scripts/comparison-browser-check.mjs.

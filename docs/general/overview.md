@@ -1,6 +1,6 @@
 # Mục tiêu và phạm vi CacheSec
 
-Cập nhật 2026-11-17. Hiện trạng chạy thật ở [project-status](project-status.md); công việc tiếp theo ở [kế hoạch](implementation-plan.md).
+Cập nhật 2026-11-18. Hiện trạng chạy thật ở [project-status](project-status.md); công việc tiếp theo ở [kế hoạch](implementation-plan.md).
 
 ## Mục tiêu
 
@@ -57,9 +57,9 @@ App local đã có rule được duyệt; source baseline dùng để tái hiệ
 
 | Trước khi làm | Cần chốt |
 | --- | --- |
-| Triển khai cache | Storage engine; embedding provider/model và phạm vi gửi dữ liệu; metric/top-k/threshold; TTL/capacity/eviction |
-| Verification | Trusted metadata/integrity, dependency/intent binding, authority/freshness/revoke, sharing scope, logout/offline |
-| Lịch sử bền | Schema/contract theo nhánh và revision; retention, quyền đọc/xóa và cách ghi trạng thái khi lỗi/restart |
+| Mở rộng cache | Summary/selected chunks và calibration nghiên cứu; cấu hình full-source demo đã xác nhận ở [contract](../system/context-comparison.md) |
+| Verification mở rộng | Offline/sharing ngoài principal và distributed execution; PoC online/full-source đã có registry/integrity/scope/epoch/source verification |
+| Lịch sử bền | Schema 006–007 và retention tới khi owner dọn đã xác nhận; endpoint xóa/retention tự động và assessment nghiên cứu còn mở |
 | Đóng băng fixture | Review từng nhãn oracle; cách một manifest liên kết ca báo giá/gate/reuse/trace; calibration/evaluation |
 | Thực nghiệm | Acceptance do cô quy định; baseline tools/người thực hiện, số lặp/thứ tự, reset/preload và cách tính lỗi/timeout |
 
@@ -68,3 +68,5 @@ Các lựa chọn chưa chốt giữ trạng thái đề xuất và chặn phầ
 ## Ngoài phạm vi demo đầu
 
 Agent sửa toàn repo, extension IDE bên ngoài, Answer Cache, server payload cache, nhiều model/policy/eviction và fine-tune/FL để sau. Giữ code UI cũ để tái sử dụng. Contract cache có phiên bản và độc lập host; chưa công bố tương thích IDE/Agent chưa được kiểm chứng.
+
+Cấu hình cache/retention ngày 18/11 do người dùng xác nhận; xem [contract thực thi](../system/context-comparison.md). Không coi là giảng viên đã duyệt protocol.

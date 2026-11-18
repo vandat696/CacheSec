@@ -12,6 +12,7 @@
 | [Kiến trúc](system/architecture.md) | Ranh giới module, storage và runtime |
 | [API](system/api.md) | Contract, quyền, retry và trạng thái |
 | [Cache](system/cache.md) | Lookup, verification, metadata và lifecycle |
+| [Context Cache/so sánh](system/context-comparison.md) | Cấu hình PoC, API, persistence và demo riêng |
 | [Phân quyền](system/authorization.md) | Authority, gate, threat boundary và recovery |
 | [Sửa/test](system/change-workflow.md) | Revision, artifact, Docker test và evidence |
 | [Agent](system/agent-workflow.md) | Vòng sửa/test, công cụ và giới hạn |

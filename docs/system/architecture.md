@@ -1,5 +1,7 @@
 # Kiến trúc hệ thống
 
+Cập nhật 2026-11-18: Đã triển khai cache full-source và comparison/persistence theo [contract hiện hành](context-comparison.md). Phần khảo sát/Target cũ bên dưới ghi lịch sử thiết kế; không dùng mô tả thiếu cache ngày 02–15/11 làm hiện trạng.
+
 ## Phạm vi và trạng thái
 
 Cập nhật 2026-11-15: [Workspace ghi file và runtime local](workspace-runtime.md) đã nối host worker với source thật, PostgreSQL journal và approval/activation/Docker ingress; đây là trạng thái mới hơn các mục khảo sát As-Is bên dưới. App đang chạy không mount working tree; cache và artifact-ready nghiên cứu chưa triển khai.

@@ -13,7 +13,7 @@
     "typecheck": "tsc --noEmit",
     "templates:build": "node scripts/build-ui-templates.mjs",
     "templates:check": "node scripts/build-ui-templates.mjs --check",
-    "test": "node --experimental-strip-types --test --test-isolation=none scripts/chat-state.test.mjs scripts/documents.test.mjs scripts/experiment-config.test.mjs scripts/metrics-model.test.mjs scripts/developer-preview.test.mjs scripts/quotations.test.mjs scripts/database-studio.test.mjs scripts/repositories.test.mjs scripts/code-changes.test.mjs scripts/local-workspace.test.mjs scripts/agent.test.mjs",
+    "test": "node --experimental-strip-types --test --test-isolation=none scripts/chat-state.test.mjs scripts/documents.test.mjs scripts/experiment-config.test.mjs scripts/metrics-model.test.mjs scripts/developer-preview.test.mjs scripts/quotations.test.mjs scripts/database-studio.test.mjs scripts/repositories.test.mjs scripts/code-changes.test.mjs scripts/local-workspace.test.mjs scripts/agent.test.mjs scripts/context-cache.test.mjs scripts/comparisons.test.mjs",
     "test:browser": "node scripts/browser-smoke.mjs"
   },
   "dependencies": {
@@ -23,7 +23,8 @@
     "@codemirror/state": "^6.7.6",
     "@codemirror/view": "^6.43.15",
     "codemirror": "^6.0.2",
-    "next": "^16.4.3",
+    "dexie": "^4.4.7",
+    "next": "^16.4.5",
     "react": "^19.3.1",
     "react-dom": "^19.3.1"
   },
@@ -32,7 +33,8 @@
     "@types/react": "^19.3.0",
     "@types/react-dom": "^19.3.0",
     "eslint": "^9.39.5",
-    "eslint-config-next": "^16.4.3",
+    "eslint-config-next": "^16.4.5",
+    "fake-indexeddb": "^6.2.8",
     "prisma": "7.10.1",
     "typescript": "^6.0.3"
   }

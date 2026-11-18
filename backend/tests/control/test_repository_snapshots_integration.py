@@ -381,6 +381,8 @@ def test_upgrade_from_registry_preserves_registry_and_migration_history(
             "003_repository_snapshots.sql",
             "004_change_workflow.sql",
             "005_workspace_runtime.sql",
+            "006_context_cache.sql",
+            "007_comparisons.sql",
         )
         assert connection.execute("SELECT identity FROM control.repositories").fetchall() == [
             ("test-repository",)

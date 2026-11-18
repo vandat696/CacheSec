@@ -1,7 +1,7 @@
 // These IDs are navigation hints only. Every restore is fetched and authorized by the backend.
 const uuid = /^[a-f0-9]{8}-[a-f0-9]{4}-[a-f0-9]{4}-[a-f0-9]{4}-[a-f0-9]{12}$/i;
-type View = "proposal" | "quotation";
-const routes = { proposal: "/workspace", quotation: "/quotations" };
+type View = "proposal" | "quotation" | "comparison";
+const routes = { proposal: "/workspace", quotation: "/quotations", comparison: "/workspace" };
 export const viewReferenceChanged = "cachesec-view-reference-changed";
 
 export function readViewReference(view: View): string | null {
