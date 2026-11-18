@@ -114,7 +114,7 @@ export function RepositoryWorkspace({ repo, ref }: { repo: ReturnType<typeof use
       <Button id="change-test" onClick={() => { void runTests(); }} disabled={!canTest} loading={change.busy}
         loadingLabel="Đang gửi…"><Icon name="terminal" />{pending ? "Đang kiểm thử…" : "Chạy test"}</Button>
       <LocalRuntimeControls api={repo.changes} config={change.workspaceConfig} revision={change.saved}
-        jobs={change.jobs} dirty={change.dirty} disabled={change.busy || pending} />
+        jobs={change.jobs} dirty={change.dirty || change.revisionDirty} disabled={change.busy || pending} />
     </div>
     <div className="repository-source repository-workspace-body">
       <RepositoryExplorer files={snapshot.files} activeId={activeId}
@@ -144,7 +144,15 @@ export function RepositoryWorkspace({ repo, ref }: { repo: ReturnType<typeof use
         {original !== null && original !== undefined && <>
           <PaneResizeHandle label="Chiều cao bảng kết quả" controls="repository-console" orientation="horizontal"
             defaultSize={210} min={90} max={600} maxRatio={.7} reservedSpace={174} resizePane="after" onChange={setConsoleHeight} />
-          <CodeChangesPanel change={change} tab={consoleTab} onTab={setConsoleTab} />
+          <CodeChangesPanel change={change} tab={consoleTab} onTab={setConsoleTab} onRestoreBase={() => {
+            if (!editable || !change.saved || !change.canRestoreBase) return;
+            const base = change.saved.base_text;
+            requestLeave(() => {
+              openFile(editable);
+              change.restoreBase(base);
+              setSavedNotice("Đã mở mã gốc");
+            });
+          }} />
         </>}
       </div>
     </div>

@@ -7,8 +7,8 @@ import { TestRunPanel } from "./TestRunPanel";
 import type { useCodeChanges } from "./useCodeChanges";
 
 type ConsoleTab = "tests" | "diff" | "details";
-export function CodeChangesPanel({ change, tab, onTab }: {
-  change: ReturnType<typeof useCodeChanges>; tab: ConsoleTab; onTab: (tab: ConsoleTab) => void;
+export function CodeChangesPanel({ change, tab, onTab, onRestoreBase }: {
+  change: ReturnType<typeof useCodeChanges>; tab: ConsoleTab; onTab: (tab: ConsoleTab) => void; onRestoreBase: () => void;
 }) {
   const [proposalId, setProposalId] = useState("");
   return <section id="repository-console" className="code-changes repository-console" aria-label="Bảng kết quả">
@@ -28,6 +28,9 @@ export function CodeChangesPanel({ change, tab, onTab }: {
       </div>
       <div className="change-diff" hidden={tab !== "diff"}>
         {change.saved ? <><p>Thay đổi đã lưu · Bản {change.saved.revision}{change.dirty && " · Còn thay đổi chưa lưu"}</p>
+          <Button id="change-restore-base" variant="secondary" disabled={!change.canRestoreBase} onClick={onRestoreBase}>
+            Đưa mã gốc vào editor
+          </Button>
           {change.saved.diff ? <pre aria-label="Diff bản sửa"><code>{change.saved.diff}</code></pre>
             : <p>Không có thay đổi so với bản gốc.</p>}</>
           : <p className="repository-notice">Lưu tệp để xem thay đổi.</p>}

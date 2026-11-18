@@ -23,6 +23,7 @@ export function useCodeChanges(api: ChangeWorkflowClient | null, snapshotId: str
   const [opening, setOpening] = useState(false);
   const [workspaceConfig, setWorkspaceConfig] = useState<WorkspaceConfig | null>(null);
   const [sourceContent, setSourceContent] = useState(original);
+  const [restoredBase, setRestoredBase] = useState<string | null>(null);
   const [sourceOperation, setSourceOperation] = useState<WorkspaceOperation | null>(null);
   const sourceSnapshot = useRef(snapshotId);
   const sourceAttempt = useRef<{ identity: string; key: string } | null>(null);
@@ -74,10 +75,18 @@ export function useCodeChanges(api: ChangeWorkflowClient | null, snapshotId: str
     finally { if (!controller.signal.aborted) setBusy(false); }
     return false;
   }
-  const content = editorContent(draft, saved?.content ?? original);
+  const content = restoredBase !== null && draft === restoredBase.replace(/\r\n?/g, "\n")
+    ? restoredBase : editorContent(draft, restoredBase ?? saved?.content ?? original);
   const revisionDirty = content !== (saved?.content ?? original);
   const sourceDirty = content !== sourceContent;
   const dirty = workspaceConfig?.can_write ? sourceDirty : revisionDirty;
+  const canRestoreBase = !!config?.can_propose && !!saved && !busy && content !== saved.base_text;
+  function restoreBase(base: string) {
+    setRestoredBase(base);
+    setDraft(base.replace(/\r\n?/g, "\n"));
+    setError(""); setRequestId(undefined);
+    setDocumentVersion(value => value + 1);
+  }
   function save() {
     if (!api || !dirty || !config?.can_propose || busy) return Promise.resolve(false);
     return run(async signal => {
@@ -104,7 +113,7 @@ export function useCodeChanges(api: ChangeWorkflowClient | null, snapshotId: str
     setOpening(true);
     return run(async signal => {
       const value = await api.open(proposalId, signal);
-      return () => { latestSaved.current = value; setSaved(value); setDraft(value.content.replace(/\r\n?/g, "\n")); setJobs(value.tests);
+      return () => { latestSaved.current = value; setSaved(value); setDraft(value.content.replace(/\r\n?/g, "\n")); setJobs(value.tests); setRestoredBase(null);
         attempts.current = { save: null, test: null }; setDocumentVersion(v => v + 1); };
     }).finally(() => setOpening(false));
   }
@@ -117,8 +126,8 @@ export function useCodeChanges(api: ChangeWorkflowClient | null, snapshotId: str
       return () => { if (job) setJobs(previous => [job, ...previous.filter(j => j.job_id !== job.job_id)]); };
     });
   }
-  function discard() { setDraft((workspaceConfig?.can_write ? sourceContent : saved?.content ?? original).replace(/\r\n?/g, "\n"));
+  function discard() { setDraft((workspaceConfig?.can_write ? sourceContent : saved?.content ?? original).replace(/\r\n?/g, "\n")); setRestoredBase(null);
     attempts.current.save = null; setDocumentVersion(v => v + 1); }
-  return { config, draft, setDraft, saved, jobs, busy, opening, error, requestId, dirty, documentVersion,
-    workspaceConfig, sourceDirty, sourceOperation, save, open, test, discard };
+  return { config, draft, setDraft, saved, jobs, busy, opening, error, requestId, dirty, revisionDirty, documentVersion,
+    workspaceConfig, sourceDirty, sourceOperation, save, open, test, discard, canRestoreBase, restoreBase };
 }

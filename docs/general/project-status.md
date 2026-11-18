@@ -19,6 +19,11 @@ Lưu source không tự reload/deploy app. Chạy app cần human duyệt đúng
 
 ## Bằng chứng luồng thật gần nhất
 
+## 2026-11-18 — Mốc ban đầu để đối chiếu và khôi phục mã
+
+- Workspace đưa mã gốc của đề xuất vào editor từ snapshot đã lưu. Ghi file vẫn qua thao tác Lưu và quyền ghi; bản nháp khác revision đã test giữ nút chạy app bị khóa. [Cách kiểm chứng](../system/context-comparison.md#về-mốc-ban-đầu).
+- Edge kiểm draft khôi phục khớp baseline đóng riêng và không ghi source. Cùng báo giá giả `d3abb6c9-19b4-4143-a31e-24a20eed1a9e` thiếu ngày: baseline 18002 trả 0 cờ, app đã duyệt 18001 trả một cờ `expiration_review`. Typecheck và lint phần thay đổi đạt. Chưa có rollback runtime một chạm.
+
 ## 2026-11-18 — Xem hai bản sửa trên Workspace
 
 - Nút **Xem hai bản sửa** mở hai diff cạnh nhau với file, số dòng gốc/sau, màu thêm/xóa và lựa chọn xem nguyên file hoặc bản sửa cũ. Trạng thái Agent hiện lượt sửa, test và lúc sửa theo phản hồi; chi tiết giữ số liệu, kiểm tra chưa đạt và bằng chứng. [Cách xem](../system/context-comparison.md).

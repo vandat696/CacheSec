@@ -2,6 +2,7 @@ import assert from "node:assert/strict";
 import { readFile, writeFile } from "node:fs/promises";
 import { resolve } from "node:path";
 import { createHash } from "node:crypto";
+import { visibleEditorText } from "./editor-browser-actions.mjs";
 
 // Live opt-in: real browser IndexedDB, HTTP, Gemini, PostgreSQL and Docker.
 // Uses only the isolated demo. Never writes source, approves or activates.
@@ -35,6 +36,11 @@ export async function checkComparisons({ cdp, navigate, evaluate, waitFor, click
     await waitFor("document.querySelector('.repository-panel')?.dataset.connected === 'true'");
     await waitFor("document.querySelector('.dev-assistant')?.dataset.agentReady === 'true'");
     await click("#agent-comparison-toggle");
+  };
+  const discardDraft = async () => {
+    if (await evaluate("!!document.querySelector('dialog[open][aria-labelledby=unsaved-title]')")) {
+      await click("dialog[open][aria-labelledby=unsaved-title] button:nth-of-type(2)");
+    }
   };
   const run = async (prompt, state) => {
     const previous = await evaluate("window.__comparisonPair?.pair_id ?? null");
@@ -105,6 +111,24 @@ export async function checkComparisons({ cdp, navigate, evaluate, waitFor, click
     assert.equal(await evaluate("window.__comparisonStarts"), 0);
     const stored = await evaluate("window.__comparisonPair"); assert.equal(stored.pair_id, warm.pair_id);
     assert.deepEqual(stored.branches.local.revisions.map(r => r.artifact_digest), warm.branches.local.revisions.map(r => r.artifact_digest));
+    if (process.argv.includes("--comparison-approved")) {
+      const revision = stored.branches.local.revisions.at(-1);
+      const base = await readFile(resolve(root, "baseline", revision.path), "utf8");
+      assert.equal(revision.base_text, base);
+      await openReview();
+      await click(".comparison-review-branch:last-child > button");
+      await waitFor("!!document.querySelector('#change-restore-base:not(:disabled)')", "baseline restore available");
+      await click("#change-restore-base");
+      await discardDraft();
+      await waitFor("document.querySelector('#change-restore-base')?.disabled", "baseline loaded into editor");
+      const normalized = base.replace(/\r\n?/g, "\n").trimEnd();
+      assert.ok(normalized.startsWith((await evaluate(visibleEditorText)).trimEnd()));
+      await evaluate("const scroller = document.querySelector('.source-editor:not([hidden]) .cm-scroller'); scroller.scrollTop = scroller.scrollHeight;");
+      await waitFor(`${visibleEditorText}.includes('evaluated_rules=(),')`, "end of baseline shown");
+      assert.ok(normalized.endsWith((await evaluate(visibleEditorText)).trimEnd()));
+      assert.equal(await evaluate("document.querySelector('#workspace-run')?.disabled"), true);
+      assert.equal(await evaluate("window.__comparisonForbidden"), 0);
+    }
     await cdp("Emulation.setDeviceMetricsOverride", { width: 390, height: 844, deviceScaleFactor: 1, mobile: true });
     await screenshot("comparison-live-mobile.png");
     await openReview();
@@ -126,7 +150,27 @@ export async function checkComparisons({ cdp, navigate, evaluate, waitFor, click
     if (!resume) await writeFile(resolve(root, "review.md"), review);
     if (process.argv.includes("--comparison-approved")) {
       const deployed = JSON.parse(await readFile(resolve(root, "live-approved-result.json"), "utf8"));
+      assert.match(deployed.quotation_id, /^[a-f0-9-]{36}$/i);
+      const baselineUrl = `http://127.0.0.1:18002/api/v1/quotations/${deployed.quotation_id}`;
+      const fixture = await fetch(baselineUrl, {
+        headers: { Authorization: "Bearer " + access.quotation_token },
+        redirect: "error", signal: AbortSignal.timeout(5000),
+      });
+      assert.equal(fixture.status, 200);
+      assert.equal((await fixture.json()).data.expires_on ?? null, null);
+      const baseline = await fetch(`${baselineUrl}/validate`, {
+        method: "POST", headers: { Authorization: "Bearer " + access.quotation_token },
+        redirect: "error", signal: AbortSignal.timeout(5000),
+      });
+      assert.equal(baseline.status, 200);
+      const before = (await baseline.json()).data;
+      assert.equal(before.quotation_id, deployed.quotation_id);
+      assert.deepEqual(before.flags, []);
       await cdp("Emulation.setDeviceMetricsOverride", { width: 1440, height: 900, deviceScaleFactor: 1, mobile: false });
+      await click(".comparison-review-heading button");
+      await click("#repository-disconnect");
+      await discardDraft();
+      await waitFor("document.querySelector('.repository-panel')?.dataset.connected === 'false'");
       await navigate("/quotations?quotation=" + deployed.quotation_id);
       await waitFor("!!document.querySelector('.quotation-manual-connection') && !document.querySelector('#quotation-token').disabled");
       await click(".quotation-manual-connection > summary"); await fill("#quotation-token", access.quotation_token);
@@ -137,6 +181,7 @@ export async function checkComparisons({ cdp, navigate, evaluate, waitFor, click
       const validation = await evaluate("window.__comparisonValidation");
       assert.equal(validation.quotation_id, deployed.quotation_id);
       assert.equal(validation.flags[0].code, "expiration_review"); assert.equal(validation.flags[0].field, "expires_on");
+      console.log(`Same quotation ${deployed.quotation_id}: baseline 18002 = 0 flags, approved 18001 = 1 expiration_review flag.`);
       await screenshot("comparison-approved-app.png");
       assert.equal(await evaluate("window.__comparisonStarts"), 0); assert.equal(await evaluate("window.__comparisonForbidden"), 0);
     }

@@ -62,4 +62,12 @@ Restart không resume model. Nhánh process cũ đang chạy thành incomplete; 
 - Khi target đã active, chỉ đọc lại bằng `CACHESEC_COMPARISON_PAIR_ID` và `--comparisons`; thêm `--comparison-approved` để kiểm app đã duyệt. Không generation lại nhiệm vụ trên project đã có rule.
 - History UI liệt kê 100 cặp gần nhất; ID cũ vẫn mở trực tiếp được. Query/score mới do backend tính; dữ liệu cũ thiếu trường giữ unknown.
 
+### Về mốc ban đầu
+
+Trong phiên demo, chọn **Xem hai bản sửa → Mở đề xuất trong editor → Thay đổi → Đưa mã gốc vào editor**. Nút lấy `base_text` của đề xuất từ snapshot đã lưu. Nếu có nội dung chưa lưu, Workspace hỏi giữ hay bỏ trước khi thay bản nháp. Để ghi lại mã gốc vào project, chọn **Lưu** với phiên có quyền ghi. Lịch sử các bản sửa và bằng chứng test vẫn mở lại được.
+
+Môi trường demo giữ source baseline trong `baseline/` dưới root private, với validator ghim theo commit trong manifest. App baseline tại 18002 dùng bản sao này, nên có thể kiểm cùng báo giá thiếu ngày qua hai app nhiều lần. `--comparison-approved` kiểm draft khôi phục, xác nhận 18002 trả 0 cờ rồi 18001 trả một cờ `expiration_review` cho cùng ID báo giá.
+
+Lưu mã gốc chỉ thay source. Khi cần phục hồi runtime ngay trên target đang chạy, bản khôi phục phải có kiểm thử phù hợp và phê duyệt triển khai riêng. Profile `expiration-review-v1` đòi rule mới, nên để demo hành vi trước thay đổi hãy dùng baseline 18002.
+
 Prepare không ghi đè/dọn môi trường tồn tại. Manifest giữ tên resource cho owner dọn có scope; không reset app dev làm baseline. Fixture demo kỹ thuật chưa phải fixture nghiên cứu đã đóng băng.
