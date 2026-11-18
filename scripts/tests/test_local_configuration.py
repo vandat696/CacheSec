@@ -7,7 +7,11 @@ from pathlib import Path
 from types import SimpleNamespace
 from unittest.mock import patch
 
-from scripts.local_configuration import quotation_environment, runtime_state
+from scripts.local_configuration import (
+    LocalRuntimeStateError,
+    quotation_environment,
+    runtime_state,
+)
 
 
 class LocalConfigurationTests(unittest.TestCase):
@@ -142,6 +146,82 @@ class LocalConfigurationTests(unittest.TestCase):
                             with self.assertRaises(ValueError):
                                 runtime_state()
                             self.assertNotIn("baseline", output.getvalue())
+
+    def test_other_demo_artifacts_do_not_make_registered_runtime_ambiguous(self):
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            local = root / "backend/.local"
+            local.mkdir(parents=True)
+            (local / "test-worker.json").write_text(json.dumps({"runtime": {"port": 8001}}))
+            (local / "control-access.env").write_text("CONTROL_REPOSITORY_READ_TOKEN=" + "t" * 40)
+            artifact = "sha256:" + "a" * 64
+
+            def observed(command, **kwargs):
+                if command[1] == "ps":
+                    self.assertIn("label=cachesec.local-artifact=" + artifact, command)
+                    return SimpleNamespace(stdout=b"registered-dev-app\n")
+                return SimpleNamespace(
+                    stdout=json.dumps(
+                        [{"Config": {"Labels": {"cachesec.local-artifact": artifact}}}]
+                    ).encode()
+                )
+
+            with (
+                patch("scripts.local_configuration.ROOT", root),
+                patch("scripts.local_configuration.urllib.request.build_opener") as opener,
+                patch("scripts.local_configuration.subprocess.run", side_effect=observed),
+                redirect_stdout(io.StringIO()) as output,
+            ):
+                opener.return_value.open.return_value = io.BytesIO(
+                    json.dumps(
+                        {
+                            "data": {
+                                "configured": True,
+                                "pending_id": None,
+                                "target_version": 1,
+                                "active_artifact": artifact,
+                            }
+                        }
+                    ).encode()
+                )
+                runtime_state()
+                self.assertEqual(output.getvalue().strip(), "active")
+
+    def test_stopped_or_ambiguous_registered_runtime_never_starts_baseline(self):
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            local = root / "backend/.local"
+            local.mkdir(parents=True)
+            (local / "test-worker.json").write_text(json.dumps({"runtime": {"port": 8001}}))
+            (local / "control-access.env").write_text("CONTROL_REPOSITORY_READ_TOKEN=" + "t" * 40)
+            for names, reason in (
+                (b"", "REGISTERED_RUNTIME_NOT_RUNNING"),
+                (b"dev-app\nother-app\n", "REGISTERED_RUNTIME_AMBIGUOUS"),
+            ):
+                with (
+                    self.subTest(reason=reason),
+                    patch("scripts.local_configuration.ROOT", root),
+                    patch("scripts.local_configuration.urllib.request.build_opener") as opener,
+                    patch("scripts.local_configuration.subprocess.run") as docker_call,
+                    redirect_stdout(io.StringIO()) as output,
+                ):
+                    opener.return_value.open.return_value = io.BytesIO(
+                        json.dumps(
+                            {
+                                "data": {
+                                    "configured": True,
+                                    "pending_id": None,
+                                    "target_version": 1,
+                                    "active_artifact": "sha256:" + "a" * 64,
+                                }
+                            }
+                        ).encode()
+                    )
+                    docker_call.return_value = SimpleNamespace(stdout=names)
+                    with self.assertRaisesRegex(LocalRuntimeStateError, reason):
+                        runtime_state()
+                    self.assertEqual(output.getvalue(), "")
+                    self.assertEqual(docker_call.call_count, 1)
 
 
 if __name__ == "__main__":

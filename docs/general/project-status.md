@@ -19,6 +19,12 @@ Lưu source không tự reload/deploy app. Chạy app cần human duyệt đúng
 
 ## Bằng chứng luồng thật gần nhất
 
+## 2026-11-18 — Khôi phục launcher dev khi demo riêng cùng chạy
+
+- Sửa launcher lọc Docker theo artifact active mà control dev đăng ký, tránh nhận nhầm app demo 18001; lỗi runtime có mã riêng, vẫn chặn fallback baseline khi target pending hoặc app đã deploy đang dừng/không xác định duy nhất.
+- App/gateway dev cũ đã dừng. Sau đối chiếu activation/approval/evidence, source, receipt, image và cấu hình, khởi động lại đúng deployment đã hoàn tất `1a28b675-f0df-496d-abe0-432837c9544c`; giữ target version 1/artifact `sha256:886461963bb20155cca3c02fbce593f8a4642296c2e99cf16640111c58221b23`. Không tạo approval/activation mới. Proof private: `backend/.local/launcher/approved-runtime-restart-20261118.json`.
+- Bảy unit test launcher và Ruff theo cấu hình backend đạt; chạy thật `start-local.ps1 -Studio -NoBrowser` thành công với API 8000/8001, worker, frontend 3000 và Studio 5555. [Setup](setup.md) đã ghi mã lỗi và giới hạn: chưa tự phục hồi runtime đã dừng, chưa có reconciliation tổng quát.
+
 ## 2026-11-18 — Cache, hai nhánh và app demo đã được human duyệt
 
 - Người dùng xác nhận cấu hình [Context Cache/comparison](../system/context-comparison.md): browser Dexie, TTL 30 phút/100 entry/LRU; Gemini chỉ embedding prompt, 768 chiều/cosine 0,85/top-3; full-source intent, online registry verification và retention tới khi owner dọn. Không coi là giảng viên đã duyệt protocol.

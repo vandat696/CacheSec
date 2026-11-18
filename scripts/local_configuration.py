@@ -126,6 +126,10 @@ def probe():
     print("Control workflow and quotation database: OK")
 
 
+class LocalRuntimeStateError(ValueError):
+    """Fixed diagnostics, safe to print without exposing private configuration."""
+
+
 def runtime_state():
     local = ROOT / "backend/.local"
     worker = json.loads((local / "test-worker.json").read_text(encoding="utf-8"))
@@ -141,16 +145,21 @@ def runtime_state():
     with opener.open(request, timeout=5) as response:
         target = json.load(response)["data"]
     if not target["configured"] or target["pending_id"]:
-        raise ValueError("Runtime target needs reconciliation")
+        raise LocalRuntimeStateError("RUNTIME_TARGET_PENDING_OR_UNCONFIGURED")
     if target["target_version"] == 0:
         print("baseline")
         return
+    artifact = target.get("active_artifact")
+    if not artifact:
+        raise LocalRuntimeStateError("RUNTIME_ARTIFACT_UNAVAILABLE")
     result = subprocess.run(
         [
             "docker",
             "ps",
             "--filter",
             "label=cachesec.local-target=quotations",
+            "--filter",
+            "label=cachesec.local-artifact=" + artifact,
             "--format",
             "{{.Names}}",
         ],
@@ -158,13 +167,15 @@ def runtime_state():
         check=True,
     )
     names = result.stdout.decode("ascii").splitlines()
-    if len(names) != 1 or not target["active_artifact"]:
-        raise ValueError("Do not restart baseline over a registered runtime")
+    if not names:
+        raise LocalRuntimeStateError("REGISTERED_RUNTIME_NOT_RUNNING")
+    if len(names) != 1:
+        raise LocalRuntimeStateError("REGISTERED_RUNTIME_AMBIGUOUS")
     info = json.loads(
         subprocess.run(["docker", "inspect", names[0]], capture_output=True, check=True).stdout
     )[0]
     if info["Config"]["Labels"].get("cachesec.local-artifact") != target["active_artifact"]:
-        raise ValueError("Runtime artifact differs")
+        raise LocalRuntimeStateError("RUNTIME_ARTIFACT_MISMATCH")
     print("active")
 
 
@@ -182,6 +193,9 @@ def main():
             "probe": probe,
             "runtime-state": runtime_state,
         }[args.action]()
+    except LocalRuntimeStateError as error:
+        print("Local runtime check failed: " + str(error), file=sys.stderr)
+        return 1
     except Exception:
         print(
             "Local configuration check failed. "
