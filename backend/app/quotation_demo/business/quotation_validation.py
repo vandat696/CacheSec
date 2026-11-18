@@ -37,7 +37,7 @@ def validate_quotation(
         if len(parts) == 3 and len(parts[0]) == 4 and len(parts[1]) == 2 and len(parts[2]) == 2:
             try:
                 parsed_date = date.fromisoformat(expires_on)
-                if parsed_date >= reference_date:
+                if parsed_date > reference_date:
                     is_valid_date = True
             except ValueError:
                 pass

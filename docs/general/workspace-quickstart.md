@@ -22,6 +22,14 @@ Dùng project demo riêng có bản mã gốc, trước khi thêm `expiration_re
 
 Để thử một thay đổi nhỏ, gửi “Thêm một comment ngắn ở đầu hàm `validate_quotation`, giữ nguyên logic”. Bạn cũng có thể hỏi “Bạn đọc và sửa được những file nào?”.
 
+### Demo sửa lỗi một dòng trên dev
+
+Khi Workspace dev đang có bản lỗi mẫu, báo giá có ngày hết hạn bằng ngày tham chiếu bị gắn cờ nhầm. Mở phiên mới, giữ **Cả hai** và gửi prompt sau.
+
+> Báo giá có ngày hết hạn đúng bằng ngày tham chiếu đang bị gắn cờ nhầm. Sửa `quotation_validation.py` để ngày bằng ngày tham chiếu được chấp nhận. Giữ nguyên các trường hợp còn lại và chạy bộ test hiện có.
+
+Diff dự kiến đổi `>` thành `>=`. Ca `expiration_equal` phải đạt trước khi chọn một đề xuất để lưu vào mã nguồn.
+
 ## Xem bản sửa và cache hit
 
 - Trong khung chat Agent, bấm tab **Không cache** hoặc **Có Context Cache** để xem các câu hỏi và phản hồi của nhánh đó. Gửi tiếp trong cùng phiên để Agent dùng ngữ cảnh gần đây, ví dụ “viết comment đó ngắn lại”. Bấm **đồng hồ → Phiên mới** để bắt đầu phiên riêng.

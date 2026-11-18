@@ -19,6 +19,10 @@ Lưu source không tự reload/deploy app. Chạy app cần human duyệt đúng
 
 ## Bằng chứng luồng thật gần nhất
 
+## Ca sửa lỗi mẫu trên Workspace dev
+
+- Working tree dev có một lỗi mẫu ở phép so sánh ngày hết hạn bằng ngày tham chiếu. Control dev đã trả snapshot chứa đúng thay đổi. Test cục bộ tái hiện đúng một lỗi, 24 ca còn lại đạt. App đang chạy tiếp tục dùng artifact đã duyệt. [Prompt demo](workspace-quickstart.md#demo-sửa-lỗi-một-dòng-trên-dev).
+
 ## 2026-11-19 — Chạy so sánh tuần tự
 
 - Workspace xếp **Không cache** trước **Có Context Cache**. Một worker Control chạy model và test lần lượt. Giới hạn thực thi và số đo workflow của mỗi nhánh loại thời gian chờ. [Luồng so sánh](../system/context-comparison.md#contract-đã-triển-khai).
