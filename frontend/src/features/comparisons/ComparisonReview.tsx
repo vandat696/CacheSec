@@ -2,13 +2,17 @@ import { useId, useState } from "react";
 import { Button } from "@/components/ui/Button";
 import { Icon } from "@/components/ui/Icon";
 import type { ContextMode } from "../context-cache/contextCacheModel";
-import { branchPending, revisionTest, testLabel, type Branch } from "./comparisonModel";
+import { branchLabel, branchPending, revisionTest, testLabel, type Branch } from "./comparisonModel";
 import { ComparisonBranch } from "./ComparisonBranch";
 import { RevisionDiff } from "./RevisionDiff";
 import type { useComparison } from "./useComparison";
+import type { ChangeWorkflowClient, Revision } from "../code-changes/changeWorkflowApi";
+import { deploymentRevisionKey, passedDeploymentTest } from "../code-changes/deploymentSelection";
+import { ComparisonDeployment } from "./ComparisonDeployment";
 
-function ReviewBranch({ mode, branch, busy, onOpen, onCancel }: {
+function ReviewBranch({ mode, branch, busy, onOpen, onCancel, onSelect, selectedKey }: {
   mode: ContextMode; branch?: Branch; busy: boolean; onOpen: (id: string) => void; onCancel: () => void;
+  onSelect: (mode: ContextMode, revision: Revision) => void; selectedKey?: string;
 }) {
   const [selected, setSelected] = useState<number | null>(null);
   const revisions = branch?.revisions ?? [];
@@ -32,15 +36,25 @@ function ReviewBranch({ mode, branch, busy, onOpen, onCancel }: {
       </div>
       <RevisionDiff key={revision.revision} revision={revision} />
       {branch && revision === latest && <Button variant="secondary" disabled={busy || branchPending(branch)} onClick={() => onOpen(revision.proposal_id)}>Mở đề xuất trong editor</Button>}
+      {branch && <Button variant="secondary" data-select-deployment={mode}
+        aria-pressed={selectedKey === deploymentRevisionKey(revision)}
+        disabled={busy || branchPending(branch) || revision !== latest || !passedDeploymentTest(revision, revision.tests)}
+        title="Chọn bản đã test đạt, sau đó xem diff và phê duyệt để chạy"
+        onClick={() => onSelect(mode, revision)}>Chọn bản chạy</Button>}
     </> : <p className="comparison-no-revision">Chưa có bản sửa</p>}
   </ComparisonBranch>;
 }
 
-export function ComparisonReview({ comparison, onOpen }: {
+export function ComparisonReview({ comparison, onOpen, api }: {
   comparison: ReturnType<typeof useComparison>; onOpen: (id: string) => void;
+  api: ChangeWorkflowClient | null;
 }) {
   const title = useId();
   const { pair, busy, error, notice, cancel } = comparison;
+  const [selection, setSelection] = useState<{ mode: ContextMode; key: string } | null>(null);
+  const [deploying, setDeploying] = useState(false);
+  const selected = selection ? pair?.branches[selection.mode].revisions?.at(-1) : undefined;
+  const chosen = selected && selection?.key === deploymentRevisionKey(selected) ? selected : undefined;
   const none = pair?.branches.none.revisions?.at(-1);
   const local = pair?.branches.local.revisions?.at(-1);
   const path = none?.path ?? local?.path;
@@ -57,7 +71,11 @@ export function ComparisonReview({ comparison, onOpen }: {
     {none && local && none.content === local.content && <p>Hai bản mới nhất có nội dung giống nhau.</p>}
     <div className="comparison-review-grid">
       {(["none", "local"] as const).map(mode => <ReviewBranch key={mode} mode={mode} branch={pair?.branches[mode]}
-        busy={busy} onOpen={onOpen} onCancel={() => { void cancel(mode); }} />)}
+        busy={busy || deploying || !api} onOpen={onOpen} onCancel={() => { void cancel(mode); }}
+        selectedKey={selection?.mode === mode ? selection.key : undefined}
+        onSelect={(mode, revision) => setSelection({ mode, key: deploymentRevisionKey(revision) })} />)}
     </div>
+    {chosen && selection && api && <ComparisonDeployment key={deploymentRevisionKey(chosen)} api={api}
+      revision={chosen} label={branchLabel(selection.mode)} onBusyChange={setDeploying} />}
   </section>;
 }

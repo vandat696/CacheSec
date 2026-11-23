@@ -48,6 +48,12 @@ Khi tạo lượt mới, backend chốt tối đa sáu lượt đã kết thúc 
 
 Cuộn xuống dưới Workspace để xem hai bản sửa, tiến trình, cache hit/miss, lỗi và số liệu của lượt đang mở. Nền xanh `+` là dòng thêm, nền đỏ `−` là dòng xóa. **Đến dòng sửa** cuộn tới thay đổi đầu tiên trong khung đó. Trên màn hình hẹp, hai bản xếp dọc. Bấm **Mở đề xuất trong editor** khi cần chỉnh tiếp.
 
+### Chọn bản để chạy app Báo giá
+
+Ở cột Không cache hoặc Có Context Cache, chọn **Chọn bản chạy** trên revision mới nhất đã test đạt. Vùng **Bản chạy** bên dưới ghi rõ nhánh/revision. Chọn **Chạy ứng dụng**, xem tên nhánh, diff và artifact rồi **Phê duyệt và chạy bản này**. Chọn nhánh chỉ giữ lựa chọn UI, không ghi source editor hoặc tạo approval. Nếu cần ghi candidate vào project để sửa tiếp, vẫn dùng **Mở đề xuất trong editor → Lưu**.
+
+Hai nhánh dùng chung gate backend hiện có. Test phải khớp proposal/revision/artifact/profile và có evidence; retry approval/activation giữ binding riêng, kể cả hai nhánh có artifact giống nhau. Không đổi nhánh trong lúc review/activation đang xử lý. Backend tiếp tục kiểm quyền, source freshness, revision hiện tại, evidence và target trước approve/dispatch; lịch sử stale có thể bị chặn. Chỉ bản đã duyệt được activate; không chạy hai phiên bản app cùng lúc, cache không cấp quyền triển khai.
+
 ## Lịch sử và số đo
 
 Migration 006 thêm requests/registry; 007 thêm pairs, immutable revision references và append-only assessments. Source/diff/artifact/evidence dùng snapshot/blob hiện có; registry cache không lưu payload. Checkpoint lưu events/usage/trạng thái từng mốc, không lưu credential.

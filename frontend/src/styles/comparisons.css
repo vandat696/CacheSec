@@ -139,6 +139,9 @@
 .comparison-review-branch h3 { font-size: 14px; margin: 0 auto 0 0; }
 .comparison-review-branch > p { padding-inline: 12px; }
 .comparison-review-branch > button { align-self: flex-start; margin: 10px 12px; }
+.comparison-review-branch > button[aria-pressed="true"] { outline: 2px solid var(--nui-primary); outline-offset: 2px; }
+.comparison-deployment { display: grid; gap: 12px; margin-top: 20px; padding: 16px; border: 1px solid var(--nui-border); border-radius: 8px; background: var(--nui-surface); }
+.comparison-deployment p { margin: 0; }
 .comparison-editor-tabs {
   display: flex;
   align-items: center;

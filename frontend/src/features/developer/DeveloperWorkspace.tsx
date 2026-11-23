@@ -55,7 +55,7 @@ export function DeveloperWorkspace() {
       </div>
     </div>
     {comparison && <div className="workspace-comparison-results">
-      <ComparisonReview key={run.pair?.pair_id} comparison={run} onOpen={openProposal} />
+      <ComparisonReview key={run.pair?.pair_id} comparison={run} onOpen={openProposal} api={repo.changes} />
     </div>}
   </>;
 }

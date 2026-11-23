@@ -2,6 +2,8 @@
 
 ## Workspace và Agent — một màn hình
 
+Hai cột comparison có nút **Chọn bản chạy** cho revision mới nhất đã test đạt. Vùng chạy chung hiển thị nhánh/revision; **Chạy ứng dụng** mở human gate đúng diff/artifact. Chọn nhánh không ghi editor/source. Khóa đổi lựa chọn trong lúc review/activation; test phải khớp proposal/revision/artifact/profile và có evidence. [Contract chọn bản chạy](../system/context-comparison.md#chọn-bản-để-chạy-app-báo-giá) sở hữu giới hạn backend.
+
 Cập nhật 2026-11-15: Ctrl+S có repository.write ghi file project thật qua host worker; phiên chỉ proposal.create hiển thị Lưu revision. Editor giữ undo; source đổi ngoài editor bị chặn ghi đè. Agent dùng context snapshot mới sau ghi source, vẫn không có quyền approve/deploy. Nút Chạy ứng dụng cần test evidence đúng revision, mở hộp diff/artifact và human phê duyệt trước backend activation; status pending/unknown/lỗi không hiển thị thành công. [Luồng thực thi](../system/workspace-runtime.md) sở hữu contract và giới hạn; UI mô phỏng cũ tiếp tục ở khu phụ.
 
 Sidebar desktop mặc định thu gọn còn 72 px với logo và icon điều hướng; nút cuối thanh mở rộng/thu gọn, giữ tên truy cập/tooltip cho từng mục và trạng thái qua chuyển trang. Co/mở chiều rộng và nhãn chuyển động trong 300 ms; tôn trọng `prefers-reduced-motion`. Lịch sử chat tạm thu lại và không nhận focus khi sidebar gọn; menu mobile vẫn mở đầy đủ bằng drawer, giữ Escape/focus trap. Trạng thái chỉ giữ trong phiên component; reload trở về thu gọn mặc định.

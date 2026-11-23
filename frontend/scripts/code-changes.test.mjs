@@ -3,6 +3,7 @@ import test from "node:test";
 import { ChangeWorkflowClient, editorContent, editablePath } from "../src/features/code-changes/changeWorkflowApi.ts";
 import { submitCodeChange } from "../src/features/code-changes/changeSubmission.ts";
 import { waitForOperation } from "../src/features/code-changes/workspaceOperations.ts";
+import { deploymentRevisionKey, passedDeploymentTest } from "../src/features/code-changes/deploymentSelection.ts";
 
 const proposal = "10000000-0000-4000-8000-000000000001";
 const snapshot = "10000000-0000-4000-8000-000000000002";
@@ -15,6 +16,17 @@ const revision = { proposal_id: proposal, revision: 1, base_snapshot_id: snapsho
 const queued = { job_id: jobId, proposal_id: proposal, revision: 1, artifact_digest: hash,
   profile_digest: hash, status: "queued", evidence_digest: null, result: null };
 const signal = () => new AbortController().signal;
+
+test("deployment selection never borrows another branch's test or approval binding", () => {
+  const passed = { ...queued, status: "passed", evidence_digest: hash };
+  assert.equal(passedDeploymentTest(revision, [passed]), passed);
+  for (const changes of [
+    { proposal_id: snapshot }, { revision: 2 }, { artifact_digest: "sha256:" + "b".repeat(64) },
+    { profile_digest: "sha256:" + "b".repeat(64) }, { evidence_digest: null }, { status: "failed" },
+  ]) assert.equal(passedDeploymentTest(revision, [{ ...passed, ...changes }]), undefined);
+  assert.notEqual(deploymentRevisionKey(revision), deploymentRevisionKey({ ...revision, proposal_id: snapshot }));
+  assert.notEqual(deploymentRevisionKey(revision), deploymentRevisionKey({ ...revision, revision: 2 }));
+});
 const envelope = data => ({ data, meta: { contract_version: "v0.2", identity_mode: "fixture", request_id: proposal } });
 const sourceOperation = { id: jobId, kind: "write", status: "queued", proposal_id: proposal, revision: 1,
   artifact_digest: hash, profile_digest: hash, job_id: null, evidence_digest: null, created_at: 1,

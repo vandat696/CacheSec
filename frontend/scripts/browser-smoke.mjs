@@ -22,6 +22,7 @@ import { checkWorkspaceFiles } from "./workspace-files-browser-check.mjs";
 import { checkProposalReview } from "./proposal-review-browser-check.mjs";
 import { checkDeployedRule } from "./deployed-rule-browser-check.mjs";
 import { checkWorkspaceData } from "./workspace-data-browser-check.mjs";
+import { checkComparisonDeployment } from "./comparison-deployment-browser-check.mjs";
 import { checkComparisonLayout, checkComparisons } from "./comparison-browser-check.mjs";
 import { LocalSessionStore } from "../src/features/local-workspace/localSessionStore.ts";
 
@@ -39,7 +40,8 @@ const proposalReview = process.argv.includes("--proposal-review");
 const comparisons = process.argv.includes("--comparisons") || process.argv.includes("--comparison-approved");
 const comparisonLayout = process.argv.includes("--comparison-layout");
 const workspaceData = process.argv.includes("--workspace-data");
-const repositoryOnly = process.argv.includes("--repository-only") || repositoryDev || localWorkspace || agentOnly || agentLive || agentRuns || agentRunLive || workbenchOnly || workspaceFiles || proposalReview || comparisons || comparisonLayout || workspaceData;
+const comparisonDeployment = process.argv.includes("--comparison-deployment");
+const repositoryOnly = process.argv.includes("--repository-only") || repositoryDev || localWorkspace || agentOnly || agentLive || agentRuns || agentRunLive || workbenchOnly || workspaceFiles || proposalReview || comparisons || comparisonLayout || workspaceData || comparisonDeployment;
 if (repositoryDev) {
   // This private file contains only the dedicated read credential, never the backend DSN.
   process.loadEnvFile(join(frontend, "../backend/.local/control-access.env"));
@@ -255,7 +257,7 @@ try {
       await waitFor("document.querySelector('.app').dataset.sidebarCollapsed === 'false'");
     }
     // Single-Agent checks opt out of the default two-branch mode.
-    if (pathname === "/workspace" && repositoryOnly && !comparisons && !comparisonLayout && !workspaceData) {
+    if (pathname === "/workspace" && repositoryOnly && !comparisons && !comparisonLayout && !workspaceData && !comparisonDeployment) {
       await waitFor("!!document.querySelector('#agent-comparison-toggle')");
       if (await evaluate("document.querySelector('#agent-comparison-toggle')?.getAttribute('aria-pressed') === 'true'")) {
         await click("#agent-comparison-toggle");
@@ -346,6 +348,7 @@ try {
     await checkAgentRunLive({ cdp, navigate, evaluate, waitFor, click, fill, screenshot });
   }
   if (workspaceData) await checkWorkspaceData({ cdp, navigate, evaluate, waitFor, click, screenshot });
+  if (comparisonDeployment) await checkComparisonDeployment({ cdp, navigate, evaluate, waitFor, click, screenshot });
   if (comparisons) {
     await checkComparisons({ cdp, navigate, evaluate, waitFor, click, fill, screenshot });
   }
@@ -1254,7 +1257,8 @@ try {
   }
   assert.deepEqual(errors, [], "Lỗi runtime/React trên trình duyệt");
   console.log(
-    workspaceData ? "Đạt: Báo giá và Số liệu Workspace thật; kiểm chứng dữ liệu, responsive và trạng thái bị từ chối."
+    comparisonDeployment ? "Đạt: chọn bản chạy từ hai nhánh và review đúng artifact; không triển khai thật."
+      : workspaceData ? "Đạt: Báo giá và Số liệu Workspace thật; kiểm chứng dữ liệu, responsive và trạng thái bị từ chối."
       : comparisons ? "Đạt: comparison/history và UI; kiểm chứng theo live hoặc history-only mode đã chọn, không tự approve/activate."
       : comparisonLayout ? "Đạt: lịch sử trong khung Agent, phiên mới, giữ bản nháp khi xem và kết quả hai nhánh bên dưới."
       : proposalReview && process.argv.includes("--deployed-rule") ? "Đạt: artifact đã triển khai khớp, Báo giá hiển thị đúng cờ/ngày hợp lệ/ISO tuần và mobile; không gọi model hoặc triển khai thêm."

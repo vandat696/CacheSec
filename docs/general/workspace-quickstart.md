@@ -41,6 +41,7 @@ Diff dự kiến đổi `>` thành `>=`. Ca `expiration_equal` phải đạt tr�
 
 ## Lưu, duyệt hoặc xem lại mã gốc
 
-- **Mở đề xuất trong editor → Lưu** để ghi bản sửa đã chọn vào project. Để đưa bản đã qua test lên app báo giá, chọn **Chạy ứng dụng** và phê duyệt đúng bản sửa trong hộp thoại.
+- Để chọn giữa hai nhánh: bấm **Chọn bản chạy** ở cột Không cache hoặc Có Context Cache đã test đạt. Kiểm tra vùng **Bản chạy**, chọn **Chạy ứng dụng**, xem nhánh/diff/artifact rồi phê duyệt đúng bản đó. App Báo giá chạy một bản tại một thời điểm.
+- **Mở đề xuất trong editor → Lưu** nếu cần ghi candidate vào project để sửa tiếp. Chọn bản chạy không tự ghi editor/source; backend vẫn chặn source hoặc revision không còn hợp lệ.
 - **Đang chạy bản** cho biết phiên bản đã triển khai. Chọn **Báo giá** trong menu để mở ứng dụng.
 - **Mở đề xuất trong editor → Thay đổi → Đưa mã gốc vào editor** để xem lại bản trước khi sửa. Bấm **Lưu** nếu cần ghi lại mã gốc và phiên của bạn có quyền ghi. [Chi tiết khôi phục](../system/context-comparison.md#về-mốc-ban-đầu).

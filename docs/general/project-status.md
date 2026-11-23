@@ -20,6 +20,12 @@ Lưu source không tự reload/deploy app. Chạy app cần human duyệt đúng
 
 ## Bằng chứng luồng thật gần nhất
 
+## 2026-11-23 — Chọn bản chạy từ hai nhánh
+
+- Workspace có **Chọn bản chạy** ở hai cột Không cache/Có Context Cache, chỉ bật cho revision mới nhất có test/evidence khớp proposal/revision/artifact/profile. Vùng chạy chung ghi tên nhánh/revision; hộp duyệt hiển thị đúng diff/artifact. Không tự chọn nhánh, ghi source, gọi model hoặc triển khai; dùng nguyên gate backend. Retry approval/activation gắn proposal/revision/artifact/job để không dùng nhầm approval giữa hai nhánh có code giống nhau.
+- **129 test frontend**, typecheck, ESLint và production build đạt. Edge `--comparison-deployment` dùng lịch sử/API thật: chọn lần lượt hai nhánh, đối chiếu nhãn/diff/digest, kiểm khóa đổi nhánh khi review và bố cục mobile; chỉ mở/Hủy, không gửi approval/activation, target giữ nguyên. Unit test chặn test khác proposal/revision/artifact/profile hoặc thiếu evidence. Frontend 3000 đã nạp build; backend/Agent/cache và artifact Báo giá không đổi.
+- [Hướng dẫn nhanh](workspace-quickstart.md) và [contract so sánh](../system/context-comparison.md#chọn-bản-để-chạy-app-báo-giá) đã cập nhật. Source hiện tại không còn khớp base/candidate hoặc revision đã cũ vẫn bị backend từ chối; cần tạo/test bản phù hợp. Chưa chạy activation mới trong lượt kiểm này.
+
 ## 2026-11-23 — Báo giá chạy lại và Số liệu nối API thật
 
 - Theo yêu cầu tiếp tục làm app báo giá chạy thật, nối lại bridge thiếu và khôi phục đúng app/gateway của activation `1a28b675-f0df-496d-abe0-432837c9544c`, sau đối soát source/artifact/evidence/image/mounts/environment. Verifier ingress và HTTP đạt; target vẫn version 1, artifact cũ, pending null. Launcher chạy thành công, giữ worker singleton, frontend 3000/API 8000/8001 sẵn sàng. Không tạo approval hoặc activation mới.
