@@ -23,6 +23,7 @@ import { checkProposalReview } from "./proposal-review-browser-check.mjs";
 import { checkDeployedRule } from "./deployed-rule-browser-check.mjs";
 import { checkWorkspaceData } from "./workspace-data-browser-check.mjs";
 import { checkComparisonDeployment } from "./comparison-deployment-browser-check.mjs";
+import { checkAppPages } from "./app-pages-browser-check.mjs";
 import { checkComparisonLayout, checkComparisons } from "./comparison-browser-check.mjs";
 import { LocalSessionStore } from "../src/features/local-workspace/localSessionStore.ts";
 
@@ -41,7 +42,8 @@ const comparisons = process.argv.includes("--comparisons") || process.argv.inclu
 const comparisonLayout = process.argv.includes("--comparison-layout");
 const workspaceData = process.argv.includes("--workspace-data");
 const comparisonDeployment = process.argv.includes("--comparison-deployment");
-const repositoryOnly = process.argv.includes("--repository-only") || repositoryDev || localWorkspace || agentOnly || agentLive || agentRuns || agentRunLive || workbenchOnly || workspaceFiles || proposalReview || comparisons || comparisonLayout || workspaceData || comparisonDeployment;
+const appPages = process.argv.includes("--app-pages");
+const repositoryOnly = process.argv.includes("--repository-only") || repositoryDev || localWorkspace || agentOnly || agentLive || agentRuns || agentRunLive || workbenchOnly || workspaceFiles || proposalReview || comparisons || comparisonLayout || workspaceData || comparisonDeployment || appPages;
 if (repositoryDev) {
   // This private file contains only the dedicated read credential, never the backend DSN.
   process.loadEnvFile(join(frontend, "../backend/.local/control-access.env"));
@@ -205,6 +207,14 @@ try {
       button: "left",
       clickCount: 1,
     });
+    // Legacy catalog checks explicitly enter the retained preview surfaces.
+    if (!repositoryOnly && ['.sidebar a[href="/setup"]', '.sidebar a[href="/documents"]'].includes(selector)) {
+      const path = selector.includes('/setup') ? '/setup' : '/documents';
+      await waitFor(`location.pathname === ${JSON.stringify(path)} && !!document.querySelector('a[href="${path}?view=preview"]')`);
+      await click('.runtime-settings-reference > summary');
+      await click(`a[href="${path}?view=preview"]`);
+      await waitFor(path === '/setup' ? "!!document.querySelector('#setup-mode-title')" : "!!document.querySelector('#document-files')");
+    }
     await pause(60);
   };
   const fill = async (selector, value) => {
@@ -242,8 +252,10 @@ try {
   };
   const navigate = async (path) => {
     if (!repositoryOnly && path === "/metrics") path = "/metrics?source=sample";
+    if (!repositoryOnly && ["/setup", "/documents"].includes(path)) path += "?view=preview";
     await cdp("Page.navigate", { url: new URL(path, baseUrl).href });
-    const pathname = new URL(path, baseUrl).pathname;
+    const requestedPath = new URL(path, baseUrl).pathname;
+    const pathname = requestedPath === '/chat' ? '/' : ['/settings', '/experiments'].includes(requestedPath) ? '/setup' : requestedPath;
     await waitFor(
       `document.readyState === 'complete' && location.pathname === ${JSON.stringify(pathname)} && !!document.querySelector('main')`,
     );
@@ -257,7 +269,7 @@ try {
       await waitFor("document.querySelector('.app').dataset.sidebarCollapsed === 'false'");
     }
     // Single-Agent checks opt out of the default two-branch mode.
-    if (pathname === "/workspace" && repositoryOnly && !comparisons && !comparisonLayout && !workspaceData && !comparisonDeployment) {
+    if (pathname === "/workspace" && repositoryOnly && !comparisons && !comparisonLayout && !workspaceData && !comparisonDeployment && !appPages) {
       await waitFor("!!document.querySelector('#agent-comparison-toggle')");
       if (await evaluate("document.querySelector('#agent-comparison-toggle')?.getAttribute('aria-pressed') === 'true'")) {
         await click("#agent-comparison-toggle");
@@ -349,6 +361,7 @@ try {
   }
   if (workspaceData) await checkWorkspaceData({ cdp, navigate, evaluate, waitFor, click, screenshot });
   if (comparisonDeployment) await checkComparisonDeployment({ cdp, navigate, evaluate, waitFor, click, screenshot });
+  if (appPages) await checkAppPages({ cdp, navigate, evaluate, waitFor, click, screenshot });
   if (comparisons) {
     await checkComparisons({ cdp, navigate, evaluate, waitFor, click, fill, screenshot });
   }
@@ -1019,10 +1032,10 @@ try {
     await evaluate("document.querySelectorAll('.document-row').length"),
     0,
   );
-  for (const oldPath of ["/chat", "/settings", "/experiments"]) {
+  for (const [oldPath, expected] of [["/chat", "/"], ["/settings", "/setup"], ["/experiments", "/setup"]]) {
     await cdp("Page.navigate", { url: new URL(oldPath, baseUrl).href });
     await waitFor(
-      "location.pathname === '/' && !!document.querySelector('.chat-layout')",
+      `location.pathname === ${JSON.stringify(expected)} && document.readyState === 'complete'`,
     );
   }
 
@@ -1163,7 +1176,7 @@ try {
   await pause(250);
   await evaluate("document.querySelector('.history-toggle').focus()");
   await key("Tab");
-  assert.equal(await evaluate("document.activeElement.getAttribute('href')"), "/metrics");
+  assert.equal(await evaluate("document.activeElement.id"), "sidebar-collapse-toggle");
   await evaluate(
     "[...document.querySelectorAll('.sidebar a, .sidebar button:not(:disabled)')].filter(control => !control.closest('[inert]')).at(-1).focus()",
   );
@@ -1257,7 +1270,8 @@ try {
   }
   assert.deepEqual(errors, [], "Lỗi runtime/React trên trình duyệt");
   console.log(
-    comparisonDeployment ? "Đạt: chọn bản chạy từ hai nhánh và review đúng artifact; không triển khai thật."
+    appPages ? "Đạt: màn Thiết lập/Nguồn repo đọc API thật; bản mẫu có nhãn riêng."
+      : comparisonDeployment ? "Đạt: chọn bản chạy từ hai nhánh và review đúng artifact; không triển khai thật."
       : workspaceData ? "Đạt: Báo giá và Số liệu Workspace thật; kiểm chứng dữ liệu, responsive và trạng thái bị từ chối."
       : comparisons ? "Đạt: comparison/history và UI; kiểm chứng theo live hoặc history-only mode đã chọn, không tự approve/activate."
       : comparisonLayout ? "Đạt: lịch sử trong khung Agent, phiên mới, giữ bản nháp khi xem và kết quả hai nhánh bên dưới."

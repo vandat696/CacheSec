@@ -14,11 +14,20 @@ Cập nhật 2026-11-23. Đây là bản tổng hợp hiện trạng, thay nhậ
 | Context Cache | Dexie, Gemini query embedding 768 chiều, exact/semantic, backend verifier/registry, TTL/LRU/invalidation/logout | Full-source profile, online và riêng principal; chưa summary/Answer Cache/offline |
 | So sánh hai nhánh | Workspace chạy None trước Local trên một worker Control, lịch sử PostgreSQL mở lại sau reload/control restart | Cấu hình demo cố định; chưa benchmark hoặc thí nghiệm chính |
 | Số liệu | `/metrics` đọc lượt gần nhất mỗi phiên Workspace qua API, so hai nhánh và mở bản sửa/test | Chưa tổng hợp benchmark; nguồn mẫu/Chat mô phỏng giữ ở query riêng |
-| UI cũ | Chat, setup, documents được giữ để tái sử dụng | Chat còn mô phỏng; setup chưa chạy benchmark; documents chưa ingest |
+| Thiết lập | `/setup` đọc model/workflow/quyền/target qua API local | Chỉ đọc; không tự ghi cấu hình hoặc chứng minh provider hoạt động |
+| Nguồn repo | `/documents` tải snapshot trong scope và xem file sau kiểm size/hash | Không upload/ingest; chỉ profile được cấp quyền |
+| UI tham khảo | Chat mô phỏng; draft thí nghiệm và tệp trong phiên tại `?view=preview` | Chưa chạy benchmark/training hoặc ingest; không tự đưa tệp vào Agent |
 
 Lưu source không tự reload/deploy app. Chạy app cần human duyệt đúng artifact; cache không thay quyền, test hoặc gate. Trạng thái trên dựa trên bằng chứng gần nhất, không phải probe dịch vụ đang chạy ở thời điểm đọc.
 
 ## Bằng chứng luồng thật gần nhất
+
+## 2026-11-23 — Rà màn hình và nối cấu hình/nguồn repo
+
+- Thay mặc định hai màn trống backend bằng chức năng dùng API đã có: Thiết lập đọc repository/config Agent/workflow/target theo phiên local, Nguồn repo đọc metadata → snapshot → file trong scope và xác minh size/SHA-256 trước hiển thị. Không mở endpoint/quyền mới, không tự ghi config, đọc path tùy ý hoặc upload vào Agent. Mất quyền/đóng phiên/tải lỗi xóa dữ liệu cũ, không dùng fallback giả thành công.
+- Sidebar ưu tiên năm màn làm việc thật; Chat được ghi mô phỏng. Giữ nguyên UI draft thí nghiệm/upload trong chế độ phụ `?view=preview`, có nhãn chưa nối runtime. `/settings` dẫn tới `/setup`, `/experiments` tới draft. Backend hiện chưa có API ingest/training/benchmark; không bổ sung những pipeline này khi protocol và policy liên quan còn mở.
+- **131 test frontend**, typecheck, ESLint và build đạt. Edge `--app-pages` kiểm cấu hình/source API thật, scope ba file, đọc nội dung/metadata, bố cục desktop/mobile, redirects và preview. Ca API 403 giả lập có nhãn xác nhận config/snapshot/content cũ bị xóa. Edge `--workspace-data` xác nhận Báo giá và Số liệu thật vẫn đạt. Không gọi provider hoặc tạo approval/activation; Agent/gate/cache và artifact app Báo giá giữ nguyên. Chưa chạy lại toàn bộ bộ smoke catalog cũ; đã cập nhật đường dẫn preview/redirect trong harness.
+- Edge `--agent-runs` hồi quy UI Agent ở ba bố cục đạt với model/run/executor doubles. Assertion nhãn phiên bản cũ đã được đồng bộ với giao diện hiện tại; không sửa logic Agent. README, frontend design, setup và bản đồ source đã cập nhật. Frontend 3000 đã nạp build mới; config runtime vẫn quản lý phía backend, model vẫn chọn trong Workspace.
 
 ## 2026-11-23 — Chọn bản chạy từ hai nhánh
 

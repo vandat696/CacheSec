@@ -31,6 +31,7 @@ export function DocumentsWorkspace() {
   return (
     <div className="content-page documents-workspace">
       <PageHeading title="Tài liệu" />
+      <p className="document-pending-note">Bản mẫu · tệp chỉ giữ trong phiên, chưa upload hoặc đưa vào Agent.</p>
       <section className="document-intake" aria-label="Thêm tài liệu">
         <input
           ref={input}

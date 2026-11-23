@@ -266,6 +266,8 @@ Trong frontend: `$env:APP_URL='http://127.0.0.1:3000'; node scripts/browser-smok
 
 ## 3. Frontend (terminal khác)
 
+Sau khi mở phiên local, `/setup` hiển thị cấu hình/quyền thực tế ở chế độ chỉ đọc; `/documents` cho phép tải nguồn repo trong scope và xem các file đã đối chiếu hash. Không cần dán token. Mẫu cấu hình thí nghiệm và tệp chờ tải lên giữ ở `?view=preview`, chưa áp dụng vào runtime hoặc ingest. Kiểm riêng hai màn bằng `APP_URL=http://127.0.0.1:3000` và `node --experimental-strip-types scripts/browser-smoke.mjs --app-pages` từ frontend; tạo snapshot khi bấm tải nguồn, không gọi model/approve/activate. Các ca 403 trong helper là response doubles có nhãn.
+
 ```powershell
 cd frontend
 npm ci

@@ -36,8 +36,8 @@ export function SidebarChat({
           href="/"
           className={`nav${active ? " active" : ""}`}
           aria-current={active ? "page" : undefined}
-          aria-label="Chat"
-          title="Chat"
+          aria-label="Chat mô phỏng"
+          title="Chat mô phỏng"
           aria-controls="chat-history"
           aria-expanded={historyExpanded}
           onClick={() => {
@@ -50,7 +50,7 @@ export function SidebarChat({
           }}
         >
           <Icon name="chat" />
-          <span>Chat</span>
+          <span>Chat mô phỏng</span>
         </Link>
         <button
           type="button"

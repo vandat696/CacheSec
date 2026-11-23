@@ -244,7 +244,7 @@ export async function checkAgentRuns({ cdp, navigate, evaluate, waitFor, click, 
     assert.equal(await evaluate("window.__runtimeUIRequests.length"), 0, 'cancel cannot approve/deploy');
     await click('#workspace-run');
     await click('#workspace-approve-run');
-    await waitFor("window.__runtimeUIRequests.length === 2 && document.querySelector('.workspace-runtime-controls [role=status]')?.textContent === 'Đang chạy bản ' + (window.__runtimeUIRequests[1].body.expected_version + 1)");
+    await waitFor("window.__runtimeUIRequests.length === 2 && document.querySelector('.workspace-runtime-controls [role=status]')?.textContent === 'Ứng dụng hiện tại: bản ' + (window.__runtimeUIRequests[1].body.expected_version + 1)");
     assert.equal(await evaluate("!!document.querySelector('.workspace-runtime-controls a')"), false);
     assert.equal(await evaluate("window.__runtimeUIRequests.length"), 2);
     assert.equal(await evaluate("window.__runtimeUIRequests[0].body.artifact_digest"), 'sha256:'+'a'.repeat(64));

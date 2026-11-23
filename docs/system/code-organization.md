@@ -34,6 +34,8 @@ frontend/src/
     workbench/                 layout giữ hai màn và UUID điều hướng, không lưu source/token
     local-workspace/           phiên local private, proxy allowlist và bootstrap browser
     quotations/                form/danh sách/chi tiết nối API, hook phiên và HTTP adapter
+    runtime-settings/          đọc cấu hình hiện tại qua các API có sẵn, UI chỉ đọc
+    documents/                 nguồn repo có kiểm hash và UI tệp trong phiên ở chế độ preview
     experiment-config/         profile, comparison, experiment-plan, setup-plan
     ui-library/
       catalog/                 definition + snippet theo từng template

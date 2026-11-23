@@ -14,10 +14,10 @@ import { SidebarChat } from "@/features/chat/SidebarChat";
 const navigation = [
   { href: "/workspace", label: "Workspace", icon: "code" },
   { href: "/quotations", label: "Báo giá", icon: "file" },
-  { href: "/setup", label: "Thiết lập", icon: "settings" },
-  { href: "/", label: "Chat", icon: "chat" },
   { href: "/metrics", label: "Số liệu", icon: "chart" },
-  { href: "/documents", label: "Tài liệu", icon: "book" },
+  { href: "/documents", label: "Nguồn repo", icon: "book" },
+  { href: "/setup", label: "Thiết lập", icon: "settings" },
+  { href: "/", label: "Chat mô phỏng", icon: "chat" },
 ] as const;
 
 export function AppShell({ children }: { children: ReactNode }) {
@@ -159,6 +159,7 @@ export function AppShell({ children }: { children: ReactNode }) {
                 <Icon name="menu" />
               </Button>
               <span className="workspace-brand">CacheSec</span>
+              {pathname === "/" && <span className="quotation-note">Chat mô phỏng</span>}
             </div>
             {pathname === "/" && (
               <div className="chat-topbar-actions" role="group" aria-label="Công cụ chat">

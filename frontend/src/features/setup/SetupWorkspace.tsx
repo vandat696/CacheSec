@@ -54,6 +54,7 @@ export function SetupWorkspace() {
   return (
     <div className="content-page setup-workspace">
       <PageHeading title="Thiết lập thí nghiệm" />
+      <p className="setup-note">Bản nháp · xuất cấu hình, chưa áp dụng vào runtime hoặc chạy benchmark/training.</p>
       <p className="setup-intro">Chọn dữ liệu và cấu hình để so sánh hiệu suất, chất lượng và kiểm soát truy cập.</p>
       <form onSubmit={(event) => {
         event.preventDefault();

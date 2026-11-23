@@ -4,8 +4,10 @@
 @import "../styles/chat.css";
 @import "../styles/catalog.css";
 @import "../styles/documents.css";
+@import "../styles/repository-documents.css";
 @import "../styles/metrics.css";
 @import "../styles/setup.css";
+@import "../styles/runtime-settings.css";
 @import "../styles/developer.css";
 @import "../styles/quotations.css";
 @import "../styles/comparisons.css";

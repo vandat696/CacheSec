@@ -1,0 +1,11 @@
+.repository-documents-layout { display: grid; grid-template-columns: minmax(220px, 1fr) minmax(0, 2fr); gap: 20px; }
+.repository-documents-layout ul { list-style: none; padding: 0; margin: 0; }
+.repository-documents-layout li + li { margin-top: 8px; }
+.repository-documents-layout button { display: grid; gap: 8px; width: 100%; padding: 14px; text-align: left; border: 1px solid var(--nui-border); border-radius: 6px; background: var(--nui-surface); color: var(--nui-text); cursor: pointer; overflow-wrap: anywhere; }
+.repository-documents-layout button[aria-pressed="true"] { outline: 2px solid var(--nui-primary); }
+.repository-documents-layout small { color: var(--nui-muted); }
+.repository-documents-layout section { min-width: 0; padding: 20px; border: 1px solid var(--nui-border); background: var(--nui-surface); border-radius: 8px; }
+.repository-documents-layout h2 { font-size: 16px; }
+.repository-documents-layout pre { max-height: 60vh; overflow: auto; font-size: 12px; }
+.repository-documents-layout details code { display: block; overflow-wrap: anywhere; margin-top: 8px; }
+@media (max-width: 760px) { .repository-documents-layout { grid-template-columns: minmax(0, 1fr); } }

@@ -1,5 +1,12 @@
 # Thiết kế frontend
 
+## Các màn chính sau rà soát 2026-11-23
+
+- Sidebar ưu tiên Workspace → Báo giá → Số liệu → Nguồn repo → Thiết lập. Chat cũ giữ nguyên tại `/`, có nhãn **Chat mô phỏng**; không gọi nó là Agent thật.
+- `/setup` đọc repository, cấu hình Agent/workflow và target qua API local có xác thực, chỉ hiển thị cấu hình đang dùng. Tải lỗi/mất quyền/đóng phiên xóa dữ liệu cũ. `/settings` dẫn tới màn này. Không có nút ghi cấu hình giả; model được chọn trong Workspace như trước.
+- `/documents` là Nguồn repo: chỉ đọc metadata khi mở màn, **Tải nguồn hiện tại** mới tạo snapshot. File được đọc qua ID trong snapshot, kiểm size/SHA-256 và giải mã UTF-8 trước hiển thị. Không đọc path tùy ý hoặc upload file vào Agent. Lỗi quyền/đóng phiên xóa snapshot/nội dung đang xem.
+- Mẫu upload tệp và bản nháp thí nghiệm được giữ tại `/documents?view=preview` và `/setup?view=preview`, mở qua mục phụ có nhãn chưa nối runtime. `/experiments` dẫn tới bản nháp này. Các phần mô tả hai giao diện cũ bên dưới chỉ áp dụng chế độ preview; không phải trạng thái backend hiện tại.
+
 ## Workspace và Agent — một màn hình
 
 Hai cột comparison có nút **Chọn bản chạy** cho revision mới nhất đã test đạt. Vùng chạy chung hiển thị nhánh/revision; **Chạy ứng dụng** mở human gate đúng diff/artifact. Chọn nhánh không ghi editor/source. Khóa đổi lựa chọn trong lúc review/activation; test phải khớp proposal/revision/artifact/profile và có evidence. [Contract chọn bản chạy](../system/context-comparison.md#chọn-bản-để-chạy-app-báo-giá) sở hữu giới hạn backend.

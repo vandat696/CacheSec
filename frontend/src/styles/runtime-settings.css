@@ -1,0 +1,9 @@
+.runtime-settings-note { color: var(--nui-muted); font-size: 13px; margin-bottom: 20px; }
+.runtime-settings-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(100%, 300px), 1fr)); gap: 20px; }
+.runtime-settings-grid section { padding: 20px; background: var(--nui-surface); border: 1px solid var(--nui-border); border-radius: 8px; min-width: 0; }
+.runtime-settings-grid h2 { font-size: 16px; margin: 0 0 16px; }
+.runtime-settings-grid dl { display: grid; gap: 8px; }
+.runtime-settings-grid dt { color: var(--nui-muted); font-size: 13px; }
+.runtime-settings-grid dd { margin: 0 0 10px; overflow-wrap: anywhere; font-size: 14px; }
+.runtime-settings-reference { margin-top: 24px; font-size: 13px; }
+.runtime-settings-reference summary { cursor: pointer; }
