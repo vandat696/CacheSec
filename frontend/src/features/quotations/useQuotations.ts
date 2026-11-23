@@ -156,6 +156,11 @@ export function useQuotations() {
     finally { finish(controller); }
   }
 
+  function invalidateValidation() {
+    if (busy === "validate") { current.current?.abort(); setBusy(null); }
+    setValidation(null);
+  }
+
   return { connected, items, listUnavailable, cursor, selected, validation, busy: checkingSession ? "connect" as const : busy,
-    error, requestId, connect, disconnect, load, select, create, validate };
+    error, requestId, connect, disconnect, load, select, create, validate, invalidateValidation };
 }

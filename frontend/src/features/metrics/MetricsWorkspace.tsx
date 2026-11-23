@@ -13,6 +13,7 @@ import { MetricsTurns } from "./MetricsTurns";
 import { MetricsComparison } from "./MetricsComparison";
 import { MetricsTrend } from "./MetricsTrend";
 import { getMetricsPreview, previewConversations, type MetricsPreview } from "./metricsPreview";
+import { WorkspaceMetrics } from "./WorkspaceMetrics";
 
 const plotMetrics = [
   { value: "response", label: "Độ trễ", unit: "ms · end-to-end" },
@@ -193,6 +194,8 @@ function MetricsWorkspaceView({ showPreview }: { showPreview: boolean }) {
 }
 
 export function MetricsWorkspace() {
-  const showPreview = useSearchParams().get("source") !== "session";
+  const source = useSearchParams().get("source");
+  if (source !== "sample" && source !== "session") return <WorkspaceMetrics />;
+  const showPreview = source === "sample";
   return <MetricsWorkspaceView key={showPreview ? "sample" : "session"} showPreview={showPreview} />;
 }

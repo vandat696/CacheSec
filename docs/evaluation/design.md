@@ -7,10 +7,10 @@ Cập nhật 2026-11-17. Chưa có kết quả thực nghiệm CacheSec. Test k�
 | Mục đích | Nhánh | Điều kiện |
 | --- | --- | --- |
 | Nghiên cứu chính theo giảng viên | Developer-guided / AI-assisted | Cùng repo gốc, một thay đổi rule, fixture/oracle, gate và acceptance |
-| Demo đã được người dùng chọn | AI Không cache / Có Context Cache, một prompt chạy song song | Cùng immutable snapshot/model/config/quyền/test profile; candidate/test riêng |
+| Demo đã được người dùng chọn | AI Không cache / Có Context Cache, một prompt chạy tuần tự | Cùng immutable snapshot/model/config/quyền/test profile; candidate/test riêng; hiện None trước Local |
 | Đo đóng góp riêng cache | Cùng AI, None / Local cold / Local warm | Protocol cần thống nhất; chỉ thay cache, kiểm soát thứ tự/tài nguyên và preload |
 
-Timing song song chịu queue, test serialization và provider limits; không đủ để kết luận cache tăng tốc. Nhánh None không làm ấm Local. Hai diff giống hoặc khác đều được chấm bằng oracle. Context Hit không mặc nhiên giảm model calls/tokens.
+Demo hiện chạy None trước Local trên một worker; thời gian từng nhánh loại thời gian chờ worker. Thứ tự cố định, trạng thái tài nguyên và provider limits vẫn có thể ảnh hưởng số đo; chưa đủ để kết luận cache tăng tốc. Protocol đo cache cần khóa cách kiểm soát thứ tự trước thực nghiệm. Nhánh None không làm ấm Local. Hai diff giống hoặc khác đều được chấm bằng oracle. Context Hit không mặc nhiên giảm model calls/tokens.
 
 ## Fixture và oracle
 
@@ -113,7 +113,7 @@ Không có opportunity stale/unauthorized thì tỷ lệ N/A; reject an toàn kh
 
 PostgreSQL lưu cặp/nhánh/turn/revision/model call/test/metrics/assessment và liên kết source/artifact/evidence bền. Mỗi measurement có đơn vị, nguồn event/span/provider và missing reason. Mỗi assessment gắn revision/artifact, criterion/formula version, fixture/oracle/acceptance refs khi áp dụng, evaluator và thời điểm. Đánh giá lại thêm record, giữ kết luận cũ.
 
-Lưu cả failure/cancel/timeout/incomplete. Generation/embedding usage tách riêng; tokens thiếu ghi null, không suy từ ký tự. Cost nếu có là estimate kèm bảng giá/version trừ khi có dữ liệu phí thực. Duration dùng monotonic span cùng clock origin; end-to-end cặp song song không bằng tổng hai nhánh. Context-ready latency tính lookup/embedding/verify/network/fallback; báo lỗi và overhead, không điền 0 cho thiếu dữ liệu.
+Lưu cả failure/cancel/timeout/incomplete. Generation/embedding usage tách riêng; tokens thiếu ghi null, không suy từ ký tự. Cost nếu có là estimate kèm bảng giá/version trừ khi có dữ liệu phí thực. Duration dùng monotonic span cùng clock origin; end-to-end cả cặp và thời gian từng nhánh là hai phạm vi đo riêng, không suy giá trị này từ tổng giá trị kia. Context-ready latency tính lookup/embedding/verify/network/fallback; báo lỗi và overhead, không điền 0 cho thiếu dữ liệu.
 
 ## Protocol và acceptance trước run
 

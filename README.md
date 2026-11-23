@@ -29,7 +29,7 @@ Workspace `/workspace` làm việc với source/revision/test và runtime local 
 | Workspace `/workspace` | Editor ghi file thật, revision/diff, Docker test, Gemini, human duyệt/chạy app local | Chỉ file validation; Agent tối đa 3 lượt/10 phút, không auto-approve/deploy; thêm luồng so sánh Context Cache |
 | Thiết lập `/setup` | Chín nhóm mode/dataset/embedding/threshold/eviction/quyền/training/logging/export; snapshot trong phiên, validation và xuất JSON cấu hình | Bản nháp; results null, chưa áp dụng vào Chat hoặc chạy benchmark/training/logging thật |
 | Chat `/` | Lịch sử, bản nháp, Không cache/Cache/Cả hai với prompt chung; modal thông số từng lượt | Phản hồi mô phỏng, chưa AI/RAG hoặc cache thật |
-| Số liệu `/metrics` | Ba tab, biểu đồ/bảng/chi tiết; mặc định 24 truy vấn giả, nguồn phiên riêng tại `/metrics?source=session` | Fixture xem UI, không phải kết quả thực nghiệm |
+| Số liệu `/metrics` | Đọc lịch sử Workspace thật qua phiên local; chọn phiên, xem số đo hai nhánh và mở bản sửa/test | Lượt gần nhất của mỗi phiên; mẫu tại `?source=sample`, Chat mô phỏng tại `?source=session`; chưa benchmark |
 | Tài liệu `/documents` | Chọn/thả, phân loại, tìm/lọc tệp trong phiên | Chờ tải lên; chưa đọc/ingest/upload hoặc authorized retrieval |
 | Backend control | Blob/registry/snapshot, revision/test/Agent, journal source write và gate runtime local | Dev được cấu hình quyền ghi/review/deploy riêng; chưa artifact-ready/audit nghiên cứu; readiness chỉ PostgreSQL |
 | Báo giá `/quotations` | API/PostgreSQL thật; rule ngày Gemini đã được human duyệt đúng artifact và chạy trên app local, target v1 | Fixture/oracle/acceptance nghiên cứu còn mở |

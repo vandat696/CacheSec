@@ -1,6 +1,6 @@
 # Trạng thái CacheSec
 
-Cập nhật 2026-11-19. Đây là bản tổng hợp hiện trạng, thay nhật ký thao tác chi tiết. [Phạm vi](overview.md) và [kế hoạch](implementation-plan.md) quản lý yêu cầu và việc tiếp theo.
+Cập nhật 2026-11-23. Đây là bản tổng hợp hiện trạng, thay nhật ký thao tác chi tiết. [Phạm vi](overview.md) và [kế hoạch](implementation-plan.md) quản lý yêu cầu và việc tiếp theo.
 
 ## Hiện trạng đã kiểm chứng
 
@@ -13,11 +13,36 @@ Cập nhật 2026-11-19. Đây là bản tổng hợp hiện trạng, thay nhậ
 | Persistence | PostgreSQL/blob giữ pair/branch/events/usage/revision/test/assessment và journal source-write/approval/activation | Assessment nghiên cứu chưa khóa; in-flight có thể incomplete/null usage |
 | Context Cache | Dexie, Gemini query embedding 768 chiều, exact/semantic, backend verifier/registry, TTL/LRU/invalidation/logout | Full-source profile, online và riêng principal; chưa summary/Answer Cache/offline |
 | So sánh hai nhánh | Workspace chạy None trước Local trên một worker Control, lịch sử PostgreSQL mở lại sau reload/control restart | Cấu hình demo cố định; chưa benchmark hoặc thí nghiệm chính |
-| UI cũ | Chat, metrics, setup, documents được giữ để tái sử dụng | Chat/metrics còn dữ liệu mô phỏng; setup chưa chạy benchmark; documents chưa ingest |
+| Số liệu | `/metrics` đọc lượt gần nhất mỗi phiên Workspace qua API, so hai nhánh và mở bản sửa/test | Chưa tổng hợp benchmark; nguồn mẫu/Chat mô phỏng giữ ở query riêng |
+| UI cũ | Chat, setup, documents được giữ để tái sử dụng | Chat còn mô phỏng; setup chưa chạy benchmark; documents chưa ingest |
 
 Lưu source không tự reload/deploy app. Chạy app cần human duyệt đúng artifact; cache không thay quyền, test hoặc gate. Trạng thái trên dựa trên bằng chứng gần nhất, không phải probe dịch vụ đang chạy ở thời điểm đọc.
 
 ## Bằng chứng luồng thật gần nhất
+
+## 2026-11-23 — Báo giá chạy lại và Số liệu nối API thật
+
+- Theo yêu cầu tiếp tục làm app báo giá chạy thật, nối lại bridge thiếu và khôi phục đúng app/gateway của activation `1a28b675-f0df-496d-abe0-432837c9544c`, sau đối soát source/artifact/evidence/image/mounts/environment. Verifier ingress và HTTP đạt; target vẫn version 1, artifact cũ, pending null. Launcher chạy thành công, giữ worker singleton, frontend 3000/API 8000/8001 sẵn sàng. Không tạo approval hoặc activation mới.
+- Báo giá hiển thị version/artifact đăng ký ở Control; khi quay lại trang thấy binding triển khai đổi hoặc không đọc được cấu hình thì xóa validation cũ. `/metrics` mặc định đọc lịch sử Workspace có quyền, chọn lượt gần nhất từng phiên, hiện số đo hai nhánh và mở diff/test. Trường thiếu giữ dấu gạch; dữ liệu mẫu ở `?source=sample`, Chat mô phỏng ở `?source=session`. Agent/provider/controller và lõi cache giữ nguyên.
+- **128 test frontend**, typecheck, ESLint và production build đạt. Edge `--workspace-data` xác nhận ba báo giá có sẵn trên app thật, target/artifact giữ nguyên, số liệu khớp API PostgreSQL, chọn phiên và ba bố cục. Ca đổi version và API 403 dùng response doubles có nhãn: validation/bảng cũ được xóa, không gọi generation/approve/activate. Harness xử lý beforeunload của draft và hộp thoại đồng bộ Edge trong profile test, có timeout/lỗi gốc thay vì treo vô hạn.
+- Edge `--workspace-files` ghi hai comment qua Ctrl+S, test Docker đúng source vừa lưu rồi Undo phục hồi nguyên bytes gốc; không đổi rule hoặc triển khai thêm. Lỗi mẫu ngày bằng R vẫn được giữ. README, frontend design và setup đã cập nhật; documents/upload và setup thực nghiệm chưa nối backend trong lát cắt này theo ưu tiên người dùng.
+
+## 2026-11-23 — Sửa phần kiểm thử, dependency và tài liệu ngoài Agent
+
+- Giữ nguyên toàn bộ `backend/app` và `frontend/src`, gồm prompt/model/controller/cache/gate, editor và rule lỗi mẫu. Smoke repository dùng helper cuộn đọc đủ các dòng CodeMirror, khôi phục vị trí cuộn sau kiểm; Edge ở viewport chuẩn và ba bố cục đối chiếu toàn bộ file host đạt, không cần harness viewport cao tạm.
+- Giữ Prisma 7.10.1, override riêng effect 3.22.1; cập nhật chuỗi TypeScript ESLint 8.73.0/minimatch 11.0.9. Đối chiếu lockfile xác nhận chỉ dependency dev thay đổi. **127 frontend test, typecheck, ESLint, build và template check đạt; npm audit còn 0 cảnh báo** tại thời điểm kiểm. Chưa kiểm tương tác Studio thật; test cấu hình Studio đạt.
+- Sửa import-order/format hai script baseline/provisioning; Ruff khai báo first-party app/tests để lint nhất quán từ root/backend. Tám test launcher và Ruff lint app/tests/scripts đạt. Format cũ trong comparison service chưa sửa vì giữ nguyên Agent; không tuyên bố format toàn backend sạch.
+- Overview/evaluation đã khớp implementation chạy None trước Local. Không đổi protocol hoặc tự chốt fixture/oracle/acceptance nghiên cứu. Dependency override và cách bảo trì được ghi trong [setup](setup.md).
+- Khôi phục network bridge và bật lại đúng deployment cũ đang chờ owner cho phép sau khi bộ xét duyệt tự động chặn thao tác thay network/khởi động dịch vụ. Chưa đổi network, artifact, target hoặc tạo approval/activation mới; API báo giá 8001 vẫn dừng. Bước này chưa hoàn tất, không coi các kiểm tra frontend đạt là runtime đã phục hồi.
+
+## 2026-11-23 — Rà soát khả năng hoàn thiện và kiểm tra lại các blocker
+
+- Chạy ngoài sandbox xác nhận frontend **127/127 test**, production build, typecheck, ESLint và kiểm bundle template đều đạt. Lỗi Studio/build `spawn EPERM` ở lượt rà trước là giới hạn sandbox. Tám test launcher đạt khi chạy ngoài sandbox.
+- Backend hồi quy với PostgreSQL tạm riêng, không dùng volume/dữ liệu dev: **541 đạt, một thất bại, hai baseline-only deselected, không skip**. Ca thất bại duy nhất là lỗi mẫu `d == R` đã ghi bên dưới; giữ nguyên source để demo sửa lỗi. Test quyền/cache/persistence/gate trong suite có model/worker doubles, không phải diễn tập Docker/provider thật hoặc acceptance nghiên cứu. Ruff `app/tests` đạt lint; format còn một file. Script ngoài backend còn một lỗi import-order và hai file chưa đúng format theo config backend; chưa tự sửa trong lượt kiểm tra.
+- Docker Desktop ban đầu tắt. Sau khi mở Docker và chạy launcher, DB/Control dev lên được; launcher chặn `REGISTERED_RUNTIME_NOT_RUNNING`, không chạy baseline thay app đã duyệt. Đối soát activation đã hoàn tất, approval, artifact/source/evidence, image, mounts và environment đều khớp. Gateway cũ chỉ còn network `cachesec_quotation_runtime`, thiếu `bridge` so với verifier; giữ cả app/gateway dừng, chưa sửa network hoặc restart deployment. Target vẫn version 1/artifact cũ, pending null. Proof private: `backend/.local/launcher/review-runtime-20261123.json`.
+- Edge kiểm UI Agent ở ba bố cục với model/run/executor doubles đạt. Smoke repository ban đầu thất bại vì helper đọc các dòng CodeMirror đang render rồi so với toàn bộ file. Bản harness tạm tăng viewport ban đầu, không đổi app/source, xác nhận đúng ba file host, snapshot, disconnect và ba bố cục qua Control/PostgreSQL thật. Chưa sửa helper chính; đây là vấn đề kiểm thử cần xử lý. Frontend build mới chạy ở 3000; API báo giá 8001 vẫn chưa hoạt động.
+- Người dùng cho phép audit online: `npm audit` báo **10 package bị ảnh hưởng (3 high, 7 moderate)**, theo chuỗi Prisma/config → `effect` và TypeScript ESLint → `minimatch`; `--omit=dev` báo 0. Đây là cảnh báo dependency dev, chưa chứng minh app có đường khai thác hoặc bảo đảm runtime an toàn. Chưa nâng package; npm đề xuất đổi major Prisma về 6.12.0 nên cần review tương thích, không áp `audit fix --force`. Advisory gốc: [Effect](https://github.com/Effect-TS/effect/security/advisories/GHSA-7589-6fvf-x4pw), [minimatch](https://github.com/isaacs/minimatch/security/advisories/GHSA-g3hv-75wg-m249).
+- Chưa gọi provider, tạo approval/activation mới, sửa rule hoặc chạy benchmark. JSON export hiện là dữ liệu một pair, chưa là gói evidence tự kiểm đủ source/config/test/approval/runtime. D5 còn reset/fault/recovery; D6 vẫn chờ fixture/oracle/acceptance/protocol. Overview/evaluation còn mô tả chạy song song trong khi contract/implementation hiện chạy tuần tự; cần đồng bộ trước khóa protocol.
 
 ## Ca sửa lỗi mẫu trên Workspace dev
 
@@ -156,7 +181,7 @@ Các thay đổi UI nhỏ và lỗi tooling đã xử lý không còn là đầu
 
 ## Việc tiếp theo
 
-Tiếp tục D5 trong [kế hoạch](implementation-plan.md): diễn tập reset/fault/revoke/expired trên scope demo riêng và hoàn thiện hướng dẫn vận hành. D1–D4 đã có implementation và kiểm chứng kỹ thuật nêu trên; D6 chỉ bắt đầu khi fixture/oracle/acceptance/protocol được xác nhận.
+Theo ưu tiên hiện tại, trau chuốt Báo giá và Số liệu thật, giữ Agent. Ingress dev đã khôi phục và các kiểm tra nêu trên đạt. Khi tiếp tục D5 trong [kế hoạch](implementation-plan.md), vẫn còn recovery tổng quát/reset/fault/revoke/expired trên scope demo riêng; lần khôi phục cụ thể không thay thế toàn gói. D6 chỉ bắt đầu khi fixture/oracle/acceptance/protocol được xác nhận.
 
 Chưa có kết luận hiệu quả cache từ benchmark hoặc thực nghiệm chính; raw smoke telemetry không thay dữ liệu đánh giá theo protocol. Fixture/oracle/acceptance và baseline/số lặp còn phải xác nhận trước D6; không dùng 463 test kỹ thuật hoặc 21 nhóm harness làm ngưỡng nghiệm thu nghiên cứu.
 

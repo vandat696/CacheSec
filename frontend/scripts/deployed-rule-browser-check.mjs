@@ -43,6 +43,7 @@ export async function checkDeployedRule({ cdp, navigate, evaluate, waitFor, clic
   try {
     await cdp("Emulation.setDeviceMetricsOverride", { width: 1440, height: 900, deviceScaleFactor: 1, mobile: false });
     for (const sample of report.cases) {
+      console.log("Checking deployed quotation: " + sample.case);
       assert.match(sample.quotation_id, /^[a-f0-9]{8}(?:-[a-f0-9]{4}){3}-[a-f0-9]{12}$/i);
       await navigate("/quotations?proposal=" + report.proposal_id + "&quotation=" + sample.quotation_id);
       await waitFor(`document.querySelector('.quotation-details')?.dataset.quotationId === ${JSON.stringify(sample.quotation_id)}`);

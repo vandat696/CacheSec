@@ -21,7 +21,7 @@ Nguồn: yêu cầu người dùng cung cấp ngày 2026-11-02. Acceptance thres
 
 ## Demo cuối đã thống nhất
 
-Một prompt chung chạy **Không cache / Có Context Cache** song song trên Workspace. Hai nhánh dùng cùng source snapshot, model, prompt, quyền và test profile; tạo candidate/revision/test riêng. Hai bản sửa có thể giống nhau.
+Một prompt chung chạy **Không cache / Có Context Cache** trên Workspace. Implementation hiện chạy tuần tự, Không cache trước Có Context Cache, trên một worker Control. Hai nhánh dùng cùng source snapshot, model, prompt, quyền và test profile; tạo candidate/revision/test riêng. Hai bản sửa có thể giống nhau.
 
 Người dùng xem diff, test, tokens, thời gian, kết quả cache và đánh giá của từng nhánh; chọn một bản để lưu source và duyệt chạy app. Hai nhánh không cùng ghi đè file repo hoặc tự triển khai. Cache Hit vẫn có thể cần gọi model và gửi cùng số tokens.
 

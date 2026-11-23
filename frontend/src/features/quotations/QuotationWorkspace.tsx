@@ -10,6 +10,7 @@ import { QuotationForm } from "./QuotationForm";
 import { QuotationList } from "./QuotationList";
 import { QuotationDetails } from "./QuotationDetails";
 import { useQuotations } from "./useQuotations";
+import { QuotationRuntimeStatus } from "./QuotationRuntimeStatus";
 
 export function QuotationWorkspace() {
   const quotation = useQuotations();
@@ -23,6 +24,7 @@ export function QuotationWorkspace() {
       <PageHeading title="Báo giá" action={quotation.connected
         ? <Button id="quotation-disconnect" variant="tertiary" onClick={quotation.disconnect}>Ngắt kết nối</Button>
         : <span className="quotation-note">Identity fixture · PoC</span>} />
+      {quotation.connected && <QuotationRuntimeStatus onChanged={quotation.invalidateValidation} />}
       {quotation.error && <div className="quotation-error" role="alert">
         <p>{quotation.error}</p>
         {quotation.requestId && <small>Mã yêu cầu: {quotation.requestId}</small>}

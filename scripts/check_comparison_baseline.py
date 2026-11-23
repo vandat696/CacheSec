@@ -65,9 +65,7 @@ def check_baseline(root: Path, quotation_id: UUID | None = None) -> dict:
         if source.resolve() != source or not source.is_file():
             raise ValueError("Frozen source is missing or redirected")
         target = "/opt/quotation/" + path.removeprefix("backend/")
-        mounts.extend(
-            ["--mount", f"type=bind,source={source},target={target},readonly"]
-        )
+        mounts.extend(["--mount", f"type=bind,source={source},target={target},readonly"])
 
     output = docker(
         [

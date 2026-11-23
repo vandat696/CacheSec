@@ -21,6 +21,7 @@ import { checkWorkbench } from "./workbench-browser-check.mjs";
 import { checkWorkspaceFiles } from "./workspace-files-browser-check.mjs";
 import { checkProposalReview } from "./proposal-review-browser-check.mjs";
 import { checkDeployedRule } from "./deployed-rule-browser-check.mjs";
+import { checkWorkspaceData } from "./workspace-data-browser-check.mjs";
 import { checkComparisonLayout, checkComparisons } from "./comparison-browser-check.mjs";
 import { LocalSessionStore } from "../src/features/local-workspace/localSessionStore.ts";
 
@@ -37,7 +38,8 @@ const workspaceFiles = process.argv.includes("--workspace-files");
 const proposalReview = process.argv.includes("--proposal-review");
 const comparisons = process.argv.includes("--comparisons") || process.argv.includes("--comparison-approved");
 const comparisonLayout = process.argv.includes("--comparison-layout");
-const repositoryOnly = process.argv.includes("--repository-only") || repositoryDev || localWorkspace || agentOnly || agentLive || agentRuns || agentRunLive || workbenchOnly || workspaceFiles || proposalReview || comparisons || comparisonLayout;
+const workspaceData = process.argv.includes("--workspace-data");
+const repositoryOnly = process.argv.includes("--repository-only") || repositoryDev || localWorkspace || agentOnly || agentLive || agentRuns || agentRunLive || workbenchOnly || workspaceFiles || proposalReview || comparisons || comparisonLayout || workspaceData;
 if (repositoryDev) {
   // This private file contains only the dedicated read credential, never the backend DSN.
   process.loadEnvFile(join(frontend, "../backend/.local/control-access.env"));
@@ -69,9 +71,12 @@ const browser = spawn(
   browserPath,
   [
     "--headless=new",
+    "--inprivate",
+    "--disable-gpu",
     "--no-first-run",
     "--no-default-browser-check",
     "--disable-background-networking",
+    "--disable-sync",
     "--remote-debugging-port=0",
     `--user-data-dir=${profile}`,
     "about:blank",
@@ -119,9 +124,21 @@ try {
   const pending = new Map();
   socket.addEventListener("message", (event) => {
     const message = JSON.parse(event.data);
+    // Full-page navigation may trigger the app's unsaved-draft protection.
+    // These checks never save a draft by accepting a beforeunload dialog.
+    if (message.method === "Page.javascriptDialogOpening" && message.params.type === "beforeunload") {
+      socket.send(JSON.stringify({ id: ++nextId, method: "Page.handleJavaScriptDialog", params: { accept: true } }));
+    }
+    // Edge can open an OS-account sync prompt even in a fresh headless profile.
+    // Close only that internal page in this disposable test browser.
+    if (["Target.targetCreated", "Target.targetInfoChanged"].includes(message.method) && message.params.targetInfo.url.startsWith("edge://sync-confirmation-dialog")) {
+      socket.send(JSON.stringify({ id: ++nextId, method: "Target.closeTarget", params: { targetId: message.params.targetInfo.targetId } }));
+    }
     if (message.id) {
       const request = pending.get(message.id);
+      if (!request) return;
       pending.delete(message.id);
+      clearTimeout(request.timer);
       if (message.error) request.reject(new Error(message.error.message));
       else request.resolve(message.result);
     }
@@ -143,7 +160,8 @@ try {
   const cdp = (method, params = {}) =>
     new Promise((resolve, reject) => {
       const id = ++nextId;
-      pending.set(id, { resolve, reject });
+      const timer = setTimeout(() => { pending.delete(id); reject(new Error(`Browser command timed out: ${method}`)); }, 30000);
+      pending.set(id, { resolve, reject, timer });
       socket.send(JSON.stringify({ id, method, params }));
     });
   const evaluate = async (expression) => {
@@ -221,6 +239,7 @@ try {
     await pause(60);
   };
   const navigate = async (path) => {
+    if (!repositoryOnly && path === "/metrics") path = "/metrics?source=sample";
     await cdp("Page.navigate", { url: new URL(path, baseUrl).href });
     const pathname = new URL(path, baseUrl).pathname;
     await waitFor(
@@ -236,7 +255,7 @@ try {
       await waitFor("document.querySelector('.app').dataset.sidebarCollapsed === 'false'");
     }
     // Single-Agent checks opt out of the default two-branch mode.
-    if (pathname === "/workspace" && repositoryOnly && !comparisons && !comparisonLayout) {
+    if (pathname === "/workspace" && repositoryOnly && !comparisons && !comparisonLayout && !workspaceData) {
       await waitFor("!!document.querySelector('#agent-comparison-toggle')");
       if (await evaluate("document.querySelector('#agent-comparison-toggle')?.getAttribute('aria-pressed') === 'true'")) {
         await click("#agent-comparison-toggle");
@@ -288,6 +307,7 @@ try {
     console.error(errors);
   };
   await cdp("Runtime.enable");
+  await cdp("Target.setDiscoverTargets", { discover: true });
   await cdp("Page.enable");
   await cdp("Emulation.setDeviceMetricsOverride", {
     width: 1440,
@@ -325,6 +345,7 @@ try {
   if (agentRunLive) {
     await checkAgentRunLive({ cdp, navigate, evaluate, waitFor, click, fill, screenshot });
   }
+  if (workspaceData) await checkWorkspaceData({ cdp, navigate, evaluate, waitFor, click, screenshot });
   if (comparisons) {
     await checkComparisons({ cdp, navigate, evaluate, waitFor, click, fill, screenshot });
   }
@@ -837,7 +858,9 @@ try {
 
   // Dashboard reuses session turns without turning demo completion into measurements.
   await click('.sidebar a[href="/metrics"]');
-  await waitFor("location.pathname === '/metrics' && !!document.querySelector('#metrics-conversation')");
+  await waitFor("location.pathname === '/metrics'");
+  await setMetricsSource("sample");
+  await waitFor("!!document.querySelector('#metrics-conversation')");
   assert.equal(await evaluate("document.querySelector('.metrics-workspace').dataset.metricsSource"), "sample");
   assert.equal(await evaluate("document.querySelector('.metrics-kpis-overview .metrics-kpi:first-child > strong').textContent"), "24");
   assert.equal(await evaluate("document.querySelectorAll('.metrics-trend-series circle').length"), 48);
@@ -957,7 +980,9 @@ try {
   await fill('#prompt', 'Hoàn tất khi đang xem Số liệu');
   await click('.composer button[type="submit"]');
   await click('.sidebar a[href="/metrics"]');
-  await waitFor("location.pathname === '/metrics' && !!document.querySelector('#metrics-conversation')");
+  await waitFor("location.pathname === '/metrics'");
+  await setMetricsSource("sample");
+  await waitFor("!!document.querySelector('#metrics-conversation')");
   await setMetricsSource('session');
   await waitFor("(() => { const bars = [...document.querySelectorAll('[data-metrics-view=no-cache] .metrics-stacked-bar, [data-metrics-view=cache] .metrics-stacked-bar')]; return bars.length === 2 && bars.every(bar => bar.getAttribute('aria-label').includes('0 đang chờ')); })()");
   assert.equal(await evaluate("document.querySelector('.metrics-kpis-overview .metrics-kpi:first-child > strong').textContent"), '11');
@@ -1154,7 +1179,9 @@ try {
   );
   await click('.mobile-toggle');
   await click('.sidebar a[href="/metrics"]');
-  await waitFor("location.pathname === '/metrics' && !!document.querySelector('#metrics-conversation')");
+  await waitFor("location.pathname === '/metrics'");
+  await setMetricsSource("sample");
+  await waitFor("!!document.querySelector('#metrics-conversation')");
   assert.equal(await evaluate("document.querySelector('.sidebar').classList.contains('open')"), false);
   await navigate('/');
   await setChatMode('no-cache');
@@ -1227,7 +1254,8 @@ try {
   }
   assert.deepEqual(errors, [], "Lỗi runtime/React trên trình duyệt");
   console.log(
-    comparisons ? "Đạt: comparison/history và UI; kiểm chứng theo live hoặc history-only mode đã chọn, không tự approve/activate."
+    workspaceData ? "Đạt: Báo giá và Số liệu Workspace thật; kiểm chứng dữ liệu, responsive và trạng thái bị từ chối."
+      : comparisons ? "Đạt: comparison/history và UI; kiểm chứng theo live hoặc history-only mode đã chọn, không tự approve/activate."
       : comparisonLayout ? "Đạt: lịch sử trong khung Agent, phiên mới, giữ bản nháp khi xem và kết quả hai nhánh bên dưới."
       : proposalReview && process.argv.includes("--deployed-rule") ? "Đạt: artifact đã triển khai khớp, Báo giá hiển thị đúng cờ/ngày hợp lệ/ISO tuần và mobile; không gọi model hoặc triển khai thêm."
       : proposalReview ? "Đạt: proposal/artifact thật, diff và Docker evidence trên Workspace; không gọi provider, approve hoặc activate."
@@ -1251,7 +1279,8 @@ try {
   );
   console.log(`Ảnh kiểm chứng: ${output}`);
 } catch (error) {
-  await captureFailure?.();
+  console.error("Browser check failed:", error);
+  try { await captureFailure?.(); } catch (captureError) { console.error("Failure capture unavailable:", captureError.message); }
   throw error;
 } finally {
   socket?.close();

@@ -1,6 +1,6 @@
 import assert from "node:assert/strict";
 import { readFile } from "node:fs/promises";
-import { visibleEditorText } from "./editor-browser-actions.mjs";
+import { readEditorText } from "./editor-browser-actions.mjs";
 
 export async function checkRepositoryDev({ cdp, navigate, evaluate, waitFor, click, fill, screenshot }) {
   const token = process.env.CONTROL_REPOSITORY_READ_TOKEN;
@@ -22,7 +22,7 @@ export async function checkRepositoryDev({ cdp, navigate, evaluate, waitFor, cli
   await connect(); await waitFor(connected);
   await waitFor("!!document.querySelector('.cm-content')");
   assert.deepEqual(await evaluate("[...document.querySelectorAll('.repository-explorer button')].map(button => button.dataset.path)"), expectedPaths);
-  assert.equal((await evaluate(visibleEditorText)).replace(/^\uFEFF/, ""), validation);
+  assert.equal((await readEditorText({ evaluate })).replace(/^\uFEFF/, ""), validation);
   await click(".repository-reference summary");
   const snapshotId = await evaluate("document.querySelector('.repository-reference dd').textContent");
   assert.match(snapshotId, /^[0-9a-f-]{36}$/);
@@ -36,7 +36,7 @@ export async function checkRepositoryDev({ cdp, navigate, evaluate, waitFor, cli
     await fill("#repository-snapshot-id", snapshotId);
     await click('.repository-open button[type="submit"]');
     await waitFor("!!document.querySelector('.cm-content')");
-    assert.ok((await evaluate(visibleEditorText)).includes("validate_quotation"));
+    assert.equal((await readEditorText({ evaluate })).replace(/^\uFEFF/, ""), validation);
     assert.equal(await evaluate("document.documentElement.scrollWidth <= innerWidth"), true);
     await screenshot(`repository-ide-${width}.png`);
     await click("#repository-disconnect");

@@ -1,5 +1,8 @@
 .quotation-workspace { font-size: 14px; }
 .quotation-workspace h2 { font-size: 16px; font-weight: 600; }
+.quotation-runtime-status { display: flex; flex-wrap: wrap; align-items: center; gap: 12px 24px; margin-bottom: 20px; font-size: 13px; color: var(--nui-muted); }
+.quotation-runtime-status details { min-width: 0; }
+.quotation-runtime-status code { display: block; overflow-wrap: anywhere; margin-top: 8px; }
 .quotation-note { color: var(--nui-muted); font-size: 13px; }
 .quotation-connection {
   display: grid; gap: 16px;

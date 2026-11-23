@@ -23,6 +23,10 @@ ROOT = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(ROOT / "backend"))
 
 import psycopg
+from psycopg import sql
+from psycopg.conninfo import make_conninfo
+from pydantic import SecretStr
+
 from app.artifacts.filesystem_blob_store import FileSystemBlobStore
 from app.artifacts.metadata_encoding import metadata_digest
 from app.change_workflow.postgres_test_profile_administration import (
@@ -57,17 +61,12 @@ from app.testing.image_inventory import verify_images
 from app.workspace_runtime.docker_runtime import runtime_configuration
 from app.workspace_runtime.postgres_operations import PostgresOperations
 from app.workspace_runtime.source_operations import TARGET_ID
-from psycopg import sql
-from psycopg.conninfo import make_conninfo
-from pydantic import SecretStr
 
 BASELINE_COMMIT = "4924398"
 
 
 def write_json(path, value):
-    path.write_text(
-        json.dumps(value, ensure_ascii=False, indent=2) + "\n", encoding="utf-8"
-    )
+    path.write_text(json.dumps(value, ensure_ascii=False, indent=2) + "\n", encoding="utf-8")
 
 
 def start_process(arguments, cwd, environment, log):
@@ -140,9 +139,7 @@ def main():
     for path in OVERLAY_PATHS:
         target = source / path
         target.parent.mkdir(parents=True, exist_ok=True)
-        target.write_bytes(
-            baseline if path == EDITABLE_PATH else (ROOT / path).read_bytes()
-        )
+        target.write_bytes(baseline if path == EDITABLE_PATH else (ROOT / path).read_bytes())
         frozen = frozen_baseline / path
         frozen.parent.mkdir(parents=True, exist_ok=True)
         frozen.write_bytes(target.read_bytes())
@@ -195,12 +192,8 @@ def main():
         "processes": {},
     }
     write_json(root / "manifest.json", manifest)
-    with psycopg.connect(
-        settings.database_url.get_secret_value(), autocommit=True
-    ) as admin:
-        admin.execute(
-            sql.SQL("CREATE DATABASE {}").format(sql.Identifier(database_name))
-        )
+    with psycopg.connect(settings.database_url.get_secret_value(), autocommit=True) as admin:
+        admin.execute(sql.SQL("CREATE DATABASE {}").format(sql.Identifier(database_name)))
         admin.execute(
             sql.SQL(
                 "CREATE ROLE {} LOGIN PASSWORD {} NOSUPERUSER NOCREATEDB NOCREATEROLE NOINHERIT"
@@ -209,9 +202,7 @@ def main():
     database = PostgresDatabase(
         SecretStr(dsn), connect_timeout_seconds=3, statement_timeout_ms=5000
     )
-    source_profile = SourceProfile(
-        scope, configuration["repository_identity"], OVERLAY_PATHS
-    )
+    source_profile = SourceProfile(scope, configuration["repository_identity"], OVERLAY_PATHS)
     with database.connection() as connection:
         apply_migrations(connection)
         app_migrations(connection)
@@ -225,18 +216,16 @@ def main():
         epoch = PostgresSourceProfileAdministration(connection).set_profile(
             source_profile, expected_epoch=epoch
         )
-        PostgresTestProfileAdministration(
-            connection, FileSystemBlobStore(store)
-        ).set_profile(scope, profile, expected_epoch=epoch)
-        connection.execute(
-            sql.SQL("GRANT USAGE ON SCHEMA quotation_demo TO {}").format(
-                sql.Identifier(role)
-            )
+        PostgresTestProfileAdministration(connection, FileSystemBlobStore(store)).set_profile(
+            scope, profile, expected_epoch=epoch
         )
         connection.execute(
-            sql.SQL(
-                "GRANT SELECT,INSERT ON ALL TABLES IN SCHEMA quotation_demo TO {}"
-            ).format(sql.Identifier(role))
+            sql.SQL("GRANT USAGE ON SCHEMA quotation_demo TO {}").format(sql.Identifier(role))
+        )
+        connection.execute(
+            sql.SQL("GRANT SELECT,INSERT ON ALL TABLES IN SCHEMA quotation_demo TO {}").format(
+                sql.Identifier(role)
+            )
         )
         PostgresOperations(connection).add(
             scope,
@@ -247,9 +236,7 @@ def main():
                 "version": 0,
                 "pending_id": None,
                 "profile_digest": profile.digest,
-                "config_digest": metadata_digest(
-                    runtime_configuration(runtime, profile)
-                ),
+                "config_digest": metadata_digest(runtime_configuration(runtime, profile)),
                 "active_artifact": None,
                 "container_name": None,
             },
@@ -280,9 +267,7 @@ def main():
         "PYTHONDONTWRITEBYTECODE": "1",
     }
     write_json(root / "control-environment.json", env)
-    write_json(
-        root / "access.json", {"control_token": token, "quotation_token": app_token}
-    )
+    write_json(root / "access.json", {"control_token": token, "quotation_token": app_token})
     write_json(
         root / "worker.json",
         {
